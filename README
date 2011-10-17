@@ -1,0 +1,185 @@
+Introduction
+============
+
+Sifarish is a suite of recommendation engines implementaed in Hadoop. Various algorithms, including 
+feature similarity based recommendation and collaborative filtering based recommendation using social 
+rating data will be available
+
+Similarity Based Recommendation
+===============================
+
+In the absence of social rating data, the only options is a feature similarity based recommendation.
+Similarity is calculated based on distance between entities in a multi dimensional feature space. Some
+examples are - recommending jobs based on user's resume - recommending products based on user profile
+
+Attribute meta data is defined in a json file. Both entities need not have the same set of attributes. 
+Mapping between attributes values from one entity to the other can be defined in the config file.
+
+The data type supported are numerical (integer) and categorical. The distnace between categorical attributes 
+is is 0 if they are same 1 otherwise. If the atrributes are different, the distance can be configured to be 
+something other than. For numerical, the distance is simply the distance between the two values. Numerical 
+attributes are normalized using the difference between the min and max values.
+ 
+The distance algorithms can be chosed to be euclidian, manhattan or minkowski. The default algorithm is 
+euclidian. The distancs between different atrributes of different types are combined to find distance between
+two entity instances. Different weights can be assigned to the attributes to control the relative importance
+of different attributes.
+
+Here is an example for a recipe recommendation system configuration. The entities are user profile and recipe. 
+
+{
+	"distAlgorithm" : "euclidian",
+	"entities" : 
+	[
+		{
+			"name" : "profile",
+			"type" : 0,
+			"fieldCount" : 6,
+			"fields" :
+			[
+				{
+					"name" : "id",
+					"ordinal" : 0,
+					"id" : true,
+					"dataType" : "string"
+				},
+				{
+					"name" : "category",
+					"ordinal" : 1,
+					"dataType" : "categorical",
+					"mappings" :
+					[
+						{ 
+							"matchingOrdinal" : 3
+						}
+					]
+				},
+				{
+					"name" : "cuisine",
+					"ordinal" : 2,
+					"dataType" : "categorical",
+					"mappings" :
+					[
+						{ 
+							"matchingOrdinal" : 4
+						}
+					]
+				},
+				{
+					"name" : "ingredient",
+					"ordinal" : 3,
+					"dataType" : "categorical",
+					"mappings" :
+					[
+						{ 
+							"matchingOrdinal" : 5
+						}
+					]
+				},
+				{
+					"name" : "style",
+					"ordinal" : 4,
+					"dataType" : "categorical",
+					"mappings" :
+					[
+						{ 
+							"matchingOrdinal" : 6,
+							"valueMappings" :
+							[
+								{
+									"thisValue" : "normal",
+									"thatValue" : "low"
+								},
+								{
+									"thisValue" : "mild",
+									"thatValue" : "medium"
+								},
+								{
+									"thisValue" : "bold",
+									"thatValue" : "hot"
+								}
+							]
+						}
+					]
+				},
+				{
+					"name" : "mood",
+					"ordinal" : 5,
+					"dataType" : "categorical",
+					"mappings" :
+					[
+						{ 
+							"matchingOrdinal" : 7,
+							"valueMappings" :
+							[
+								{
+									"thisValue" : "simple",
+									"thatValue" : "easy"
+								},
+								{
+									"thisValue" : "healthy",
+									"thatValue" : "natural"
+								},
+								{
+									"thisValue" : "adventurous",
+									"thatValue" : "difficult"
+								}
+							]
+						}
+					]
+				}
+			]
+		},
+		{
+			"name" : "recipe",
+			"type" : 1,
+			"fieldCount" : 8,
+			"fields" :
+			[
+				{
+					"name" : "id",
+					"ordinal" : 0,
+					"id" : true,
+					"dataType" : "string"
+				},
+				{
+					"name" : "name",
+					"ordinal" : 1,
+					"dataType" : "string"
+				},
+				{
+					"name" : "url",
+					"ordinal" : 2,
+					"dataType" : "string"
+				},
+				{
+					"name" : "category",
+					"ordinal" : 3,
+					"dataType" : "categorical"
+				},
+				{
+					"name" : "cuisine",
+					"ordinal" : 4,
+					"dataType" : "categorical"
+				},
+				{
+					"name" : "ingredient",
+					"ordinal" : 5,
+					"dataType" : "categorical"
+				},
+				{
+					"name" : "spicy",
+					"ordinal" : 6,
+					"dataType" : "categorical"
+				},
+				{
+					"name" : "type",
+					"ordinal" : 7,
+					"dataType" : "categorical"
+				}
+			]
+		}
+	]
+}
+
+
