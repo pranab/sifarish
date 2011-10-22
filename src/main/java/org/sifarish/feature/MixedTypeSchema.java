@@ -79,7 +79,7 @@ public class MixedTypeSchema {
 	public double findCattegoricalDistance(String thisValue, String thatValue, int ordinal) {
 		double distance = 1.0;
 		
-		Entity entity = entities.get(0);
+		Entity entity = entities.get(1);
 		List<Field> fields = entity.getFields();
 		for (Field field : fields) {
 			if (ordinal == field.getOrdinal()) {

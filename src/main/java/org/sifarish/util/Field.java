@@ -28,7 +28,7 @@ public class Field {
 	private int min;
 	private int max;
 	private double weight = 1.0;
-	private int matchingOrdinal;
+	private int matchingOrdinal = -1;
 	private List<FieldMapping> mappings;
 	private List<CategoricalDistance> categoricalDistances;
 	

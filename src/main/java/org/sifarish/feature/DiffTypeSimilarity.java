@@ -152,6 +152,9 @@ public class DiffTypeSimilarity  extends Configured implements Tool {
         private int scale;
         private Map<Integer, List<String>> mappedFields = new HashMap<Integer, List<String>>();
         private static final int INVALID_ORDINAL = -1;
+        private int srcCount;
+        private int targetCount;
+        private int simCount;
  
         protected void setup(Context context) throws IOException, InterruptedException {
         	//load schema
@@ -169,35 +172,51 @@ public class DiffTypeSimilarity  extends Configured implements Tool {
         	fields = schema.getEntityByType(0).getFields();
         	targetFields = schema.getEntityByType(1).getFields();
         	scale = context.getConfiguration().getInt("distance.scale", 1000);
+        	
+        	System.out.println("firstTypeSize: " + firstTypeSize + " firstIdOrdinal:" +firstIdOrdinal + 
+        			" secondIdOrdinal:" + secondIdOrdinal + " Source field count:" + fields.size() + 
+        			" Target field count:" + targetFields.size());
         }
         
         protected void reduce(LongWritable key, Iterable<Text> values, Context context)
         throws IOException, InterruptedException {
         	firstTypeValues.clear();
+        	srcCount = 0;
+        	targetCount = 0;
+        	simCount = 0;
         	for (Text value : values){
         		String[] items = value.toString().split(",");
         		if (items.length == firstTypeSize){
         			firstTypeValues.add(value.toString());
+        			++srcCount;
         		} else {
         			for (String first : firstTypeValues){
         				String second = value.toString();
-        				sim = findSimilarity(first, second);
+        				sim = findSimilarity(first, second, context);
         				firstId = first.split(",")[firstIdOrdinal];
         				secondId = second.split(",")[secondIdOrdinal];
         				valueHolder.set(firstId + "," + second + "," + sim);
         				context.write(NullWritable.get(), valueHolder);
+        				++simCount;
         			}
+        			++targetCount;
         		}
         	}
+			context.getCounter("Data", "Source Count").increment(srcCount);
+			context.getCounter("Data", "Target Count").increment(targetCount);
+			context.getCounter("Data", "Similarity Count").increment(simCount);
+        	
         }
         
-    	private int findSimilarity(String source, String target) {
+    	private int findSimilarity(String source, String target, Context context) {
     		int sim = 0;
-    		mapFields(source);
+    		mapFields(source, context);
     		String[] trgItems = target.split(",");
     		
     		double sumWt = 0;
     		double dist = 0;
+    		double totWt = 0;
+			context.getCounter("Data", "Target Field Count").increment(targetFields.size());
     		for (Field field : targetFields) {
     			dist = 0;
     			Integer ordinal = field.getOrdinal();
@@ -206,28 +225,49 @@ public class DiffTypeSimilarity  extends Configured implements Tool {
     			if (null != mappedValues){
     				if (!trgItem.isEmpty()) {
 	    				if (field.getDataType().equals("categorical")) {
-	    					double thisDist = 1.0;
-	    					dist = 1.0;
-	    					for (String mappedValue : mappedValues) {
-	    						thisDist = schema.findCattegoricalDistance(mappedValue, trgItem, ordinal);
-	    						if (thisDist < dist) {
-	    							dist = thisDist;
-	    						}
+	    					if (!mappedValues.isEmpty()) {
+		    					double thisDist;
+		    					dist = 1.0;
+		    					for (String mappedValue : mappedValues) {
+		    						thisDist = schema.findCattegoricalDistance(mappedValue, trgItem, ordinal);
+		    						if (thisDist < dist) {
+		    							dist = thisDist;
+		    						}
+		    					}
+	    						context.getCounter("Data", "Dist Calculated").increment(1);
+	    					} else {
+	    						//missing source
+	    						dist = 0;
+	    						context.getCounter("Data", "Missing Source").increment(1);
 	    					}
 	    				} else if (field.getDataType().equals("int")) {
-	    					int sItemInt = Integer.parseInt(trgItem);
-    						int fItemInt = getAverageMappedValue(mappedValues);
-	    					if (field.getMax() > field.getMin()) {
-	    						dist = ((double)(fItemInt - sItemInt)) / (field.getMax() - field.getMin());
+	    					if (!mappedValues.isEmpty()) {
+		    					int sItemInt = Integer.parseInt(trgItem);
+	    						int fItemInt = getAverageMappedValue(mappedValues);
+		    					if (field.getMax() > field.getMin()) {
+		    						dist = ((double)(fItemInt - sItemInt)) / (field.getMax() - field.getMin());
+		    					} else {
+		    						int max = fItemInt > sItemInt ? fItemInt : sItemInt;
+		    						dist = ((double)(fItemInt - sItemInt)) / max;
+		    					}
 	    					} else {
-	    						int max = fItemInt > sItemInt ? fItemInt : sItemInt;
-	    						dist = ((double)(fItemInt - sItemInt)) / max;
+	    						//missing source
+	        					int trgItemInt = Integer.parseInt(trgItem);
+	        					if (field.getMax() > field.getMin()) {
+	        						double upper = ((double)(field.getMax() - trgItemInt)) / (field.getMax() - field.getMin());
+	        						double lower = ((double)(trgItemInt - field.getMin())) / (field.getMax() - field.getMin());
+	        						dist = upper > lower ? upper : lower;
+	        					} else {
+	        						dist = 1;
+	        					}
+	    						
 	    					}
 	    				}
     				} else {
     					//missing target value
     					if (field.getDataType().equals("categorical")) {
     						dist = 1;
+    						context.getCounter("Data", "Missing Target").increment(1);
     					}  else if (field.getDataType().equals("int")) {
     						int fItemInt = getAverageMappedValue(mappedValues);
 	    					if (field.getMax() > field.getMin()) {
@@ -239,33 +279,21 @@ public class DiffTypeSimilarity  extends Configured implements Tool {
 	    					}
     					}
     				}
-    			} 
-    			
-    			if (null != mappedValues && mappedValues.isEmpty()) {
-    				//missing source
-					if (field.getDataType().equals("categorical")) {
-						dist = 0;
-					}  else if (field.getDataType().equals("int")) {
-    					int trgItemInt = Integer.parseInt(trgItem);
-    					if (field.getMax() > field.getMin()) {
-    						double upper = ((double)(field.getMax() - trgItemInt)) / (field.getMax() - field.getMin());
-    						double lower = ((double)(trgItemInt - field.getMin())) / (field.getMax() - field.getMin());
-    						dist = upper > lower ? upper : lower;
-    					} else {
-    						dist = 1;
-    					}
-					}
-    				
+    			} else {
+    				//non mapped passive attributes
     			}
     			
+    			
+    			
 				sumWt += field.getWeight() * dist * dist;
+				totWt += field.getWeight();
     		}
     		
     		sim = (int)(Math.sqrt(sumWt) * (double)scale);
     		return sim;
     	}
     	
-    	private void mapFields(String source){
+    	private void mapFields(String source, Context context){
 	    	mappedFields.clear();
 			String[] srcItems = source.split(",");
 			
@@ -274,6 +302,9 @@ public class DiffTypeSimilarity  extends Configured implements Tool {
 				if (null != mappings){
 					for (FieldMapping fldMapping : mappings) {
 						int matchingOrdinal = fldMapping.getMatchingOrdinal();
+						if (-1 == matchingOrdinal) {
+							continue;
+						}
 						
 						List<String> mappedValues = mappedFields.get(matchingOrdinal);
 						if (null == mappedValues){
@@ -288,6 +319,7 @@ public class DiffTypeSimilarity  extends Configured implements Tool {
 								if (field.getDataType().equals("categorical")) {
 									if (valMapping.getThisValue().equals(value)) {
 										mappedValues.add(valMapping.getThatValue());
+			    						context.getCounter("Data", "Mapped Value").increment(1);
 										break;
 									}
 								} else if (field.getDataType().equals("int")) {
