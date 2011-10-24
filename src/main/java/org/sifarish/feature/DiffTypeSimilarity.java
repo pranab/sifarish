@@ -155,6 +155,8 @@ public class DiffTypeSimilarity  extends Configured implements Tool {
         private int srcCount;
         private int targetCount;
         private int simCount;
+        private int simResultCnt;
+        private boolean prntDetail;
  
         protected void setup(Context context) throws IOException, InterruptedException {
         	//load schema
@@ -192,6 +194,7 @@ public class DiffTypeSimilarity  extends Configured implements Tool {
         		} else {
         			for (String first : firstTypeValues){
         				String second = value.toString();
+        				//prntDetail =  ++simResultCnt % 10000 == 0;
         				sim = findSimilarity(first, second, context);
         				firstId = first.split(",")[firstIdOrdinal];
         				secondId = second.split(",")[secondIdOrdinal];
@@ -217,10 +220,17 @@ public class DiffTypeSimilarity  extends Configured implements Tool {
     		double dist = 0;
     		double totWt = 0;
 			context.getCounter("Data", "Target Field Count").increment(targetFields.size());
+			if (prntDetail){
+				System.out.println("target record: " + trgItems[0]);
+			}
+			
     		for (Field field : targetFields) {
     			dist = 0;
     			Integer ordinal = field.getOrdinal();
 				String trgItem = trgItems[ordinal];
+				if (prntDetail){
+					System.out.println("ordinal: " + ordinal +  " target:" + trgItem);
+				}
     			List<String> mappedValues = mappedFields.get(ordinal);
     			if (null != mappedValues){
     				if (!trgItem.isEmpty()) {
@@ -233,7 +243,12 @@ public class DiffTypeSimilarity  extends Configured implements Tool {
 		    						if (thisDist < dist) {
 		    							dist = thisDist;
 		    						}
+			    					if (prntDetail){
+			    						System.out.println("dist calculation: ordinal: " + ordinal + " src:" + mappedValue + " target:" + trgItem + 
+			    								" dist:" + dist);
+			    					}
 		    					}
+		    					
 	    						context.getCounter("Data", "Dist Calculated").increment(1);
 	    					} else {
 	    						//missing source
@@ -297,6 +312,9 @@ public class DiffTypeSimilarity  extends Configured implements Tool {
 	    	mappedFields.clear();
 			String[] srcItems = source.split(",");
 			
+			if (prntDetail){
+				System.out.println("src record: " + srcItems[0]);
+			}
 			for (Field field : fields) {
 				List<FieldMapping> mappings = field.getMappings();
 				if (null != mappings){
@@ -313,6 +331,10 @@ public class DiffTypeSimilarity  extends Configured implements Tool {
 						}
 						
 						String value = srcItems[field.getOrdinal()];
+						if (prntDetail){
+							System.out.println("src value: " + value);
+						}
+						
 						List<FieldMapping.ValueMapping> valueMappings = fldMapping.getValueMappings();
 						if (null != valueMappings) {
 							for (FieldMapping.ValueMapping valMapping : valueMappings) {
@@ -320,6 +342,10 @@ public class DiffTypeSimilarity  extends Configured implements Tool {
 									if (valMapping.getThisValue().equals(value)) {
 										mappedValues.add(valMapping.getThatValue());
 			    						context.getCounter("Data", "Mapped Value").increment(1);
+			    						if (prntDetail){
+			    							System.out.println("mapped: " + value + "  " + valMapping.getThatValue() + 
+			    									" matching ordinal:" + matchingOrdinal);
+			    						}
 										break;
 									}
 								} else if (field.getDataType().equals("int")) {
@@ -332,6 +358,9 @@ public class DiffTypeSimilarity  extends Configured implements Tool {
 								}
 							}
 						} else {
+    						if (prntDetail){
+    							System.out.println("non mapped: " + value + " matching ordinal:" + matchingOrdinal);
+    						}
 							if (!value.isEmpty()) {
 								mappedValues.add(value);
 							}

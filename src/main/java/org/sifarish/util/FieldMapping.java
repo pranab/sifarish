@@ -22,7 +22,7 @@ import java.util.List;
 
 public class FieldMapping {
 	private int matchingOrdinal = -1;
-	private List<FieldMapping.ValueMapping> valueMappings = new ArrayList<FieldMapping.ValueMapping>();
+	private List<FieldMapping.ValueMapping> valueMappings;
 	
 	public int getMatchingOrdinal() {
 		return matchingOrdinal;
