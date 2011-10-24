@@ -1,0 +1,167 @@
+{
+	"distAlgorithm" : "euclidian",
+	"entities" : 
+	[
+		{
+			"name" : "profile",
+			"type" : 0,
+			"fieldCount" : 6,
+			"fields" :
+			[
+				{
+					"name" : "id",
+					"ordinal" : 0,
+					"id" : true,
+					"dataType" : "string"
+				},
+				{
+					"name" : "category",
+					"ordinal" : 1,
+					"dataType" : "categorical",
+					"mappings" :
+					[
+						{ 
+							"matchingOrdinal" : 3
+						}
+					]
+				},
+				{
+					"name" : "cuisine",
+					"ordinal" : 2,
+					"dataType" : "categorical",
+					"mappings" :
+					[
+						{ 
+							"matchingOrdinal" : 4
+						}
+					]
+				},
+				{
+					"name" : "ingredient",
+					"ordinal" : 3,
+					"dataType" : "categorical",
+					"mappings" :
+					[
+						{ 
+							"matchingOrdinal" : 5
+						}
+					]
+				},
+				{
+					"name" : "style",
+					"ordinal" : 4,
+					"dataType" : "categorical",
+					"mappings" :
+					[
+						{ 
+							"matchingOrdinal" : 6,
+							"valueMappings" :
+							[
+								{
+									"thisValue" : "normal",
+									"thatValue" : "low"
+								},
+								{
+									"thisValue" : "mild",
+									"thatValue" : "medium"
+								},
+								{
+									"thisValue" : "bold",
+									"thatValue" : "hot"
+								}
+							]
+						}
+					]
+				},
+				{
+					"name" : "mood",
+					"ordinal" : 5,
+					"dataType" : "categorical",
+					"mappings" :
+					[
+						{ 
+							"matchingOrdinal" : 7,
+							"valueMappings" :
+							[
+								{
+									"thisValue" : "simple",
+									"thatValue" : "easy"
+								},
+								{
+									"thisValue" : "healthy",
+									"thatValue" : "natural"
+								},
+								{
+									"thisValue" : "adventurous",
+									"thatValue" : "difficult"
+								}
+							]
+						}
+					]
+				}
+			]
+		},
+		{
+			"name" : "recipe",
+			"type" : 1,
+			"fieldCount" : 8,
+			"fields" :
+			[
+				{
+					"name" : "id",
+					"ordinal" : 0,
+					"id" : true,
+					"dataType" : "string"
+				},
+				{
+					"name" : "name",
+					"ordinal" : 1,
+					"dataType" : "string"
+				},
+				{
+					"name" : "url",
+					"ordinal" : 2,
+					"dataType" : "string"
+				},
+				{
+					"name" : "category",
+					"ordinal" : 3,
+					"dataType" : "categorical",
+					"categoricalDistances" :
+					[
+						{
+							"thisValue" : "veg",
+							"thatValue" : "vegan",
+							"distance" : 0.40
+						},
+						{
+							"thisValue" : "non veg",
+							"thatValue" : "meat lover",
+							"distance" : 0.60
+						}
+					]
+				},
+				{
+					"name" : "cuisine",
+					"ordinal" : 4,
+					"dataType" : "categorical"
+				},
+				{
+					"name" : "ingredient",
+					"ordinal" : 5,
+					"dataType" : "categorical"
+				},
+				{
+					"name" : "spicy",
+					"ordinal" : 6,
+					"dataType" : "categorical"
+				},
+				{
+					"name" : "type",
+					"ordinal" : 7,
+					"dataType" : "categorical"
+				}
+			]
+		}
+	]
+}
