@@ -90,4 +90,17 @@ public class MixedTypeSchema {
 		
 		return distance;
 	}
+	
+	public DistanceStrategy createDistanceStrategy(int scale) {
+		DistanceStrategy distStrategy = null;
+		
+		if (distAlgorithm.equals("euclidean")) {
+			distStrategy = new EuclideanDistance(scale);
+		} else if (distAlgorithm.equals("manhattan")) {
+			distStrategy = new ManhattanDistance(scale);
+		}
+		
+		return distStrategy;
+	}
+	
 }

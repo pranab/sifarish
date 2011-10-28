@@ -157,6 +157,7 @@ public class DiffTypeSimilarity  extends Configured implements Tool {
         private int simCount;
         private int simResultCnt;
         private boolean prntDetail;
+        private DistanceStrategy distStrategy;
  
         protected void setup(Context context) throws IOException, InterruptedException {
         	//load schema
@@ -174,6 +175,7 @@ public class DiffTypeSimilarity  extends Configured implements Tool {
         	fields = schema.getEntityByType(0).getFields();
         	targetFields = schema.getEntityByType(1).getFields();
         	scale = context.getConfiguration().getInt("distance.scale", 1000);
+        	distStrategy = schema.createDistanceStrategy(scale);
         	
         	System.out.println("firstTypeSize: " + firstTypeSize + " firstIdOrdinal:" +firstIdOrdinal + 
         			" secondIdOrdinal:" + secondIdOrdinal + " Source field count:" + fields.size() + 
@@ -216,14 +218,13 @@ public class DiffTypeSimilarity  extends Configured implements Tool {
     		mapFields(source, context);
     		String[] trgItems = target.split(",");
     		
-    		double sumWt = 0;
     		double dist = 0;
-    		double totWt = 0;
 			context.getCounter("Data", "Target Field Count").increment(targetFields.size());
 			if (prntDetail){
 				System.out.println("target record: " + trgItems[0]);
 			}
 			
+			distStrategy.initialize();
     		for (Field field : targetFields) {
     			dist = 0;
     			Integer ordinal = field.getOrdinal();
@@ -298,13 +299,9 @@ public class DiffTypeSimilarity  extends Configured implements Tool {
     				//non mapped passive attributes
     			}
     			
-    			
-    			
-				sumWt += field.getWeight() * dist * dist;
-				totWt += field.getWeight();
+				distStrategy.accumulate(dist, field.getWeight());
     		}
-    		
-    		sim = (int)(Math.sqrt(sumWt) * (double)scale);
+    		sim = distStrategy.getSimilarity();
     		return sim;
     	}
     	
