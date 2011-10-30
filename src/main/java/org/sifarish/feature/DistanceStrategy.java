@@ -20,6 +20,7 @@ package org.sifarish.feature;
 public abstract class DistanceStrategy {
 	protected double sumWt;
 	protected int scale;
+	protected double power;
 	
 	public DistanceStrategy(int scale) {
 		this.scale = scale;
@@ -32,4 +33,20 @@ public abstract class DistanceStrategy {
 	public abstract void accumulate(double distance, double weight);
 	
 	public abstract int getSimilarity();
+
+	public int getScale() {
+		return scale;
+	}
+
+	public void setScale(int scale) {
+		this.scale = scale;
+	}
+
+	public double getPower() {
+		return power;
+	}
+
+	public void setPower(double power) {
+		this.power = power;
+	}
 }

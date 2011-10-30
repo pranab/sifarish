@@ -98,6 +98,9 @@ public class MixedTypeSchema {
 			distStrategy = new EuclideanDistance(scale);
 		} else if (distAlgorithm.equals("manhattan")) {
 			distStrategy = new ManhattanDistance(scale);
+		} else if (distAlgorithm.equals("minkwoski")) {
+			distStrategy = new MinkwoskiDistance(scale);
+			distStrategy.setPower(minkowskiParam);
 		}
 		
 		return distStrategy;
