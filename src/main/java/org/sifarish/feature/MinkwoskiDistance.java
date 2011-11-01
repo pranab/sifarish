@@ -25,6 +25,9 @@ public class MinkwoskiDistance extends DistanceStrategy {
 
 	@Override
 	public void accumulate(double distance, double weight) {
+		if (distance < 0) {
+			distance = - distance;
+		}
 		sumWt +=  Math.pow(distance, power) / weight;
 	}
 
