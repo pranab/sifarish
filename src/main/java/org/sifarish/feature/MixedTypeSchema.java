@@ -27,6 +27,7 @@ public class MixedTypeSchema {
 	private List<Entity> entities;
 	private String distAlgorithm;
 	private double minkowskiParam;
+	private double numericDiffThreshold;
 	
 	public List<Entity> getEntities() {
 		return entities;
@@ -76,6 +77,14 @@ public class MixedTypeSchema {
 		this.minkowskiParam = minkowskiParam;
 	}
 	
+	public double getNumericDiffThreshold() {
+		return numericDiffThreshold;
+	}
+
+	public void setNumericDiffThreshold(double numericDiffThreshold) {
+		this.numericDiffThreshold = numericDiffThreshold;
+	}
+
 	public double findCattegoricalDistance(String thisValue, String thatValue, int ordinal) {
 		double distance = 1.0;
 		

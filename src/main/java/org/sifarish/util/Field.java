@@ -31,6 +31,7 @@ public class Field {
 	private int matchingOrdinal = -1;
 	private List<FieldMapping> mappings;
 	private List<CategoricalDistance> categoricalDistances;
+	private String limitType;
 	
 	public boolean isType() {
 		return type;
@@ -100,6 +101,12 @@ public class Field {
 		this.categoricalDistances = categoricalDistances;
 	}
 	
+	public String getLimitType() {
+		return limitType;
+	}
+	public void setLimitType(String limitType) {
+		this.limitType = limitType;
+	}
 	public double  findDistance(String thisValue, String thatValue) {
 		double distance = 1.0;
 		if (thisValue.equals(thatValue)) {

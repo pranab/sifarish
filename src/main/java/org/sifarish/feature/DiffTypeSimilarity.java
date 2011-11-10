@@ -150,7 +150,7 @@ public class DiffTypeSimilarity  extends Configured implements Tool {
         private List<Field> fields;
         private List<Field> targetFields;
         private int scale;
-        private Map<Integer, List<String>> mappedFields = new HashMap<Integer, List<String>>();
+        private Map<Integer, MappedValue> mappedFields = new HashMap<Integer, MappedValue>();
         private static final int INVALID_ORDINAL = -1;
         private int srcCount;
         private int targetCount;
@@ -232,7 +232,8 @@ public class DiffTypeSimilarity  extends Configured implements Tool {
 				if (prntDetail){
 					System.out.println("ordinal: " + ordinal +  " target:" + trgItem);
 				}
-    			List<String> mappedValues = mappedFields.get(ordinal);
+    			List<String> mappedValues = mappedFields.get(ordinal).getValues();
+    			Field srcField = mappedFields.get(ordinal).getField();
     			if (null != mappedValues){
     				if (!trgItem.isEmpty()) {
 	    				if (field.getDataType().equals("categorical")) {
@@ -258,13 +259,30 @@ public class DiffTypeSimilarity  extends Configured implements Tool {
 	    					}
 	    				} else if (field.getDataType().equals("int")) {
 	    					if (!mappedValues.isEmpty()) {
-		    					int sItemInt = Integer.parseInt(trgItem);
-	    						int fItemInt = getAverageMappedValue(mappedValues);
+		    					int trgItemInt = Integer.parseInt(trgItem);
+	    						int srcItemInt = getAverageMappedValue(mappedValues);
 		    					if (field.getMax() > field.getMin()) {
-		    						dist = ((double)(fItemInt - sItemInt)) / (field.getMax() - field.getMin());
+		    						if (srcField.getLimitType().equals("max") && trgItemInt < srcItemInt){
+	    								dist = 0;
+		    						} else if (srcField.getLimitType().equals("min") && trgItemInt > srcItemInt){
+	    								dist = 0;
+		    						} else { 
+		    							//general
+		    							dist = ((double)(srcItemInt - trgItemInt)) / (field.getMax() - field.getMin());
+		    						}
 		    					} else {
-		    						int max = fItemInt > sItemInt ? fItemInt : sItemInt;
-		    						dist = ((double)(fItemInt - sItemInt)) / max;
+		    						if (srcField.getLimitType().equals("max") && trgItemInt < srcItemInt){
+	    								dist = 0;
+		    						} else if (srcField.getLimitType().equals("min") && trgItemInt > srcItemInt){
+	    								dist = 0;
+		    						} else { 
+			    						int max = srcItemInt > trgItemInt ? srcItemInt : trgItemInt;
+			    						double diff = ((double)(srcItemInt - trgItemInt)) / max;
+			    						if (diff < 0) {
+			    							diff = - diff;
+			    						}
+			    						dist = diff > schema.getNumericDiffThreshold() ? 1.0 : 0.0;
+		    						}
 		    					}
 	    					} else {
 	    						//missing source
@@ -321,11 +339,13 @@ public class DiffTypeSimilarity  extends Configured implements Tool {
 							continue;
 						}
 						
-						List<String> mappedValues = mappedFields.get(matchingOrdinal);
-						if (null == mappedValues){
-							mappedValues = new ArrayList<String>();
-							mappedFields.put(matchingOrdinal, mappedValues);
+						MappedValue mappedValue = mappedFields.get(matchingOrdinal);
+						if (null == mappedValue){
+							mappedValue = new MappedValue();
+							mappedValue.setField(field);
+							mappedFields.put(matchingOrdinal, mappedValue);
 						}
+						List<String> mappedValues = mappedValue.getValues();
 						
 						String value = srcItems[field.getOrdinal()];
 						if (prntDetail){
@@ -348,9 +368,11 @@ public class DiffTypeSimilarity  extends Configured implements Tool {
 								} else if (field.getDataType().equals("int")) {
 									int valueInt = Integer.parseInt(value);
 									int[] range = valMapping.getThisValueRange();
-									if (valueInt >= range[0] && valueInt <= range[1]) {
-										mappedValues.add(valMapping.getThatValue());
-										break;
+									if (null != range) {
+										if (valueInt >= range[0] && valueInt <= range[1]) {
+											mappedValues.add(valMapping.getThatValue());
+											break;
+										}
 									}
 								}
 							}
@@ -409,5 +431,24 @@ public class DiffTypeSimilarity  extends Configured implements Tool {
     		return comp;
     	}
      }
+    
+    public static class MappedValue {
+    	private List<String> values = new ArrayList<String>();
+    	private Field field;
+    	
+		public List<String> getValues() {
+			return values;
+		}
+		public void setValues(List<String> values) {
+			this.values = values;
+		}
+		public Field getField() {
+			return field;
+		}
+		public void setField(Field field) {
+			this.field = field;
+		}
+    	
+    }
     
 }
