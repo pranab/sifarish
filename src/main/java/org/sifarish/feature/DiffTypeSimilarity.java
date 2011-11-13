@@ -307,26 +307,27 @@ public class DiffTypeSimilarity  extends Configured implements Tool {
     	private double getDistForNumeric(Field srcField, int srcVal, Field trgField, int trgVal){
     		double dist = 0;
     		boolean linear = false;
+    		String distFun = srcField.getNumDistFunction();
     		
-    		if (srcField.equals("equalSoft")) {
+    		if (distFun.equals("equalSoft")) {
     			linear = true;
-    		} else if (srcField.equals("equalHard")) { 
+    		} else if (distFun.equals("equalHard")) { 
     			dist = srcVal == trgVal ? 0 : 1;
-    		} else if (srcField.equals("minSoft")) {
+    		} else if (distFun.equals("minSoft")) {
     			if (trgVal >= srcVal) {
     				dist = 0;
     			} else {
     				linear = true;
     			}
-    		} else if (srcField.equals("minHard")) {
+    		} else if (distFun.equals("minHard")) {
     			dist = trgVal >= srcVal ? 0 : 1;
-    		} else if (srcField.equals("maxSoft")) {
+    		} else if (distFun.equals("maxSoft")) {
     			if (trgVal <= srcVal) {
     				dist = 0;
     			} else {
     				linear = true;
     			}
-    		} else if (srcField.equals("maxHard")) {
+    		} else if (distFun.equals("maxHard")) {
     			dist = trgVal <= srcVal ? 0 : 1;
     		}
     		
