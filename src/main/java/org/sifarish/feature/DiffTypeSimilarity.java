@@ -232,96 +232,124 @@ public class DiffTypeSimilarity  extends Configured implements Tool {
 				if (prntDetail){
 					System.out.println("ordinal: " + ordinal +  " target:" + trgItem);
 				}
-    			List<String> mappedValues = mappedFields.get(ordinal).getValues();
-    			Field srcField = mappedFields.get(ordinal).getField();
-    			if (null != mappedValues){
-    				if (!trgItem.isEmpty()) {
-	    				if (field.getDataType().equals("categorical")) {
-	    					if (!mappedValues.isEmpty()) {
-		    					double thisDist;
-		    					dist = 1.0;
-		    					for (String mappedValue : mappedValues) {
-		    						thisDist = schema.findCattegoricalDistance(mappedValue, trgItem, ordinal);
-		    						if (thisDist < dist) {
-		    							dist = thisDist;
-		    						}
-			    					if (prntDetail){
-			    						System.out.println("dist calculation: ordinal: " + ordinal + " src:" + mappedValue + " target:" + trgItem + 
-			    								" dist:" + dist);
-			    					}
+				
+				MappedValue mappedValueObj = mappedFields.get(ordinal);
+				if (null == mappedValueObj){
+    				//non mapped passive attributes
+					continue;
+				}
+				
+    			List<String> mappedValues = mappedValueObj.getValues();
+    			Field srcField = mappedValueObj.getField();
+				if (!trgItem.isEmpty()) {
+    				if (field.getDataType().equals("categorical")) {
+    					if (!mappedValues.isEmpty()) {
+	    					double thisDist;
+	    					dist = 1.0;
+	    					for (String mappedValue : mappedValues) {
+	    						thisDist = schema.findCattegoricalDistance(mappedValue, trgItem, ordinal);
+	    						if (thisDist < dist) {
+	    							dist = thisDist;
+	    						}
+		    					if (prntDetail){
+		    						System.out.println("dist calculation: ordinal: " + ordinal + " src:" + mappedValue + " target:" + trgItem + 
+		    								" dist:" + dist);
 		    					}
-		    					
-	    						context.getCounter("Data", "Dist Calculated").increment(1);
-	    					} else {
-	    						//missing source
-	    						dist = 0;
-	    						context.getCounter("Data", "Missing Source").increment(1);
 	    					}
-	    				} else if (field.getDataType().equals("int")) {
-	    					if (!mappedValues.isEmpty()) {
-		    					int trgItemInt = Integer.parseInt(trgItem);
-	    						int srcItemInt = getAverageMappedValue(mappedValues);
-		    					if (field.getMax() > field.getMin()) {
-		    						if (srcField.getLimitType().equals("max") && trgItemInt < srcItemInt){
-	    								dist = 0;
-		    						} else if (srcField.getLimitType().equals("min") && trgItemInt > srcItemInt){
-	    								dist = 0;
-		    						} else { 
-		    							//general
-		    							dist = ((double)(srcItemInt - trgItemInt)) / (field.getMax() - field.getMin());
-		    						}
-		    					} else {
-		    						if (srcField.getLimitType().equals("max") && trgItemInt < srcItemInt){
-	    								dist = 0;
-		    						} else if (srcField.getLimitType().equals("min") && trgItemInt > srcItemInt){
-	    								dist = 0;
-		    						} else { 
-			    						int max = srcItemInt > trgItemInt ? srcItemInt : trgItemInt;
-			    						double diff = ((double)(srcItemInt - trgItemInt)) / max;
-			    						if (diff < 0) {
-			    							diff = - diff;
-			    						}
-			    						dist = diff > schema.getNumericDiffThreshold() ? 1.0 : 0.0;
-		    						}
-		    					}
-	    					} else {
-	    						//missing source
-	        					int trgItemInt = Integer.parseInt(trgItem);
-	        					if (field.getMax() > field.getMin()) {
-	        						double upper = ((double)(field.getMax() - trgItemInt)) / (field.getMax() - field.getMin());
-	        						double lower = ((double)(trgItemInt - field.getMin())) / (field.getMax() - field.getMin());
-	        						dist = upper > lower ? upper : lower;
-	        					} else {
-	        						dist = 1;
-	        					}
-	    						
-	    					}
-	    				}
-    				} else {
-    					//missing target value
-    					if (field.getDataType().equals("categorical")) {
-    						dist = 1;
-    						context.getCounter("Data", "Missing Target").increment(1);
-    					}  else if (field.getDataType().equals("int")) {
-    						int fItemInt = getAverageMappedValue(mappedValues);
-	    					if (field.getMax() > field.getMin()) {
-	    						double upper = ((double)(field.getMax() - fItemInt)) / (field.getMax() - field.getMin());
-	    						double lower = ((double)(fItemInt - field.getMin())) / (field.getMax() - field.getMin());
-	    						dist = upper > lower ? upper : lower;
-	    					} else {
-	    						dist = 1;
-	    					}
+	    					
+    						context.getCounter("Data", "Dist Calculated").increment(1);
+    					} else {
+    						//missing source
+    						dist = 0;
+    						context.getCounter("Data", "Missing Source").increment(1);
+    					}
+    				} else if (field.getDataType().equals("int")) {
+    					if (!mappedValues.isEmpty()) {
+	    					int trgItemInt = Integer.parseInt(trgItem);
+    						int srcItemInt = getAverageMappedValue(mappedValues);
+    						dist = getDistForNumeric(srcField, srcItemInt, field, trgItemInt);
+    					} else {
+    						//missing source
+        					int trgItemInt = Integer.parseInt(trgItem);
+        					if (field.getMax() > field.getMin()) {
+        						double upper = ((double)(field.getMax() - trgItemInt)) / (field.getMax() - field.getMin());
+        						double lower = ((double)(trgItemInt - field.getMin())) / (field.getMax() - field.getMin());
+        						dist = upper > lower ? upper : lower;
+        					} else {
+        						dist = 1;
+        					}
+    						
     					}
     				}
-    			} else {
-    				//non mapped passive attributes
-    			}
+				} else {
+					//missing target value
+					if (field.getDataType().equals("categorical")) {
+						dist = 1;
+						context.getCounter("Data", "Missing Target").increment(1);
+					}  else if (field.getDataType().equals("int")) {
+						int fItemInt = getAverageMappedValue(mappedValues);
+    					if (field.getMax() > field.getMin()) {
+    						double upper = ((double)(field.getMax() - fItemInt)) / (field.getMax() - field.getMin());
+    						double lower = ((double)(fItemInt - field.getMin())) / (field.getMax() - field.getMin());
+    						dist = upper > lower ? upper : lower;
+    					} else {
+    						dist = 1;
+    					}
+					}
+				}
     			
 				distStrategy.accumulate(dist, field.getWeight());
     		}
     		sim = distStrategy.getSimilarity();
     		return sim;
     	}
+    	
+    	private double getDistForNumeric(Field srcField, int srcVal, Field trgField, int trgVal){
+    		double dist = 0;
+    		boolean linear = false;
+    		
+    		if (srcField.equals("equalSoft")) {
+    			linear = true;
+    		} else if (srcField.equals("equalHard")) { 
+    			dist = srcVal == trgVal ? 0 : 1;
+    		} else if (srcField.equals("minSoft")) {
+    			if (trgVal >= srcVal) {
+    				dist = 0;
+    			} else {
+    				linear = true;
+    			}
+    		} else if (srcField.equals("minHard")) {
+    			dist = trgVal >= srcVal ? 0 : 1;
+    		} else if (srcField.equals("maxSoft")) {
+    			if (trgVal <= srcVal) {
+    				dist = 0;
+    			} else {
+    				linear = true;
+    			}
+    		} else if (srcField.equals("maxHard")) {
+    			dist = trgVal <= srcVal ? 0 : 1;
+    		}
+    		
+    		if (linear) {
+    			if (trgField.getMax() > trgField.getMin()) {
+    				dist = ((double)(srcVal - trgVal)) / (trgField.getMax() - trgField.getMin());
+       			} else {
+					int max = srcVal > trgVal ? srcVal : trgVal;
+					double diff = ((double)(srcVal - trgVal)) / max;
+					if (diff < 0) {
+						diff = - diff;
+					}
+					dist = diff > schema.getNumericDiffThreshold() ? 1.0 : 0.0;
+       				
+       			}
+				if (dist < 0) {
+					dist = -dist;
+				}
+   			}
+    		
+    		return dist;
+    	}
+    	
     	
     	private void mapFields(String source, Context context){
 	    	mappedFields.clear();
