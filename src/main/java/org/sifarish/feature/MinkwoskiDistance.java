@@ -29,11 +29,12 @@ public class MinkwoskiDistance extends DistanceStrategy {
 			distance = - distance;
 		}
 		sumWt +=  Math.pow(distance, power) / weight;
+		totalWt += 1 / weight;
 	}
 
 	@Override
 	public int getSimilarity() {
-		int sim = (int)(Math.pow(sumWt, 1.0/power) * (double)scale);
+		int sim = (int)(Math.pow(sumWt, 1.0/power) / totalWt * (double)scale);
 		return sim;
 	}
 

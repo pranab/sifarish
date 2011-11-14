@@ -25,10 +25,11 @@ public class EuclideanDistance extends DistanceStrategy {
 
 	public void accumulate(double distance, double weight){
 		sumWt +=  (distance * distance) / weight;
+		totalWt += 1 / weight;
 	}
 	
 	public int getSimilarity() {
-		int sim = (int)(Math.sqrt(sumWt) * (double)scale);
+		int sim = (int)(Math.sqrt(sumWt) / totalWt * (double)scale);
 		return sim;
 	}
 }

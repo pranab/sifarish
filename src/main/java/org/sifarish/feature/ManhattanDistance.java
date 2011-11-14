@@ -29,12 +29,12 @@ public class ManhattanDistance extends DistanceStrategy {
 			distance = - distance;
 		}
 		sumWt +=  distance  / weight;
-
+		totalWt += 1 / weight;
 	}
 
 	@Override
 	public int getSimilarity() {
-		int sim = (int)(sumWt * (double)scale);
+		int sim = (int)(sumWt / totalWt * (double)scale);
 		return sim;
 	}
 }

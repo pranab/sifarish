@@ -28,6 +28,7 @@ public class MixedTypeSchema {
 	private String distAlgorithm;
 	private double minkowskiParam;
 	private double numericDiffThreshold;
+	private String missingValueHandler = "default";
 	
 	public List<Entity> getEntities() {
 		return entities;
@@ -83,6 +84,15 @@ public class MixedTypeSchema {
 
 	public void setNumericDiffThreshold(double numericDiffThreshold) {
 		this.numericDiffThreshold = numericDiffThreshold;
+	}
+
+
+	public String getMissingValueHandler() {
+		return missingValueHandler;
+	}
+
+	public void setMissingValueHandler(String missingValueHandler) {
+		this.missingValueHandler = missingValueHandler;
 	}
 
 	public double findCattegoricalDistance(String thisValue, String thatValue, int ordinal) {

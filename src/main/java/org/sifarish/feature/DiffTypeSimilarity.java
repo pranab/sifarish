@@ -229,6 +229,7 @@ public class DiffTypeSimilarity  extends Configured implements Tool {
     			dist = 0;
     			Integer ordinal = field.getOrdinal();
 				String trgItem = trgItems[ordinal];
+				boolean skipAttr = false;
 				if (prntDetail){
 					System.out.println("ordinal: " + ordinal +  " target:" + trgItem);
 				}
@@ -260,7 +261,11 @@ public class DiffTypeSimilarity  extends Configured implements Tool {
     						context.getCounter("Data", "Dist Calculated").increment(1);
     					} else {
     						//missing source
-    						dist = 0;
+    						if (schema.getMissingValueHandler().equals("default")){
+    							dist = getDistForMissingSrc(field, trgItem);
+    						} else {
+    							skipAttr = true;
+    						}
     						context.getCounter("Data", "Missing Source").increment(1);
     					}
     				} else if (field.getDataType().equals("int")) {
@@ -270,35 +275,26 @@ public class DiffTypeSimilarity  extends Configured implements Tool {
     						dist = getDistForNumeric(srcField, srcItemInt, field, trgItemInt);
     					} else {
     						//missing source
-        					int trgItemInt = Integer.parseInt(trgItem);
-        					if (field.getMax() > field.getMin()) {
-        						double upper = ((double)(field.getMax() - trgItemInt)) / (field.getMax() - field.getMin());
-        						double lower = ((double)(trgItemInt - field.getMin())) / (field.getMax() - field.getMin());
-        						dist = upper > lower ? upper : lower;
-        					} else {
-        						dist = 1;
-        					}
-    						
+    						if (schema.getMissingValueHandler().equals("default")){
+    							dist = getDistForMissingSrc(field, trgItem);
+    						} else {
+    							skipAttr = true;
+    						}
     					}
     				}
 				} else {
 					//missing target value
-					if (field.getDataType().equals("categorical")) {
-						dist = 1;
+					if (schema.getMissingValueHandler().equals("default")){
 						context.getCounter("Data", "Missing Target").increment(1);
-					}  else if (field.getDataType().equals("int")) {
-						int fItemInt = getAverageMappedValue(mappedValues);
-    					if (field.getMax() > field.getMin()) {
-    						double upper = ((double)(field.getMax() - fItemInt)) / (field.getMax() - field.getMin());
-    						double lower = ((double)(fItemInt - field.getMin())) / (field.getMax() - field.getMin());
-    						dist = upper > lower ? upper : lower;
-    					} else {
-    						dist = 1;
-    					}
+						dist = getDistForMissingTrg(field, mappedValues);
+					} else {
+						skipAttr = true;
 					}
 				}
     			
-				distStrategy.accumulate(dist, field.getWeight());
+				if (!skipAttr) {
+					distStrategy.accumulate(dist, field.getWeight());
+				}
     		}
     		sim = distStrategy.getSimilarity();
     		return sim;
@@ -351,6 +347,44 @@ public class DiffTypeSimilarity  extends Configured implements Tool {
     		return dist;
     	}
     	
+    	private double getDistForMissingSrc(Field trgField, String trgVal){
+    		double dist = 0;
+			if (trgField.getDataType().equals("categorical")) {
+				dist = 0;
+			} else if (trgField.getDataType().equals("int")) {
+				int trgValInt = Integer.parseInt(trgVal);
+				int max = trgField.getMax();
+				int min = trgField.getMin();
+				if (max > trgField.getMin()) {
+					double upper = ((double)(max - trgValInt)) / (max - min);
+					double lower = ((double)(trgValInt - min)) / (max - min);
+					dist = upper > lower ? upper : lower;
+				} else {
+					dist = 1;
+				}
+			}
+    		return dist;
+    	}
+    	
+    	private double getDistForMissingTrg(Field trgField, List<String> mappedValues){
+    		double dist = 0;
+			if (trgField.getDataType().equals("categorical")) {
+				dist = 1;
+			}  else if (trgField.getDataType().equals("int")) {
+				int srcValInt = getAverageMappedValue(mappedValues);
+				int max = trgField.getMax();
+				int min = trgField.getMin();
+				if (max > min) {
+					double upper = ((double)(max - srcValInt)) / (max - min);
+					double lower = ((double)(srcValInt - min)) / (max - min);
+					dist = upper > lower ? upper : lower;
+				} else {
+					dist = 1;
+				}
+			}
+
+    		return dist;
+    	}
     	
     	private void mapFields(String source, Context context){
 	    	mappedFields.clear();

@@ -21,6 +21,7 @@ public abstract class DistanceStrategy {
 	protected double sumWt;
 	protected int scale;
 	protected double power;
+	protected double totalWt;
 	
 	public DistanceStrategy(int scale) {
 		this.scale = scale;
@@ -28,6 +29,7 @@ public abstract class DistanceStrategy {
 
 	public void initialize() {
 		sumWt = 0.0;
+		totalWt = 0.0;
 	}
 
 	public abstract void accumulate(double distance, double weight);
