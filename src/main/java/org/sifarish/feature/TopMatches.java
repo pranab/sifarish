@@ -44,10 +44,10 @@ public class TopMatches extends Configured implements Tool {
 	@Override
 	public int run(String[] args) throws Exception {
         Job job = new Job(getConf());
-        String jobName = "Dirfferent type entity similarity MR";
+        String jobName = "Top n matches MR";
         job.setJobName(jobName);
         
-        job.setJarByClass(DiffTypeSimilarity.class);
+        job.setJarByClass(TopMatches.class);
         
         FileInputFormat.addInputPath(job, new Path(args[0]));
         FileOutputFormat.setOutputPath(job, new Path(args[1]));
