@@ -32,6 +32,7 @@ public class Field {
 	private List<FieldMapping> mappings;
 	private List<CategoricalDistance> categoricalDistances;
 	private String numDistFunction = "equalSoft";
+	private ConceptHierarchy conceptHierarchy;
 	
 	
 	public boolean isType() {
@@ -108,18 +109,36 @@ public class Field {
 	public void setNumDistFunction(String numDistFunction) {
 		this.numDistFunction = numDistFunction;
 	}
+	public ConceptHierarchy getConceptHierarchy() {
+		return conceptHierarchy;
+	}
+	public void setConceptHierarchy(ConceptHierarchy conceptHierarchy) {
+		this.conceptHierarchy = conceptHierarchy;
+	}
 	public double  findDistance(String thisValue, String thatValue) {
 		double distance = 1.0;
 		if (thisValue.equals(thatValue)) {
+			//match
 			distance = 0.0;
 		} else {
+			boolean overridden = false;
 			if (null != categoricalDistances) {
+				//try overridden categorical distance
 				for (CategoricalDistance catDist : categoricalDistances) {
 					if ( thisValue.equals(catDist.getThisValue()) && thatValue.equals(catDist.getThatValue())  || 
 							thisValue.equals(catDist.getThatValue()) && thatValue.equals(catDist.getThisValue()) ) {
 						distance = catDist.getDistance();
+						overridden = true;
 						break;
 					}
+				}
+			}
+			
+			if (!overridden && null != conceptHierarchy) {
+				//try concept hierarchy
+				String parentThatValue = conceptHierarchy.findParent(thatValue);
+				if (null != parentThatValue && thisValue.equals(parentThatValue)){
+					distance = 0.0;
 				}
 			}
 		}
