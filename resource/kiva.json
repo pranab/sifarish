@@ -1,0 +1,175 @@
+{
+	"distAlgorithm" : "euclidean",
+	"numericDiffThreshold" : 0.20,
+	"entities" : 
+	[
+		{
+			"name" : "profile",
+			"type" : 0,
+			"fieldCount" : 4,
+			"fields" :
+			[
+				{
+					"name" : "id",
+					"ordinal" : 0,
+					"id" : true,
+					"dataType" : "string"
+				},
+				{
+					"name" : "sector",
+					"ordinal" : 1,
+					"dataType" : "categorical",
+					"mappings" :
+					[
+						{ 
+							"matchingOrdinal" : 2
+						}
+					]
+				},
+				{
+					"name" : "country",
+					"ordinal" : 2,
+					"dataType" : "categorical",
+					"mappings" :
+					[
+						{ 
+							"matchingOrdinal" : 3
+						}
+					]
+				},
+				{
+					"name" : "raised",
+					"ordinal" : 3,
+					"dataType" : "int",
+					"numDistFunction" : "maxSoft",
+					"mappings" :
+					[
+						{ 
+							"matchingOrdinal" : 5
+						}
+					]
+				}
+			]
+		},
+		{
+			"name" : "loan",
+			"type" : 1,
+			"fieldCount" : 7,
+			"fields" :
+			[
+				{
+					"name" : "id",
+					"ordinal" : 0,
+					"id" : true,
+					"dataType" : "string"
+				},
+				{
+					"name" : "name",
+					"ordinal" : 1,
+					"dataType" : "string"
+				},
+				{
+					"name" : "sector",
+					"ordinal" : 2,
+					"dataType" : "categorical"
+				},
+				{
+					"name" : "country",
+					"ordinal" : 3,
+					"dataType" : "categorical",
+					"weight" : 1.2,
+					"categoricalDistances" :
+					[
+						{
+							"thisValue" : "Costa Rica",
+							"thatValue" : "Nicaragua",
+							"distance" : 0.70
+						},
+						{
+							"thisValue" : "Ecuador",
+							"thatValue" : "Peru",
+							"distance" : 0.50
+						},
+						{
+							"thisValue" : "Ecuador",
+							"thatValue" : "Colombia",
+							"distance" : 0.40
+						},
+						{
+							"thisValue" : "Peru",
+							"thatValue" : "Colombia",
+							"distance" : 0.60
+						},
+						{
+							"thisValue" : "Peru",
+							"thatValue" : "Bolivia",
+							"distance" : 0.55
+						},
+						{
+							"thisValue" : "Kenya",
+							"thatValue" : "Uganda",
+							"distance" : 0.7
+						},
+						{
+							"thisValue" : "Ghana",
+							"thatValue" : "Benin",
+							"distance" : 0.6
+						},
+						{
+							"thisValue" : "Chad",
+							"thatValue" : "Sudan",
+							"distance" : 0.65
+						},
+						{
+							"thisValue" : "Laos",
+							"thatValue" : "Cambodia",
+							"distance" : 0.45
+						}
+					],
+					"conceptHierarchy" :
+					{
+						"concepts" :
+						[
+							{
+								"parent" : "Asia",
+								"children" : ["Philippines","Mongolia","Viet Nam","Azerbaijan","Georgia","Armenia","Tajikistan","Pakistan"]
+							},
+							{
+								"parent" : "Middle East",
+								"children" : ["Lebanon","Jordan"]
+							},
+							{
+								"parent" : "Africa",
+								"children" : ["Kenya","Benin","Ghana","Sierra Leone","Uganda","Senegal"]
+							},
+							{
+								"parent" : "South America",
+								"children" : ["Colombia","Peru","Paraguay","Bolivia"]
+							}
+
+						]
+					}
+				},
+				{
+					"name" : "amount",
+					"ordinal" : 4,
+					"dataType" : "int",
+					"min" : 0,
+					"max" : 3000
+				},
+				{
+					"name" : "raised",
+					"ordinal" : 5,
+					"dataType" : "int",
+					"min" : 0,
+					"max" : 100
+				},
+				{
+					"name" : "url",
+					"ordinal" : 6,
+					"dataType" : "string"
+				}
+			]
+		}
+	]
+}
