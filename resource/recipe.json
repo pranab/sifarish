@@ -1,11 +1,12 @@
 {
-	"distAlgorithm" : "euclidian",
+	"distAlgorithm" : "euclidean",
+	"numericDiffThreshold" : 0.20,
 	"entities" : 
 	[
 		{
 			"name" : "profile",
 			"type" : 0,
-			"fieldCount" : 6,
+			"fieldCount" : 7,
 			"fields" :
 			[
 				{
@@ -98,13 +99,25 @@
 							]
 						}
 					]
+				},
+				{
+					"name" : "cookingTime",
+					"ordinal" : 6,
+					"dataType" : "int",
+					"numDistFunction" : "maxSoft",
+					"mappings" :
+					[
+						{ 
+							"matchingOrdinal" : 8
+						}
+					]
 				}
 			]
 		},
 		{
 			"name" : "recipe",
 			"type" : 1,
-			"fieldCount" : 8,
+			"fieldCount" : 9,
 			"fields" :
 			[
 				{
@@ -127,6 +140,7 @@
 					"name" : "category",
 					"ordinal" : 3,
 					"dataType" : "categorical",
+					"weight" : 1.2,
 					"categoricalDistances" :
 					[
 						{
@@ -144,7 +158,26 @@
 				{
 					"name" : "cuisine",
 					"ordinal" : 4,
-					"dataType" : "categorical"
+					"dataType" : "categorical",
+					"weight" : 1.1,
+					"categoricalDistances" :
+					[
+						{
+							"thisValue" : "chinese",
+							"thatValue" : "thai",
+							"distance" : 0.80
+						},
+						{
+							"thisValue" : "indian",
+							"thatValue" : "thai",
+							"distance" : 0.70
+						},
+						{
+							"thisValue" : "american",
+							"thatValue" : "italian",
+							"distance" : 0.90
+						}
+					]
 				},
 				{
 					"name" : "ingredient",
@@ -160,6 +193,13 @@
 					"name" : "type",
 					"ordinal" : 7,
 					"dataType" : "categorical"
+				},
+				{
+					"name" : "cookingTime",
+					"ordinal" : 8,
+					"min" : 5,
+					"max" : 50,
+					"dataType" : "int"
 				}
 			]
 		}

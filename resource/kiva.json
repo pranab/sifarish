@@ -83,47 +83,47 @@
 						{
 							"thisValue" : "Costa Rica",
 							"thatValue" : "Nicaragua",
-							"distance" : 0.70
+							"distance" : 0.72
 						},
 						{
 							"thisValue" : "Ecuador",
 							"thatValue" : "Peru",
-							"distance" : 0.50
+							"distance" : 0.57
 						},
 						{
 							"thisValue" : "Ecuador",
 							"thatValue" : "Colombia",
-							"distance" : 0.40
+							"distance" : 0.46
 						},
 						{
 							"thisValue" : "Peru",
 							"thatValue" : "Colombia",
-							"distance" : 0.60
+							"distance" : 0.62
 						},
 						{
 							"thisValue" : "Peru",
 							"thatValue" : "Bolivia",
-							"distance" : 0.55
+							"distance" : 0.58
 						},
 						{
 							"thisValue" : "Kenya",
 							"thatValue" : "Uganda",
-							"distance" : 0.7
+							"distance" : 0.77
 						},
 						{
 							"thisValue" : "Ghana",
 							"thatValue" : "Benin",
-							"distance" : 0.6
+							"distance" : 0.64
 						},
 						{
 							"thisValue" : "Chad",
 							"thatValue" : "Sudan",
-							"distance" : 0.65
+							"distance" : 0.68
 						},
 						{
 							"thisValue" : "Laos",
 							"thatValue" : "Cambodia",
-							"distance" : 0.45
+							"distance" : 0.43
 						}
 					],
 					"conceptHierarchy" :
@@ -161,6 +161,7 @@
 					"name" : "raised",
 					"ordinal" : 5,
 					"dataType" : "int",
+					"weight" : 0.9,
 					"min" : 0,
 					"max" : 100
 				},
