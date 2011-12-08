@@ -93,6 +93,14 @@ xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/ma
             <artifactId>jackson-mapper-lgpl </artifactId>
             <version>${jackson.version}</version>
         </dependency>
+        
+		<dependency>
+	       <artifactId>lucene-core</artifactId>
+	       <groupId>org.apache.lucene</groupId>
+	       <version>3.5.0</version>
+	       <type>jar</type>
+	       <scope>compile</scope>
+	    </dependency>
     </dependencies>
 
     <repositories>
@@ -112,14 +120,6 @@ xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/ma
           </snapshots>
           <id>cloudera-releases</id>
           <url>https://repository.cloudera.com/content/repositories/releases</url>
-        </repository>
-        <repository>
-          <snapshots>
-            <enabled>false</enabled>
-          </snapshots>
-          <id>gridx</id>
-          <name>libs-releases</name>
-          <url>http://repo.gridx.org:8080/artifactory/libs-release</url>
         </repository>
     </repositories>
 
