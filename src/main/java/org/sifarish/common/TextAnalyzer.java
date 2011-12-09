@@ -17,9 +17,12 @@
 
 package org.sifarish.common;
 
+
 import java.io.IOException;
 import java.io.StringReader;
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 import org.apache.hadoop.conf.Configured;
@@ -55,8 +58,6 @@ public class TextAnalyzer extends Configured implements Tool{
 
         job.setMapperClass(TextAnalyzer.AnalyzerMapper.class);
         
-        job.setMapOutputKeyClass(NullWritable.class);
-        job.setMapOutputValueClass(Text.class);
         job.setOutputKeyClass(NullWritable.class);
         job.setOutputValueClass(Text.class);
         
@@ -69,12 +70,15 @@ public class TextAnalyzer extends Configured implements Tool{
         private Text valueHolder = new Text();
         private String fieldDelim;
         private String fieldDelimRegex;
+        private boolean consolidateFields;
         private Set<Integer> textFieldOrdinals = new HashSet<Integer>();
         private Analyzer analyzer;
-        
+        private List<String> itemList = new ArrayList<String>();
+        	
         protected void setup(Context context) throws IOException, InterruptedException {
         	fieldDelim = context.getConfiguration().get("field.delim", "[]");
         	fieldDelimRegex = context.getConfiguration().get("field.delim.regex", "\\[\\]");
+        	consolidateFields = context.getConfiguration().getBoolean("consolidate.field", false);
         	String textFields = context.getConfiguration().get("text.field.ordinals", "");
             String[] items  =  textFields.toString().split(",");
             for (int i = 0; i < items.length; ++i){
@@ -90,22 +94,42 @@ public class TextAnalyzer extends Configured implements Tool{
         @Override
         protected void map(LongWritable key, Text value, Context context)
             throws IOException, InterruptedException {
-            String[] items  =  value.toString().split(fieldDelimRegex);
+        	String[] items  =  value.toString().split(fieldDelimRegex);
             StringBuilder stBld = new StringBuilder();
+            StringBuilder consFields = new StringBuilder();
+            itemList.clear();
             
             for (int i = 0;i < items.length; ++i) {
             	String item = items[i];
             	if (textFieldOrdinals.contains(i)) {
             		//if text field analyze
             		item = tokenize(item);
+            		if (consolidateFields){
+            			consFields.append(item);
+            			item = null;
+            		}
             	}
-            	
-            	if (i == 0){
+            	if (null != item) {
+            		itemList.add(item);
+            	}
+            }
+            
+            //consolidated field at end
+            if (consolidateFields) {
+            	itemList.add(consFields.toString());
+            }
+            
+            boolean first = true;
+            for (String item : itemList){
+            	if (first){
             		stBld.append(item);
+            		first = false;
             	} else {
             		stBld.append(fieldDelim).append(item);
             	}
+            	
             }
+            
             valueHolder.set(stBld.toString());
 			context.write(NullWritable.get(), valueHolder);
        }     
