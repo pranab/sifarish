@@ -162,6 +162,7 @@ public class DiffTypeSimilarity  extends Configured implements Tool {
         private DistanceStrategy distStrategy;
         private String fieldDelimRegex;
         private TextSimilarityStrategy textSimStrategy;
+        private boolean outputVerbose;
  
         protected void setup(Context context) throws IOException, InterruptedException {
         	//load schema
@@ -182,6 +183,7 @@ public class DiffTypeSimilarity  extends Configured implements Tool {
         	distStrategy = schema.createDistanceStrategy(scale);
         	fieldDelimRegex = context.getConfiguration().get("field.delim.regex", "\\[\\]");
         	textSimStrategy = schema.createTextSimilarityStrategy();
+        	outputVerbose = context.getConfiguration().getBoolean("sim.output.verbose", true);
         	
         	System.out.println("firstTypeSize: " + firstTypeSize + " firstIdOrdinal:" +firstIdOrdinal + 
         			" secondIdOrdinal:" + secondIdOrdinal + " Source field count:" + fields.size() + 
@@ -200,13 +202,17 @@ public class DiffTypeSimilarity  extends Configured implements Tool {
         			firstTypeValues.add(value.toString());
         			++srcCount;
         		} else {
+    				String second = value.toString();
+    				secondId = second.split(fieldDelimRegex)[secondIdOrdinal];
         			for (String first : firstTypeValues){
-        				String second = value.toString();
         				//prntDetail =  ++simResultCnt % 10000 == 0;
         				sim = findSimilarity(first, second, context);
         				firstId = first.split(fieldDelimRegex)[firstIdOrdinal];
-        				secondId = second.split(fieldDelimRegex)[secondIdOrdinal];
-        				valueHolder.set(firstId + "," + second + "," + sim);
+        				if (outputVerbose) {
+        					valueHolder.set(firstId + "," + second + "," + sim);
+        				} else {
+        					valueHolder.set(firstId + "," + secondId + "," + sim);
+        				}
         				context.write(NullWritable.get(), valueHolder);
         				++simCount;
         			}
