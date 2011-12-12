@@ -96,9 +96,11 @@ public class DiffTypeSimilarity  extends Configured implements Tool {
         private int bucketCount;
         private long hash;
         private int idOrdinal;
-        
+        private String fieldDelimRegex;
+       
         protected void setup(Context context) throws IOException, InterruptedException {
         	bucketCount = context.getConfiguration().getInt("bucket.count", 1000);
+        	fieldDelimRegex = context.getConfiguration().get("field.delim.regex", "\\[\\]");
             
 			Configuration conf = context.getConfiguration();
             String filePath = conf.get("schema.file.path");
@@ -115,7 +117,7 @@ public class DiffTypeSimilarity  extends Configured implements Tool {
         @Override
         protected void map(LongWritable key, Text value, Context context)
             throws IOException, InterruptedException {
-            String[] items  =  value.toString().split(",");
+            String[] items  =  value.toString().split(fieldDelimRegex);
             Entity entity = schema.getEntityBySize(items.length);
             if (null != entity){
         		idOrdinal = entity.getIdField().getOrdinal();
@@ -158,6 +160,8 @@ public class DiffTypeSimilarity  extends Configured implements Tool {
         private int simResultCnt;
         private boolean prntDetail;
         private DistanceStrategy distStrategy;
+        private String fieldDelimRegex;
+        private TextSimilarityStrategy textSimStrategy;
  
         protected void setup(Context context) throws IOException, InterruptedException {
         	//load schema
@@ -176,6 +180,8 @@ public class DiffTypeSimilarity  extends Configured implements Tool {
         	targetFields = schema.getEntityByType(1).getFields();
         	scale = context.getConfiguration().getInt("distance.scale", 1000);
         	distStrategy = schema.createDistanceStrategy(scale);
+        	fieldDelimRegex = context.getConfiguration().get("field.delim.regex", "\\[\\]");
+        	textSimStrategy = schema.createTextSimilarityStrategy();
         	
         	System.out.println("firstTypeSize: " + firstTypeSize + " firstIdOrdinal:" +firstIdOrdinal + 
         			" secondIdOrdinal:" + secondIdOrdinal + " Source field count:" + fields.size() + 
@@ -189,7 +195,7 @@ public class DiffTypeSimilarity  extends Configured implements Tool {
         	targetCount = 0;
         	simCount = 0;
         	for (Text value : values){
-        		String[] items = value.toString().split(",");
+        		String[] items = value.toString().split(fieldDelimRegex);
         		if (items.length == firstTypeSize){
         			firstTypeValues.add(value.toString());
         			++srcCount;
@@ -198,8 +204,8 @@ public class DiffTypeSimilarity  extends Configured implements Tool {
         				String second = value.toString();
         				//prntDetail =  ++simResultCnt % 10000 == 0;
         				sim = findSimilarity(first, second, context);
-        				firstId = first.split(",")[firstIdOrdinal];
-        				secondId = second.split(",")[secondIdOrdinal];
+        				firstId = first.split(fieldDelimRegex)[firstIdOrdinal];
+        				secondId = second.split(fieldDelimRegex)[secondIdOrdinal];
         				valueHolder.set(firstId + "," + second + "," + sim);
         				context.write(NullWritable.get(), valueHolder);
         				++simCount;
@@ -216,7 +222,7 @@ public class DiffTypeSimilarity  extends Configured implements Tool {
     	private int findSimilarity(String source, String target, Context context) {
     		int sim = 0;
     		mapFields(source, context);
-    		String[] trgItems = target.split(",");
+    		String[] trgItems = target.split(fieldDelimRegex);
     		
     		double dist = 0;
 			context.getCounter("Data", "Target Field Count").increment(targetFields.size());
@@ -281,6 +287,20 @@ public class DiffTypeSimilarity  extends Configured implements Tool {
     							skipAttr = true;
     						}
     					}
+    				} else if (field.getDataType().equals("text")) {
+       					if (!mappedValues.isEmpty()) {
+       						String trgItemTxt = trgItem;
+       						String srcItemTxt = mappedValues.get(0);
+       						dist = textSimStrategy.findDistance(trgItemTxt, srcItemTxt);
+    					} else {
+    						//missing source
+    						if (schema.getMissingValueHandler().equals("default")){
+    							dist = getDistForMissingSrc(field, trgItem);
+    						} else {
+    							skipAttr = true;
+    						}
+    					}
+    					
     				}
 				} else {
 					//missing target value
@@ -349,7 +369,7 @@ public class DiffTypeSimilarity  extends Configured implements Tool {
     	
     	private double getDistForMissingSrc(Field trgField, String trgVal){
     		double dist = 0;
-			if (trgField.getDataType().equals("categorical")) {
+			if (trgField.getDataType().equals("categorical") || trgField.getDataType().equals("text")) {
 				dist = 0;
 			} else if (trgField.getDataType().equals("int")) {
 				int trgValInt = Integer.parseInt(trgVal);
@@ -368,7 +388,7 @@ public class DiffTypeSimilarity  extends Configured implements Tool {
     	
     	private double getDistForMissingTrg(Field trgField, List<String> mappedValues){
     		double dist = 0;
-			if (trgField.getDataType().equals("categorical")) {
+			if (trgField.getDataType().equals("categorical") || trgField.getDataType().equals("text")) {
 				dist = 1;
 			}  else if (trgField.getDataType().equals("int")) {
 				int srcValInt = getAverageMappedValue(mappedValues);
@@ -388,7 +408,7 @@ public class DiffTypeSimilarity  extends Configured implements Tool {
     	
     	private void mapFields(String source, Context context){
 	    	mappedFields.clear();
-			String[] srcItems = source.split(",");
+			String[] srcItems = source.split(fieldDelimRegex);
 			
 			if (prntDetail){
 				System.out.println("src record: " + srcItems[0]);

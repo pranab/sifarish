@@ -29,6 +29,8 @@ public class MixedTypeSchema {
 	private double minkowskiParam;
 	private double numericDiffThreshold;
 	private String missingValueHandler = "default";
+	private String textMatchingAlgorithm;
+	private double nonMatchingTermWeight = 1.0;
 	
 	public List<Entity> getEntities() {
 		return entities;
@@ -95,6 +97,22 @@ public class MixedTypeSchema {
 		this.missingValueHandler = missingValueHandler;
 	}
 
+	public String getTextMatchingAlgorithm() {
+		return textMatchingAlgorithm;
+	}
+
+	public void setTextMatchingAlgorithm(String textMatchingAlgorithm) {
+		this.textMatchingAlgorithm = textMatchingAlgorithm;
+	}
+
+	public double getNonMatchingTermWeight() {
+		return nonMatchingTermWeight;
+	}
+
+	public void setNonMatchingTermWeight(double nonMatchingTermWeight) {
+		this.nonMatchingTermWeight = nonMatchingTermWeight;
+	}
+
 	public double findCattegoricalDistance(String thisValue, String thatValue, int ordinal) {
 		double distance = 1.0;
 		
@@ -110,6 +128,7 @@ public class MixedTypeSchema {
 		return distance;
 	}
 	
+	
 	public DistanceStrategy createDistanceStrategy(int scale) {
 		DistanceStrategy distStrategy = null;
 		
@@ -124,5 +143,13 @@ public class MixedTypeSchema {
 		
 		return distStrategy;
 	}
+	
+	public TextSimilarityStrategy createTextSimilarityStrategy() {
+		TextSimilarityStrategy  textSimStrategy = null;
+		if (textMatchingAlgorithm.equals("jaccard")){
+			textSimStrategy = new JaccardSimilarity(nonMatchingTermWeight);
+		}
+		return textSimStrategy;
+	}	
 	
 }
