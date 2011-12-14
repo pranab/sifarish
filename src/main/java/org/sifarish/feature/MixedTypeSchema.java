@@ -30,7 +30,8 @@ public class MixedTypeSchema {
 	private double numericDiffThreshold;
 	private String missingValueHandler = "default";
 	private String textMatchingAlgorithm;
-	private double nonMatchingTermWeight = 1.0;
+	private double srcNonMatchingTermWeight = 1.0;
+	private double trgNonMatchingTermWeight = 1.0;
 	
 	public List<Entity> getEntities() {
 		return entities;
@@ -105,12 +106,21 @@ public class MixedTypeSchema {
 		this.textMatchingAlgorithm = textMatchingAlgorithm;
 	}
 
-	public double getNonMatchingTermWeight() {
-		return nonMatchingTermWeight;
+
+	public double getSrcNonMatchingTermWeight() {
+		return srcNonMatchingTermWeight;
 	}
 
-	public void setNonMatchingTermWeight(double nonMatchingTermWeight) {
-		this.nonMatchingTermWeight = nonMatchingTermWeight;
+	public void setSrcNonMatchingTermWeight(double srcNonMatchingTermWeight) {
+		this.srcNonMatchingTermWeight = srcNonMatchingTermWeight;
+	}
+
+	public double getTrgNonMatchingTermWeight() {
+		return trgNonMatchingTermWeight;
+	}
+
+	public void setTrgNonMatchingTermWeight(double trgNonMatchingTermWeight) {
+		this.trgNonMatchingTermWeight = trgNonMatchingTermWeight;
 	}
 
 	public double findCattegoricalDistance(String thisValue, String thatValue, int ordinal) {
@@ -147,7 +157,7 @@ public class MixedTypeSchema {
 	public TextSimilarityStrategy createTextSimilarityStrategy() {
 		TextSimilarityStrategy  textSimStrategy = null;
 		if (textMatchingAlgorithm.equals("jaccard")){
-			textSimStrategy = new JaccardSimilarity(nonMatchingTermWeight);
+			textSimStrategy = new JaccardSimilarity(srcNonMatchingTermWeight, trgNonMatchingTermWeight);
 		}
 		return textSimStrategy;
 	}	

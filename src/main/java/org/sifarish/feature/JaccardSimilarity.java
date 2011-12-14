@@ -18,12 +18,14 @@
 package org.sifarish.feature;
 
 public class JaccardSimilarity extends TextSimilarityStrategy {
-	private double nonMatchingTermWeight;
+	private double srcNonMatchingTermWeight;
+	private double trgNonMatchingTermWeight;
 
 	
-	public JaccardSimilarity(double nonMatchingTermWeight) {
+	public JaccardSimilarity(double srcNonMatchingTermWeight, double trgNonMatchingTermWeight) {
 		super();
-		this.nonMatchingTermWeight = nonMatchingTermWeight;
+		this.srcNonMatchingTermWeight = srcNonMatchingTermWeight;
+		this.trgNonMatchingTermWeight = trgNonMatchingTermWeight;
 	}
 
 
@@ -43,8 +45,10 @@ public class JaccardSimilarity extends TextSimilarityStrategy {
 			}
 		}
 		
-		int nonMatchCount = srcTerms.length - matchCount + trgTerms.length - matchCount;
-		distance = 1.0 - (double)matchCount / ((double)matchCount + nonMatchingTermWeight * nonMatchCount);
+		int srcNonMatchCount = srcTerms.length - matchCount;
+		int trgNonMatchCount = trgTerms.length - matchCount;
+		distance = 1.0 - (double)matchCount / ((double)matchCount + srcNonMatchingTermWeight * srcNonMatchCount +
+				trgNonMatchingTermWeight * trgNonMatchCount);
 		return distance;
 	}
 

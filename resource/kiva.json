@@ -1,12 +1,15 @@
 {
 	"distAlgorithm" : "euclidean",
 	"numericDiffThreshold" : 0.20,
+	"textMatchingAlgorithm" : "jaccard",
+	"srcNonMatchingTermWeight" : 0.8,
+	"trgNonMatchingTermWeight" : 0.2,
 	"entities" : 
 	[
 		{
 			"name" : "profile",
 			"type" : 0,
-			"fieldCount" : 4,
+			"fieldCount" : 5,
 			"fields" :
 			[
 				{
@@ -48,13 +51,24 @@
 							"matchingOrdinal" : 5
 						}
 					]
+				},
+				{
+					"name" : "keywords",
+					"ordinal" : 4,
+					"dataType" : "text",
+					"mappings" :
+					[
+						{ 
+							"matchingOrdinal" : 7
+						}
+					]
 				}
 			]
 		},
 		{
 			"name" : "loan",
 			"type" : 1,
-			"fieldCount" : 7,
+			"fieldCount" : 8,
 			"fields" :
 			[
 				{
@@ -71,7 +85,25 @@
 				{
 					"name" : "sector",
 					"ordinal" : 2,
-					"dataType" : "categorical"
+					"dataType" : "categorical",
+					"categoricalDistances" :
+					[
+						{
+							"thisValue" : "Agriculture",
+							"thatValue" : "Food",
+							"distance" : 0.76
+						},
+						{
+							"thisValue" : "Construction",
+							"thatValue" : "Manufacturing",
+							"distance" : 0.61
+						},
+						{
+							"thisValue" : "Food",
+							"thatValue" : "Health",
+							"distance" : 0.66
+						}
+					]
 				},
 				{
 					"name" : "country",
@@ -169,6 +201,11 @@
 					"name" : "url",
 					"ordinal" : 6,
 					"dataType" : "string"
+				},
+				{
+					"name" : "description",
+					"ordinal" : 7,
+					"dataType" : "text"
 				}
 			]
 		}
