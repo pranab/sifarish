@@ -27,6 +27,7 @@ public class SingleTypeSchema {
 	private double minkowskiParam;
 	private double numericDiffThreshold;
 	private String missingValueHandler = "default";
+	private int partitioningColumn = -1;
 	
 	public Entity getEntity() {
 		return entity;
@@ -57,6 +58,12 @@ public class SingleTypeSchema {
 	}
 	public void setMissingValueHandler(String missingValueHandler) {
 		this.missingValueHandler = missingValueHandler;
+	}
+	public int getPartitioningColumn() {
+		return partitioningColumn;
+	}
+	public void setPartitioningColumn(int partitioningColumn) {
+		this.partitioningColumn = partitioningColumn;
 	}
 
 }

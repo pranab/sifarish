@@ -18,7 +18,7 @@ xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/ma
             </activation>
             <properties>
                 <log4j.version>1.2.16</log4j.version>
-                <hadoop.version>0.20.2-737</hadoop.version>
+                <hadoop.version>0.20.2-cdh3u2</hadoop.version>
                 <jackson.version>1.6.3</jackson.version>
                 <jdk.level>1.6</jdk.level>
             </properties>
@@ -69,7 +69,7 @@ xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/ma
         </dependency>
 
         <dependency>
-            <groupId>com.cloudera.hadoop</groupId>
+            <groupId>org.apache.hadoop</groupId>
             <artifactId>hadoop-core</artifactId>
             <version>${hadoop.version}</version>
         </dependency>
@@ -119,7 +119,7 @@ xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/ma
             <enabled>false</enabled>
           </snapshots>
           <id>cloudera-releases</id>
-          <url>https://repository.cloudera.com/content/repositories/releases</url>
+          <url>https://repository.cloudera.com/artifactory/cloudera-repos/</url>
         </repository>
     </repositories>
 
