@@ -23,13 +23,8 @@ import java.util.List;
 import org.sifarish.util.Entity;
 import org.sifarish.util.Field;
 
-public class MixedTypeSchema {
+public class MixedTypeSchema  extends TypeSchema {
 	private List<Entity> entities;
-	private String distAlgorithm;
-	private double minkowskiParam;
-	private double numericDiffThreshold;
-	private String missingValueHandler = "default";
-	private String textMatchingAlgorithm;
 	private double srcNonMatchingTermWeight = 1.0;
 	private double trgNonMatchingTermWeight = 1.0;
 	
@@ -65,46 +60,6 @@ public class MixedTypeSchema {
 		return entity;
 	}
 
-	public String getDistAlgorithm() {
-		return distAlgorithm;
-	}
-
-	public void setDistAlgorithm(String distAlgorithm) {
-		this.distAlgorithm = distAlgorithm;
-	}
-
-	public double getMinkowskiParam() {
-		return minkowskiParam;
-	}
-
-	public void setMinkowskiParam(double minkowskiParam) {
-		this.minkowskiParam = minkowskiParam;
-	}
-	
-	public double getNumericDiffThreshold() {
-		return numericDiffThreshold;
-	}
-
-	public void setNumericDiffThreshold(double numericDiffThreshold) {
-		this.numericDiffThreshold = numericDiffThreshold;
-	}
-
-
-	public String getMissingValueHandler() {
-		return missingValueHandler;
-	}
-
-	public void setMissingValueHandler(String missingValueHandler) {
-		this.missingValueHandler = missingValueHandler;
-	}
-
-	public String getTextMatchingAlgorithm() {
-		return textMatchingAlgorithm;
-	}
-
-	public void setTextMatchingAlgorithm(String textMatchingAlgorithm) {
-		this.textMatchingAlgorithm = textMatchingAlgorithm;
-	}
 
 
 	public double getSrcNonMatchingTermWeight() {
@@ -139,27 +94,6 @@ public class MixedTypeSchema {
 	}
 	
 	
-	public DistanceStrategy createDistanceStrategy(int scale) {
-		DistanceStrategy distStrategy = null;
-		
-		if (distAlgorithm.equals("euclidean")) {
-			distStrategy = new EuclideanDistance(scale);
-		} else if (distAlgorithm.equals("manhattan")) {
-			distStrategy = new ManhattanDistance(scale);
-		} else if (distAlgorithm.equals("minkwoski")) {
-			distStrategy = new MinkwoskiDistance(scale);
-			distStrategy.setPower(minkowskiParam);
-		}
-		
-		return distStrategy;
-	}
 	
-	public TextSimilarityStrategy createTextSimilarityStrategy() {
-		TextSimilarityStrategy  textSimStrategy = null;
-		if (textMatchingAlgorithm.equals("jaccard")){
-			textSimStrategy = new JaccardSimilarity(srcNonMatchingTermWeight, trgNonMatchingTermWeight);
-		}
-		return textSimStrategy;
-	}	
 	
 }

@@ -17,6 +17,8 @@
 package org.sifarish.feature;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.conf.Configured;
@@ -38,7 +40,10 @@ import org.codehaus.jackson.map.ObjectMapper;
 import org.sifarish.feature.DiffTypeSimilarity.IdPairGroupComprator;
 import org.sifarish.feature.DiffTypeSimilarity.IdPairPartitioner;
 import org.sifarish.util.Entity;
+import org.sifarish.util.Field;
 import org.sifarish.util.Utility;
+
+
 
 public class SameTypeSimilarity  extends Configured implements Tool {
     @Override
@@ -90,13 +95,15 @@ public class SameTypeSimilarity  extends Configured implements Tool {
         	fieldDelimRegex = context.getConfiguration().get("field.delim.regex", "\\[\\]");
             
 			Configuration conf = context.getConfiguration();
-            String filePath = conf.get("schema.file.path");
+            String filePath = conf.get("same.schema.file.path");
             FileSystem dfs = FileSystem.get(conf);
             Path src = new Path(filePath);
             FSDataInputStream fs = dfs.open(src);
             ObjectMapper mapper = new ObjectMapper();
             schema = mapper.readValue(fs, SingleTypeSchema.class);
             partitonOrdinal = schema.getPartitioningColumn();
+            idOrdinal = schema.getEntity().getIdField().getOrdinal();
+
        }
         @Override
         protected void map(LongWritable key, Text value, Context context)
@@ -107,7 +114,6 @@ public class SameTypeSimilarity  extends Configured implements Tool {
             		
            Entity entity =  schema.getEntity();
            
-    		idOrdinal = entity.getIdField().getOrdinal();
     		hash = items[idOrdinal].hashCode() %  bucketCount;
     		if (hash < bucketCount / 2) {
     			for (int i =  bucketCount / 2; i < bucketCount; ++i) {
@@ -127,14 +133,83 @@ public class SameTypeSimilarity  extends Configured implements Tool {
     }
     
     public static class SimilarityReducer extends Reducer<TextIntPair, Text, NullWritable, Text> {
-        protected void setup(Context context) throws IOException, InterruptedException {
+        private Text valueHolder = new Text();
+        private List<String> valueList = new ArrayList<String>();
+        private SingleTypeSchema schema;
+       private String firstId;
+        private String  secondId;
+        private int dist;
+        private int idOrdinal;
+        private String fieldDelimRegex;
+        private int scale;
+        private DistanceStrategy distStrategy;
+        private TextSimilarityStrategy textSimStrategy;
+      
+    	protected void setup(Context context) throws IOException, InterruptedException {
+			Configuration conf = context.getConfiguration();
+            String filePath = conf.get("same.schema.file.path");
+            FileSystem dfs = FileSystem.get(conf);
+            Path src = new Path(filePath);
+            FSDataInputStream fs = dfs.open(src);
+            ObjectMapper mapper = new ObjectMapper();
+            schema = mapper.readValue(fs, SingleTypeSchema.class);
         	
-        }
+            idOrdinal = schema.getEntity().getIdField().getOrdinal();
+        	fieldDelimRegex = context.getConfiguration().get("field.delim.regex", "\\[\\]");
+        	scale = context.getConfiguration().getInt("distance.scale", 1000);
+        	distStrategy = schema.createDistanceStrategy(scale);
+        	textSimStrategy = schema.createTextSimilarityStrategy();
+      }
         
         protected void reduce(TextIntPair  key, Iterable<Text> values, Context context)
         throws IOException, InterruptedException {
+        	valueList.clear();
+        	for (Text value : values){
+        		valueList.add(value.toString());
+        	}   
         	
-        }        
+        	for (int i = 0;  i < valueList.size();  ++i){
+        		String first = valueList.get(i);
+        		firstId =  first.split(fieldDelimRegex)[idOrdinal];
+        		for (int j = i+1;  i < valueList.size();  ++j) {
+            		String second = valueList.get(j);
+            		secondId =  second.split(fieldDelimRegex)[idOrdinal];
+        			dist  = findDistance( first,  second,  context);
+   					valueHolder.set(firstId + "," + secondId + "," + dist);
+   				}
+        	}
+        }    
+        
+        private int findDistance(String first, String second, Context context) {
+        	int netDist = 0;
+    		String[] firstItems = first.split(fieldDelimRegex);
+    		String[] seconfItems = second.split(fieldDelimRegex);
+    		double dist = 0;
+    		
+    		for (Field field :  schema.getEntity().getFields()) {
+    			String firstAttr = firstItems[field.getOrdinal()];
+    			String secondAttr = seconfItems[field.getOrdinal()];
+    			if (firstAttr.isEmpty() || secondAttr.isEmpty() ) {
+    				if (schema.getMissingValueHandler().equals("default")) {
+    					dist = 1.0;
+    				} else {
+    					continue;
+    				}
+    			} else {
+	    			if (field.getDataType().equals("categorical")) {
+	    				dist = field.findDistance(firstAttr, secondAttr);
+	    			} else if (field.getDataType().equals("int")) {
+	    				dist = field.findDistance(Integer.parseInt(firstAttr), Integer.parseInt(secondAttr), schema.getNumericDiffThreshold());
+	    			} else if (field.getDataType().equals("text")) { 
+	    				dist = textSimStrategy.findDistance(firstAttr, secondAttr);	    				
+	    			}
+    			}
+				distStrategy.accumulate(dist, field.getWeight());
+    		}  
+    		
+    		netDist = distStrategy.getSimilarity();
+    		return netDist;
+        }
         
     }    
 

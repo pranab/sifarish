@@ -145,5 +145,23 @@ public class Field {
 		return distance;
 	}
 	
-	
+	public double  findDistance(int thisValue, int thatValue,  double diffThreshold) {
+		double distance = 1.0;
+		if (max > min) {
+			distance = ((double)(thisValue - thatValue)) / (max  - min);
+		} else {
+			int max = thisValue > thatValue ? thisValue : thatValue;
+			double diff = ((double)(thisValue - thatValue)) / max;
+			if (diff < 0) {
+				diff = - diff;
+			}
+			distance = diff > diffThreshold ? 1.0 : 0.0;
+				
+		}
+		if (distance < 0) {
+			distance = -distance;
+		}
+		
+		return distance;
+	}	
 }

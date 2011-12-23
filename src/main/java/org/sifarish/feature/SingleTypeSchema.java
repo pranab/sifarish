@@ -21,12 +21,8 @@ import java.util.List;
 
 import org.sifarish.util.Entity;
 
-public class SingleTypeSchema {
+public class SingleTypeSchema  extends TypeSchema {
 	private Entity entity;
-	private String distAlgorithm;
-	private double minkowskiParam;
-	private double numericDiffThreshold;
-	private String missingValueHandler = "default";
 	private int partitioningColumn = -1;
 	
 	public Entity getEntity() {
@@ -34,30 +30,6 @@ public class SingleTypeSchema {
 	}
 	public void setEntity(Entity entity) {
 		this.entity = entity;
-	}
-	public String getDistAlgorithm() {
-		return distAlgorithm;
-	}
-	public void setDistAlgorithm(String distAlgorithm) {
-		this.distAlgorithm = distAlgorithm;
-	}
-	public double getMinkowskiParam() {
-		return minkowskiParam;
-	}
-	public void setMinkowskiParam(double minkowskiParam) {
-		this.minkowskiParam = minkowskiParam;
-	}
-	public double getNumericDiffThreshold() {
-		return numericDiffThreshold;
-	}
-	public void setNumericDiffThreshold(double numericDiffThreshold) {
-		this.numericDiffThreshold = numericDiffThreshold;
-	}
-	public String getMissingValueHandler() {
-		return missingValueHandler;
-	}
-	public void setMissingValueHandler(String missingValueHandler) {
-		this.missingValueHandler = missingValueHandler;
 	}
 	public int getPartitioningColumn() {
 		return partitioningColumn;
