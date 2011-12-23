@@ -25,8 +25,6 @@ import org.sifarish.util.Field;
 
 public class MixedTypeSchema  extends TypeSchema {
 	private List<Entity> entities;
-	private double srcNonMatchingTermWeight = 1.0;
-	private double trgNonMatchingTermWeight = 1.0;
 	
 	public List<Entity> getEntities() {
 		return entities;
@@ -58,24 +56,6 @@ public class MixedTypeSchema  extends TypeSchema {
 		}
 		
 		return entity;
-	}
-
-
-
-	public double getSrcNonMatchingTermWeight() {
-		return srcNonMatchingTermWeight;
-	}
-
-	public void setSrcNonMatchingTermWeight(double srcNonMatchingTermWeight) {
-		this.srcNonMatchingTermWeight = srcNonMatchingTermWeight;
-	}
-
-	public double getTrgNonMatchingTermWeight() {
-		return trgNonMatchingTermWeight;
-	}
-
-	public void setTrgNonMatchingTermWeight(double trgNonMatchingTermWeight) {
-		this.trgNonMatchingTermWeight = trgNonMatchingTermWeight;
 	}
 
 	public double findCattegoricalDistance(String thisValue, String thatValue, int ordinal) {

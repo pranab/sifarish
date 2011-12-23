@@ -24,6 +24,8 @@ public class TypeSchema {
 	private double numericDiffThreshold;
 	private String missingValueHandler = "default";
 	private String textMatchingAlgorithm;
+	private double srcNonMatchingTermWeight = 1.0;
+	private double trgNonMatchingTermWeight = 1.0;
 
 	public String getDistAlgorithm() {
 		return distAlgorithm;
@@ -61,6 +63,21 @@ public class TypeSchema {
 		this.textMatchingAlgorithm = textMatchingAlgorithm;
 	}
 
+	public double getSrcNonMatchingTermWeight() {
+		return srcNonMatchingTermWeight;
+	}
+
+	public void setSrcNonMatchingTermWeight(double srcNonMatchingTermWeight) {
+		this.srcNonMatchingTermWeight = srcNonMatchingTermWeight;
+	}
+
+	public double getTrgNonMatchingTermWeight() {
+		return trgNonMatchingTermWeight;
+	}
+
+	public void setTrgNonMatchingTermWeight(double trgNonMatchingTermWeight) {
+		this.trgNonMatchingTermWeight = trgNonMatchingTermWeight;
+	}
 	public DistanceStrategy createDistanceStrategy(int scale) {
 		DistanceStrategy distStrategy = null;
 		
