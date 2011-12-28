@@ -97,6 +97,8 @@ public class TypeSchema {
 		TextSimilarityStrategy  textSimStrategy = null;
 		if (textMatchingAlgorithm.equals("jaccard")){
 			textSimStrategy = new JaccardSimilarity(srcNonMatchingTermWeight, trgNonMatchingTermWeight);
+		} else if (textMatchingAlgorithm.equals("cosine")){
+			textSimStrategy = new CosineSimilarity();
 		}
 		return textSimStrategy;
 	}	
