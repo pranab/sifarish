@@ -164,4 +164,25 @@ public class Field {
 		
 		return distance;
 	}	
+
+	public double  findDistance(double thisValue, double thatValue,  double diffThreshold) {
+		double distance = 1.0;
+		if (max > min) {
+			distance = ((thisValue - thatValue)) / (max  - min);
+		} else {
+			double  max = thisValue > thatValue ? thisValue : thatValue;
+			double diff = (thisValue - thatValue)/ max;
+			if (diff < 0) {
+				diff = - diff;
+			}
+			distance = diff > diffThreshold ? 1.0 : 0.0;
+				
+		}
+		if (distance < 0) {
+			distance = -distance;
+		}
+		
+		return distance;
+	}	
+
 }

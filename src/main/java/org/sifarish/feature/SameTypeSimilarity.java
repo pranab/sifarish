@@ -200,6 +200,8 @@ public class SameTypeSimilarity  extends Configured implements Tool {
 	    				dist = field.findDistance(firstAttr, secondAttr);
 	    			} else if (field.getDataType().equals("int")) {
 	    				dist = field.findDistance(Integer.parseInt(firstAttr), Integer.parseInt(secondAttr), schema.getNumericDiffThreshold());
+	    			} else if (field.getDataType().equals("double")) {
+	    				dist = field.findDistance(Double.parseDouble(firstAttr), Double.parseDouble(secondAttr), schema.getNumericDiffThreshold());
 	    			} else if (field.getDataType().equals("text")) { 
 	    				dist = textSimStrategy.findDistance(firstAttr, secondAttr);	    				
 	    			}
