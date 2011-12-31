@@ -17,6 +17,7 @@
 
 package org.sifarish.util;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class Entity {
@@ -24,6 +25,7 @@ public class Entity {
 	private int type;
 	private int fieldCount;
 	private List<Field> fields;
+	private List<FieldExtractor> fieldExtractors;
 	
 	
 	public String getName() {
@@ -52,6 +54,13 @@ public class Entity {
 	public void setFields(List<Field> fields) {
 		this.fields = fields;
 	}
+	
+	public List<FieldExtractor> getFieldExtractors() {
+		return fieldExtractors;
+	}
+	public void setFieldExtractors(List<FieldExtractor> fieldExtractors) {
+		this.fieldExtractors = fieldExtractors;
+	}
 
 	public Field getIdField() {
 		Field field = null;
@@ -63,4 +72,29 @@ public class Entity {
 		}
 		return field;
 	}
+	
+	public List<FieldExtractor> getExtractorsForField(int ordinal){
+		List<FieldExtractor> extractors =  new ArrayList<FieldExtractor>();
+		
+		for (FieldExtractor extractor :  fieldExtractors) {
+			if (extractor.allSrcFields() || extractor.getSrcOrdinal() == ordinal){
+				extractors.add(extractor);
+			} 
+		}
+		
+		return extractors;
+	}
+	
+	public boolean isRetainedField(int ordinal){
+		boolean retained = false;
+		for (Field field : fields){
+			if (field.getOrdinal() == ordinal){
+				retained = true;
+				break;
+			}
+		}
+		return retained;
+	}
+	
+	
 }

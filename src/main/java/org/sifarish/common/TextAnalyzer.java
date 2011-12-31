@@ -21,11 +21,16 @@ package org.sifarish.common;
 import java.io.IOException;
 import java.io.StringReader;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
+import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.conf.Configured;
+import org.apache.hadoop.fs.FSDataInputStream;
+import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.NullWritable;
@@ -41,6 +46,9 @@ import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.util.Version;
+import org.codehaus.jackson.map.ObjectMapper;
+import org.sifarish.feature.SingleTypeSchema;
+import org.sifarish.util.FieldExtractor;
 import org.sifarish.util.Utility;
 
 public class TextAnalyzer extends Configured implements Tool{
@@ -74,6 +82,8 @@ public class TextAnalyzer extends Configured implements Tool{
         private Set<Integer> textFieldOrdinals = new HashSet<Integer>();
         private Analyzer analyzer;
         private List<String> itemList = new ArrayList<String>();
+        private SingleTypeSchema schema;
+        private Map<Integer, String> extrtactedFields = new HashMap<Integer, String>();
         	
         protected void setup(Context context) throws IOException, InterruptedException {
         	fieldDelim = context.getConfiguration().get("field.delim", "[]");
@@ -85,6 +95,16 @@ public class TextAnalyzer extends Configured implements Tool{
             	textFieldOrdinals.add(Integer.parseInt(items[i]));
             }
             analyzer = new StandardAnalyzer(Version.LUCENE_35);
+            
+			Configuration conf = context.getConfiguration();
+            String filePath = conf.get("raw.schema.file.path");
+            FileSystem dfs = FileSystem.get(conf);
+            Path src = new Path(filePath);
+            FSDataInputStream fs = dfs.open(src);
+            ObjectMapper mapper = new ObjectMapper();
+            schema = mapper.readValue(fs, SingleTypeSchema.class);
+            
+           
        }
 
         protected void cleanup(Context context) throws IOException, InterruptedException {
@@ -101,7 +121,11 @@ public class TextAnalyzer extends Configured implements Tool{
             
             for (int i = 0;i < items.length; ++i) {
             	String item = items[i];
+            	
             	if (textFieldOrdinals.contains(i)) {
+            		//extract fields
+            		findExtractedFields(i, item);
+            		
             		//if text field analyze
             		item = tokenize(item);
             		if (consolidateFields){
@@ -110,13 +134,25 @@ public class TextAnalyzer extends Configured implements Tool{
             		}
             	}
             	if (null != item) {
-            		itemList.add(item);
+            		//only if retained
+            		if (schema.getEntity().isRetainedField(i)) {
+            			itemList.add(item);
+            		}
             	}
             }
             
             //consolidated field at end
             if (consolidateFields) {
             	itemList.add(consFields.toString());
+            }
+            
+            //add extracted fields
+            for (int e = 0; e < schema.getEntity().getFieldExtractors().size(); ++ e) {
+            	String extField = extrtactedFields.get(e);
+            	if (null == extField) {
+            		extField = "";
+            	}
+            	itemList.add(extField);
             }
             
             boolean first = true;
@@ -134,6 +170,15 @@ public class TextAnalyzer extends Configured implements Tool{
 			context.write(NullWritable.get(), valueHolder);
        }     
         
+        private void findExtractedFields(int ordinal, String data) {
+        	List<FieldExtractor> extractors = schema.getEntity().getExtractorsForField(ordinal);
+        	for (FieldExtractor extractor : extractors) {
+        		String match = extractor. findMatch(data);
+        		if (null != match) {
+        			extrtactedFields.put(extractor.getOrdinal(), match);
+        		}
+        	}
+        }
 
         private String tokenize(String text) throws IOException {
             TokenStream stream = analyzer.tokenStream("contents", new StringReader(text));
