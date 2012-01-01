@@ -25,7 +25,7 @@ public class Entity {
 	private int type;
 	private int fieldCount;
 	private List<Field> fields;
-	private List<FieldExtractor> fieldExtractors;
+	private List<FieldExtractor> fieldExtractors = new ArrayList<FieldExtractor>();
 	
 	
 	public String getName() {

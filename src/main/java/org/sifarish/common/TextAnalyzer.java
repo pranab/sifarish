@@ -48,6 +48,7 @@ import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.util.Version;
 import org.codehaus.jackson.map.ObjectMapper;
 import org.sifarish.feature.SingleTypeSchema;
+import org.sifarish.util.Field;
 import org.sifarish.util.FieldExtractor;
 import org.sifarish.util.Utility;
 
@@ -84,6 +85,7 @@ public class TextAnalyzer extends Configured implements Tool{
         private List<String> itemList = new ArrayList<String>();
         private SingleTypeSchema schema;
         private Map<Integer, String> extrtactedFields = new HashMap<Integer, String>();
+        private Set<Integer> retainedFieldOrdinals = new HashSet<Integer>();
         	
         protected void setup(Context context) throws IOException, InterruptedException {
         	fieldDelim = context.getConfiguration().get("field.delim", "[]");
@@ -103,7 +105,10 @@ public class TextAnalyzer extends Configured implements Tool{
             FSDataInputStream fs = dfs.open(src);
             ObjectMapper mapper = new ObjectMapper();
             schema = mapper.readValue(fs, SingleTypeSchema.class);
-            
+
+    		for (Field field  :  schema.getEntity().getFields()){
+    			retainedFieldOrdinals.add(field.getOrdinal());
+    		}
            
        }
 
@@ -118,6 +123,7 @@ public class TextAnalyzer extends Configured implements Tool{
             StringBuilder stBld = new StringBuilder();
             StringBuilder consFields = new StringBuilder();
             itemList.clear();
+            extrtactedFields.clear();
             
             for (int i = 0;i < items.length; ++i) {
             	String item = items[i];
@@ -133,9 +139,10 @@ public class TextAnalyzer extends Configured implements Tool{
             			item = null;
             		}
             	}
+            	
             	if (null != item) {
             		//only if retained
-            		if (schema.getEntity().isRetainedField(i)) {
+            		if (retainedFieldOrdinals.contains(i)) {
             			itemList.add(item);
             		}
             	}
@@ -173,9 +180,11 @@ public class TextAnalyzer extends Configured implements Tool{
         private void findExtractedFields(int ordinal, String data) {
         	List<FieldExtractor> extractors = schema.getEntity().getExtractorsForField(ordinal);
         	for (FieldExtractor extractor : extractors) {
-        		String match = extractor. findMatch(data);
-        		if (null != match) {
-        			extrtactedFields.put(extractor.getOrdinal(), match);
+        		if (null == extrtactedFields.get(extractor.getOrdinal())) {
+	        		String match = extractor. findMatch(data);
+	        		if (null != match) {
+	        			extrtactedFields.put(extractor.getOrdinal(), match);
+	        		}
         		}
         	}
         }

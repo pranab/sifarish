@@ -57,14 +57,14 @@ public class FieldExtractor {
 	}
 	
 	public boolean allSrcFields() {
-		return ordinal == -1;
+		return srcOrdinal == -1;
 	}
 	
 	public String findMatch(String data){
 		String match = null;
 		Matcher matcher = patternObj.matcher(data);
 		if (matcher.find() && matcher.groupCount() >= 1) {
-			match = matcher.group(1);
+			match = matcher.group(1).trim();
 		}
 		
 		return match;
