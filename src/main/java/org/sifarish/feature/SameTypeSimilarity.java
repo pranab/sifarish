@@ -112,8 +112,6 @@ public class SameTypeSimilarity  extends Configured implements Tool {
             
            String partition = partitonOrdinal >= 0 ? items[partitonOrdinal] :  "";
             		
-           Entity entity =  schema.getEntity();
-           
     		hash = items[idOrdinal].hashCode() %  bucketCount;
     		if (hash < bucketCount / 2) {
     			for (int i =  bucketCount / 2; i < bucketCount; ++i) {
@@ -171,11 +169,12 @@ public class SameTypeSimilarity  extends Configured implements Tool {
         	for (int i = 0;  i < valueList.size();  ++i){
         		String first = valueList.get(i);
         		firstId =  first.split(fieldDelimRegex)[idOrdinal];
-        		for (int j = i+1;  i < valueList.size();  ++j) {
+        		for (int j = i+1;  j < valueList.size();  ++j) {
             		String second = valueList.get(j);
             		secondId =  second.split(fieldDelimRegex)[idOrdinal];
         			dist  = findDistance( first,  second,  context);
    					valueHolder.set(firstId + "," + secondId + "," + dist);
+   					context.write(NullWritable.get(), valueHolder);
    				}
         	}
         }    
@@ -183,12 +182,22 @@ public class SameTypeSimilarity  extends Configured implements Tool {
         private int findDistance(String first, String second, Context context) {
         	int netDist = 0;
     		String[] firstItems = first.split(fieldDelimRegex);
-    		String[] seconfItems = second.split(fieldDelimRegex);
+    		String[] secondItems = second.split(fieldDelimRegex);
     		double dist = 0;
+    		boolean valid = false;
+    		distStrategy.initialize();
     		
     		for (Field field :  schema.getEntity().getFields()) {
-    			String firstAttr = firstItems[field.getOrdinal()];
-    			String secondAttr = seconfItems[field.getOrdinal()];
+    			String firstAttr = "";
+    			if (field.getOrdinal() < firstItems.length ){
+    				firstAttr = firstItems[field.getOrdinal()];
+    			} 
+    			String secondAttr = "";
+    			if (field.getOrdinal() < secondItems.length ){
+    				secondAttr = secondItems[field.getOrdinal()];
+    			}
+    			String unit = field.getUnit();
+    			
     			if (firstAttr.isEmpty() || secondAttr.isEmpty() ) {
     				if (schema.getMissingValueHandler().equals("default")) {
     					dist = 1.0;
@@ -199,9 +208,37 @@ public class SameTypeSimilarity  extends Configured implements Tool {
 	    			if (field.getDataType().equals("categorical")) {
 	    				dist = field.findDistance(firstAttr, secondAttr);
 	    			} else if (field.getDataType().equals("int")) {
-	    				dist = field.findDistance(Integer.parseInt(firstAttr), Integer.parseInt(secondAttr), schema.getNumericDiffThreshold());
+	    				String[] firstValItems = firstAttr.split("\\s+");
+	    				String[] secondValItems = secondAttr.split("\\s+");
+	    				valid = false;
+	    				if (firstValItems.length == 1 && secondValItems.length == 1){
+	    					valid = true;
+	    				} else if (firstValItems.length == 2 && secondValItems.length == 2 && 
+	    						firstValItems[1].equals(unit) && secondValItems[1].equals(unit)) {
+	    					valid = true;
+	    				}
+	    				
+	    				if (valid)	{
+	    					dist = field.findDistance(Integer.parseInt(firstValItems[0]), Integer.parseInt(secondValItems[0]), schema.getNumericDiffThreshold());
+	    				} else {
+	    					continue;
+	    				}
 	    			} else if (field.getDataType().equals("double")) {
-	    				dist = field.findDistance(Double.parseDouble(firstAttr), Double.parseDouble(secondAttr), schema.getNumericDiffThreshold());
+	    				String[] firstValItems = firstAttr.split("\\s+");
+	    				String[] secondValItems = secondAttr.split("\\s+");
+	    				valid = false;
+	    				if (firstValItems.length == 1 && secondValItems.length == 1){
+	    					valid = true;
+	    				} else if (firstValItems.length == 2 && secondValItems.length == 2 && 
+	    						firstValItems[1].equals(unit) && secondValItems[1].equals(unit)) {
+	    					valid = true;
+	    				}
+	    				
+	    				if (valid) {
+	    				dist = field.findDistance(Double.parseDouble(firstValItems[0]), Double.parseDouble(secondValItems[0]), schema.getNumericDiffThreshold());
+	    				} else {
+	    					continue;
+	    				}
 	    			} else if (field.getDataType().equals("text")) { 
 	    				dist = textSimStrategy.findDistance(firstAttr, secondAttr);	    				
 	    			}
@@ -212,6 +249,8 @@ public class SameTypeSimilarity  extends Configured implements Tool {
     		netDist = distStrategy.getSimilarity();
     		return netDist;
         }
+        
+        
         
     }    
 

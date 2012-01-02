@@ -27,6 +27,7 @@ public class Field {
 	private String dataType;
 	private int min;
 	private int max;
+	private String unit = "";
 	private double weight = 1.0;
 	private int matchingOrdinal = -1;
 	private List<FieldMapping> mappings;
@@ -83,6 +84,12 @@ public class Field {
 	}
 	public void setMax(int max) {
 		this.max = max;
+	}
+	public String getUnit() {
+		return unit;
+	}
+	public void setUnit(String unit) {
+		this.unit = unit;
 	}
 	public double getWeight() {
 		return weight;

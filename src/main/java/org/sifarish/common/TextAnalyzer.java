@@ -167,8 +167,8 @@ public class TextAnalyzer extends Configured implements Tool{
             	} else {
             		stBld.append(fieldDelim).append(item);
             	}
-            	
             }
+            stBld.append(fieldDelim);
             
             valueHolder.set(stBld.toString());
 			context.write(NullWritable.get(), valueHolder);
