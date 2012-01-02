@@ -154,11 +154,8 @@ public class TextAnalyzer extends Configured implements Tool{
             }
             
             //add extracted fields
-            for (int e = 0; e < schema.getEntity().getFieldExtractors().size(); ++ e) {
+            for (int e = 0; e < extrtactedFields.size(); ++ e) {
             	String extField = extrtactedFields.get(e);
-            	if (null == extField) {
-            		extField = "";
-            	}
             	itemList.add(extField);
             }
             
@@ -180,11 +177,13 @@ public class TextAnalyzer extends Configured implements Tool{
         private void findExtractedFields(int ordinal, String data) {
         	List<FieldExtractor> extractors = schema.getEntity().getExtractorsForField(ordinal);
         	for (FieldExtractor extractor : extractors) {
-        		if (null == extrtactedFields.get(extractor.getOrdinal())) {
+        		String extField = extrtactedFields.get(extractor.getOrdinal());
+        		if (null == extField || extField.isEmpty()) {
 	        		String match = extractor. findMatch(data);
-	        		if (null != match) {
-	        			extrtactedFields.put(extractor.getOrdinal(), match);
+	        		if (null == match){
+	        			match = "";
 	        		}
+        			extrtactedFields.put(extractor.getOrdinal(), match);
         		}
         	}
         }
