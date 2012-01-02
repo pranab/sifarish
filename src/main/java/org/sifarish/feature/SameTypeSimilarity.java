@@ -199,6 +199,7 @@ public class SameTypeSimilarity  extends Configured implements Tool {
     			String unit = field.getUnit();
     			
     			if (firstAttr.isEmpty() || secondAttr.isEmpty() ) {
+					context.getCounter("Missing Data", "Field:" + field.getOrdinal()).increment(1);
     				if (schema.getMissingValueHandler().equals("default")) {
     					dist = 1.0;
     				} else {
@@ -219,7 +220,13 @@ public class SameTypeSimilarity  extends Configured implements Tool {
 	    				}
 	    				
 	    				if (valid)	{
-	    					dist = field.findDistance(Integer.parseInt(firstValItems[0]), Integer.parseInt(secondValItems[0]), schema.getNumericDiffThreshold());
+	    					try {
+	    						dist = field.findDistance(Integer.parseInt(firstValItems[0]), Integer.parseInt(secondValItems[0]), 
+	    							schema.getNumericDiffThreshold());
+	    					} catch (NumberFormatException nfEx) {
+	    						context.getCounter("Invalid Data Format", "Field:" + field.getOrdinal()).increment(1);
+	    						continue;
+	    					}
 	    				} else {
 	    					continue;
 	    				}
@@ -235,7 +242,13 @@ public class SameTypeSimilarity  extends Configured implements Tool {
 	    				}
 	    				
 	    				if (valid) {
-	    				dist = field.findDistance(Double.parseDouble(firstValItems[0]), Double.parseDouble(secondValItems[0]), schema.getNumericDiffThreshold());
+	    					try {
+	    						dist = field.findDistance(Double.parseDouble(firstValItems[0]), Double.parseDouble(secondValItems[0]), 
+	    								schema.getNumericDiffThreshold());
+	    					} catch (NumberFormatException nfEx) {
+	    						context.getCounter("Invalid Data Format", "Field:" + field.getOrdinal()).increment(1);
+	    						continue;
+	    					}
 	    				} else {
 	    					continue;
 	    				}
