@@ -1,0 +1,141 @@
+{
+	"entity" : 
+	{
+		"name" : "product",
+		"fields" :
+		[
+			{
+				"name" : "sku",
+				"ordinal" : 0,
+				"id" : true,
+				"dataType" : "string"
+			},
+			{
+				"name" : "title",
+				"ordinal" : 3,
+				"dataType" : "text"
+			},
+			{
+				"name" : "description",
+				"ordinal" : 4,
+				"dataType" : "text"
+			},
+			{
+				"name" : "techDetail1",
+				"ordinal" : 5,
+				"dataType" : "text"
+			},
+			{
+				"name" : "techDetail2",
+				"ordinal" : 6,
+				"dataType" : "text"
+			},
+			{
+				"name" : "techDetail3",
+				"ordinal" : 7,
+				"dataType" : "text"
+			},
+			{
+				"name" : "techDetail4",
+				"ordinal" : 8,
+				"dataType" : "text"
+			},
+			{
+				"name" : "techDetail5",
+				"ordinal" : 9,
+				"dataType" : "text"
+			},
+			{
+				"name" : "techDetail6",
+				"ordinal" : 10,
+				"dataType" : "text"
+			},
+			{
+				"name" : "techDetail7",
+				"ordinal" : 11,
+				"dataType" : "text"
+			},
+			{
+				"name" : "techDetail8",
+				"ordinal" : 12,
+				"dataType" : "text"
+			},
+			{
+				"name" : "techDetail9",
+				"ordinal" : 13,
+				"dataType" : "text"
+			},
+			{
+				"name" : "techDetail10",
+				"ordinal" : 14,
+				"dataType" : "text"
+			},
+			{
+				"name" : "seller",
+				"ordinal" : 15,
+				"dataType" : "categorical"
+			},
+			{
+				"name" : "sellerPrice",
+				"ordinal" : 16,
+				"dataType" : "double",
+				"weight" : 0.9,
+				"min" : 0,
+				"max" : 100
+			},
+			{
+				"name" : "sellerShippingPrice",
+				"ordinal" : 17,
+				"dataType" : "double",
+				"weight" : 0.9,
+				"min" : 0,
+				"max" : 100
+			}
+		],
+		"fieldExtractors" :
+		[
+			{
+				"name" : "category",
+				"ordinal" : 0,
+				"srcOrdinal" : 3,
+				"pattern" : ".+?:(.+)"
+			},
+			{
+				"name" : "length",
+				"ordinal" : 1,
+				"srcOrdinal" : -1,
+				"pattern" : "Length.*?:(.+)"
+			},
+			{
+				"name" : "length",
+				"ordinal" : 1,
+				"srcOrdinal" : -1,
+				"pattern" : "Item Length.*?:(.+)"
+			},
+			{
+				"name" : "width",
+				"ordinal" : 2,
+				"srcOrdinal" : -1,
+				"pattern" : "Width.*?:(.+)"
+			},
+			{
+				"name" : "width",
+				"ordinal" : 2,
+				"srcOrdinal" : -1,
+				"pattern" : "Item Width.*?:(.+)"
+			},
+			{
+				"name" : "height",
+				"ordinal" : 3,
+				"srcOrdinal" : -1,
+				"pattern" : "Height.*?:(.+)"
+			},
+			{
+				"name" : "height",
+				"ordinal" : 3,
+				"srcOrdinal" : -1,
+				"pattern" : "Item Height.*?:(.+)"
+			}
+		] 
+	}
+}
