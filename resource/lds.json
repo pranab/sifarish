@@ -1,0 +1,71 @@
+{
+	"distAlgorithm" : "euclidean",
+	"numericDiffThreshold" : 0.20,
+	"textMatchingAlgorithm" : "jaccard",
+	"srcNonMatchingTermWeight" : 0.8,
+	"trgNonMatchingTermWeight" : 0.8,
+	"partitioningColumn" : 5,
+	"entity" : 
+	{
+		"name" : "product",
+		"fields" :
+		[
+			{
+				"name" : "sku",
+				"ordinal" : 0,
+				"id" : true,
+				"dataType" : "string"
+			},
+			{
+				"name" : "seller",
+				"ordinal" : 1,
+				"dataType" : "categorical"
+			},
+			{
+				"name" : "sellerPrice",
+				"ordinal" : 2,
+				"dataType" : "double",
+				"weight" : 0.9,
+				"min" : 0,
+				"max" : 100
+			},
+			{
+				"name" : "sellerShippingPrice",
+				"ordinal" : 3,
+				"dataType" : "double",
+				"weight" : 0.9,
+				"min" : 0,
+				"max" : 20
+			},
+			{
+				"name" : "description",
+				"ordinal" : 4,
+				"dataType" : "text"
+			},
+			{
+				"name" : "category",
+				"ordinal" : 5,
+				"dataType" : "categorical"
+			},
+			{
+				"name" : "length",
+				"ordinal" : 6,
+				"dataType" : "double",
+				"unit" : "inches"
+			},
+			{
+				"name" : "width",
+				"ordinal" : 7,
+				"dataType" : "double",
+				"unit" : "inches"
+			},
+			{
+				"name" : "height",
+				"ordinal" : 8,
+				"dataType" : "double",
+				"unit" : "inches"
+			}
+
+		]
+	}
+}
