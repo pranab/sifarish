@@ -18,7 +18,9 @@ package org.sifarish.feature;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.conf.Configured;
@@ -28,8 +30,11 @@ import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.io.Text;
+import org.apache.hadoop.io.WritableComparable;
+import org.apache.hadoop.io.WritableComparator;
 import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.mapreduce.Mapper;
+import org.apache.hadoop.mapreduce.Partitioner;
 import org.apache.hadoop.mapreduce.Reducer;
 import org.apache.hadoop.mapreduce.Mapper.Context;
 import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
@@ -60,12 +65,15 @@ public class SameTypeSimilarity  extends Configured implements Tool {
         job.setMapperClass(SameTypeSimilarity.SimilarityMapper.class);
         job.setReducerClass(SameTypeSimilarity.SimilarityReducer.class);
         
-        job.setMapOutputKeyClass(TextIntPair.class);
+        job.setMapOutputKeyClass(TextIntInt.class);
         job.setMapOutputValueClass(Text.class);
 
         job.setOutputKeyClass(NullWritable.class);
         job.setOutputValueClass(Text.class);
-        
+ 
+        job.setGroupingComparatorClass(IdPairGroupComprator.class);
+        job.setPartitionerClass(IdPairPartitioner.class);
+
         Utility.setConfiguration(job.getConfiguration());
 
         job.setNumReduceTasks(job.getConfiguration().getInt("num.reducer", 1));
@@ -80,8 +88,9 @@ public class SameTypeSimilarity  extends Configured implements Tool {
         System.exit(exitCode);
     }
     
-    public static class SimilarityMapper extends Mapper<LongWritable, Text, TextIntPair, Text> {
-        private TextIntPair keyHolder = new TextIntPair();
+    public static class SimilarityMapper extends Mapper<LongWritable, Text, TextIntInt, Text> {
+        private TextIntInt keyHolder = new TextIntInt();
+        private Text valueHolder = new Text();
         private SingleTypeSchema schema;
         private int bucketCount;
         private int hash;
@@ -103,6 +112,7 @@ public class SameTypeSimilarity  extends Configured implements Tool {
             schema = mapper.readValue(fs, SingleTypeSchema.class);
             partitonOrdinal = schema.getPartitioningColumn();
             idOrdinal = schema.getEntity().getIdField().getOrdinal();
+        	System.out.println("bucketCount: " + bucketCount + "partitonOrdinal: " + partitonOrdinal  + "idOrdinal:" + idOrdinal );
 
        }
         @Override
@@ -110,29 +120,29 @@ public class SameTypeSimilarity  extends Configured implements Tool {
             throws IOException, InterruptedException {
             String[] items  =  value.toString().split(fieldDelimRegex);
             
-           String partition = partitonOrdinal >= 0 ? items[partitonOrdinal] :  "";
+           String partition = partitonOrdinal >= 0 ? items[partitonOrdinal] :  "none";
             		
-    		hash = items[idOrdinal].hashCode() %  bucketCount;
-    		if (hash < bucketCount / 2) {
-    			for (int i =  bucketCount / 2; i < bucketCount; ++i) {
-    				hashPair =  i << 16  |  hash;
-    				keyHolder.set(partition, hashPair);
-        			context.write(keyHolder, value);
-    			}
-    		} else {
-    			for (int i =  0; i < bucketCount / 2; ++i) {
-    				hashPair = hash << 16 | i;
-    				keyHolder.set(partition, hashPair);
-        			context.write(keyHolder, value);
-    			}
-    		} 
+    		hash = (items[idOrdinal].hashCode() %  bucketCount  + bucketCount) / 2 ;
+    		for (int i = 0; i < bucketCount;  ++i) {
+    			if (i < hash){
+       				hashPair = hash * 1000 +  i;
+       				keyHolder.set(partition, hashPair,0);
+       				valueHolder.set("0" + value.toString());
+       	   		 } else {
+    				hashPair =  i * 1000  +  hash;
+       				keyHolder.set(partition, hashPair,1);
+       				valueHolder.set("1" + value.toString());
+    			} 
+   	   			context.write(keyHolder, valueHolder);
+    		}
         }
     	
     }
     
-    public static class SimilarityReducer extends Reducer<TextIntPair, Text, NullWritable, Text> {
+    public static class SimilarityReducer extends Reducer<TextIntInt, Text, NullWritable, Text> {
         private Text valueHolder = new Text();
         private List<String> valueList = new ArrayList<String>();
+        private Set<String> valueSet = new HashSet<String>();
         private SingleTypeSchema schema;
        private String firstId;
         private String  secondId;
@@ -159,24 +169,52 @@ public class SameTypeSimilarity  extends Configured implements Tool {
         	textSimStrategy = schema.createTextSimilarityStrategy();
       }
         
-        protected void reduce(TextIntPair  key, Iterable<Text> values, Context context)
+        protected void reduce(TextIntInt  key, Iterable<Text> values, Context context)
         throws IOException, InterruptedException {
         	valueList.clear();
-        	for (Text value : values){
-        		valueList.add(value.toString());
-        	}   
-        	
-        	for (int i = 0;  i < valueList.size();  ++i){
-        		String first = valueList.get(i);
-        		firstId =  first.split(fieldDelimRegex)[idOrdinal];
-        		for (int j = i+1;  j < valueList.size();  ++j) {
-            		String second = valueList.get(j);
-            		secondId =  second.split(fieldDelimRegex)[idOrdinal];
-        			dist  = findDistance( first,  second,  context);
-   					valueHolder.set(firstId + "," + secondId + "," + dist);
-   					context.write(NullWritable.get(), valueHolder);
-   				}
+        	int secondPart = key.getSecond().get();
+        	if (secondPart/1000 == secondPart%1000){
+        		//same hash bucket
+	        	for (Text value : values){
+	        		String valSt = value.toString();
+	        		valueList.add(valSt.substring(1));
+	        	}
+	        	
+	        	for (int i = 0;  i < valueList.size();  ++i){
+	        		String first = valueList.get(i);
+	        		firstId =  first.split(fieldDelimRegex)[idOrdinal];
+	        		for (int j = i+1;  j < valueList.size();  ++j) {
+	            		String second = valueList.get(j);
+	            		secondId =  second.split(fieldDelimRegex)[idOrdinal];
+	            		if (!firstId.equals(secondId)){
+		        			dist  = findDistance( first,  second,  context);
+		   					valueHolder.set(firstId + "," + secondId + "," + dist);
+		   					context.write(NullWritable.get(), valueHolder);
+	            		} else {
+	    					context.getCounter("Distance Data", "Same ID").increment(1);
+	    					System.out.println("Repeat:" + firstId );
+	            		}
+	   				}
+	        	}
+        	} else {
+        		//different hash bucket
+	        	for (Text value : values){
+	        		String valSt = value.toString();
+	        		if (valSt.startsWith("0")) {
+	        			valueList.add(valSt.substring(1));
+	        		} else {
+	        			String second = valSt.substring(1);
+	            		secondId =  second.split(fieldDelimRegex)[idOrdinal];
+	            		for (String first : valueList){
+	                		firstId =  first.split(fieldDelimRegex)[idOrdinal];
+		        			dist  = findDistance( first,  second,  context);
+		   					valueHolder.set(firstId + "," + secondId + "," + dist);
+		   					context.write(NullWritable.get(), valueHolder);
+	            		}
+	        		}
+	        	}
         	}
+        	
         }    
         
         private int findDistance(String first, String second, Context context) {
@@ -266,5 +304,30 @@ public class SameTypeSimilarity  extends Configured implements Tool {
         
         
     }    
+    
+    public static class IdPairPartitioner extends Partitioner<TextIntInt, Text> {
+	     @Override
+	     public int getPartition(TextIntInt key, Text value, int numPartitions) {
+	    	 //consider only base part of  key
+		     return key.hashCodeBase() % numPartitions;
+	     }
+   
+   }
+   
+    public static class IdPairGroupComprator extends WritableComparator {
+    	protected IdPairGroupComprator() {
+    		super(TextIntInt.class, true);
+    	}
+
+    	@Override
+    	public int compare(WritableComparable w1, WritableComparable w2) {
+    		//consider only the base part of the key
+    		TextIntInt t1 = (TextIntInt)w1;
+    		TextIntInt t2 = (TextIntInt)w2;
+    		
+    		int comp = t1.compareToBase(t2);
+    		return comp;
+    	}
+     }
 
 }

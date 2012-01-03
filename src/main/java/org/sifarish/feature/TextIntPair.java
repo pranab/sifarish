@@ -85,5 +85,9 @@ public class TextIntPair implements WritableComparable<TextIntPair> {
 		
 		return isEqual;
 	}
+	
+	public String toString() {
+		return first.toString() + ":" + second.get();
+	}
 
 }
