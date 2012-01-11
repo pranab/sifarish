@@ -93,13 +93,21 @@ public class TopMatches extends Configured implements Tool {
 	}
 	
     public static class TopMatchesReducer extends Reducer<TextIntPair, Text, NullWritable, Text> {
+    	private boolean nearestByCount;
     	private int topMatchCount;
+    	private int topMatchDistance;
 		private String srcEntityId;
 		private int count;
+		private int distance;
 		private Text outVal = new Text();
     	
         protected void setup(Context context) throws IOException, InterruptedException {
-        	topMatchCount = context.getConfiguration().getInt("top.match.count", 10);
+        	nearestByCount = context.getConfiguration().getBoolean("nearest.by.count", true);
+        	if (nearestByCount) {
+        		topMatchCount = context.getConfiguration().getInt("top.match.count", 10);
+        	} else {
+        		topMatchDistance = context.getConfiguration().getInt("top.match.distance", 200);
+        	}
         }
     	
     	protected void reduce(TextIntPair key, Iterable<Text> values, Context context)
@@ -107,14 +115,25 @@ public class TopMatches extends Configured implements Tool {
     		srcEntityId  = key.getFirst().toString();
     		count = 0;
         	for (Text value : values){
-        		outVal.set(srcEntityId + "," + value.toString());
-				context.write(NullWritable.get(), outVal);
-        		if (++count == topMatchCount){
-        			break;
-        		}
+        		//count based neighbor
+				if (nearestByCount) {
+	        		outVal.set(srcEntityId + "," + value.toString());
+					context.write(NullWritable.get(), outVal);
+	        		if (++count == topMatchCount){
+	        			break;
+	        		}
+				} else {
+					//distance based neighbor
+					distance =Integer.parseInt( value.toString().split(",")[2]);
+					if (distance  <=  topMatchDistance ) {
+		        		outVal.set(srcEntityId + "," + value.toString());
+						context.write(NullWritable.get(), outVal);
+					} else {
+						break;
+					}
+				}
         	}    		
     	}
-    	
     }
 	
     public static class IdRankPartitioner extends Partitioner<TextIntPair, Text> {
