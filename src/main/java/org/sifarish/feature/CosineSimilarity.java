@@ -21,7 +21,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
 
-public class CosineSimilarity  extends TextSimilarityStrategy{
+public class CosineSimilarity  extends DynamicAttrSimilarityStrategy{
 	private Map<String, int[]> countVec = new HashMap<String, int[]>();
 
 	@Override
@@ -29,8 +29,8 @@ public class CosineSimilarity  extends TextSimilarityStrategy{
 		double distance = 1.0;
 		countVec.clear();
 		
-		String[] srcTerms = src.split("\\s+");
-		String[] trgTerms = target.split("\\s+");
+		String[] srcTerms = src.split(fieldDelimRegex);
+		String[] trgTerms = target.split(fieldDelimRegex);
 		
 		//count vectors
 		for (String srcTerm  :  srcTerms){
@@ -40,7 +40,7 @@ public class CosineSimilarity  extends TextSimilarityStrategy{
 				 vec[0] = vec[1] = 0;
 				 countVec.put(srcTerm, vec);
 			 }
-			 vec[0] += 1;
+			 vec[0] = isBooleanVec ?  1 :  vec[0] + 1;
 		}
 		
 		for (String trgTerm  :  trgTerms){
@@ -50,7 +50,7 @@ public class CosineSimilarity  extends TextSimilarityStrategy{
 				 vec[0] = vec[1] = 0;
 				 countVec.put(trgTerm, vec);
 			 }
-			 vec[1] += 1;
+			 vec[1] = isBooleanVec ?  1 :  vec[1] + 1;
 		}
 		
 		//distance

@@ -93,8 +93,8 @@ public class TypeSchema {
 		return distStrategy;
 	}
 	
-	public TextSimilarityStrategy createTextSimilarityStrategy() {
-		TextSimilarityStrategy  textSimStrategy = null;
+	public DynamicAttrSimilarityStrategy createTextSimilarityStrategy() {
+		DynamicAttrSimilarityStrategy  textSimStrategy = null;
 		if (textMatchingAlgorithm.equals("jaccard")){
 			textSimStrategy = new JaccardSimilarity(srcNonMatchingTermWeight, trgNonMatchingTermWeight);
 		} else if (textMatchingAlgorithm.equals("cosine")){

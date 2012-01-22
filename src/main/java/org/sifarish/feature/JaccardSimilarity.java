@@ -17,7 +17,7 @@
 
 package org.sifarish.feature;
 
-public class JaccardSimilarity extends TextSimilarityStrategy {
+public class JaccardSimilarity extends DynamicAttrSimilarityStrategy {
 	private double srcNonMatchingTermWeight;
 	private double trgNonMatchingTermWeight;
 
@@ -33,8 +33,8 @@ public class JaccardSimilarity extends TextSimilarityStrategy {
 	public double findDistance(String src, String target) {
 		double distance = 1.0;
 		
-		String[] srcTerms = src.split("\\s+");
-		String[] trgTerms = target.split("\\s+");
+		String[] srcTerms = src.split(fieldDelimRegex);
+		String[] trgTerms = target.split(fieldDelimRegex);
 		
 		int matchCount = 0;
 		for (String srcTerm : srcTerms) {

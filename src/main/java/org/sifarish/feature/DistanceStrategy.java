@@ -53,4 +53,5 @@ public abstract class DistanceStrategy {
 	public void setPower(double power) {
 		this.power = power;
 	}
+
 }

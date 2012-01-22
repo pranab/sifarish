@@ -161,7 +161,7 @@ public class DiffTypeSimilarity  extends Configured implements Tool {
         private boolean prntDetail;
         private DistanceStrategy distStrategy;
         private String fieldDelimRegex;
-        private TextSimilarityStrategy textSimStrategy;
+        private DynamicAttrSimilarityStrategy textSimStrategy;
         private boolean outputVerbose;
  
         protected void setup(Context context) throws IOException, InterruptedException {

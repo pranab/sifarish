@@ -50,6 +50,13 @@ import org.sifarish.util.Utility;
 
 
 
+/**
+ * Mapreduce for finding similarities between same type of entities with fixed set of attributes. For example, 
+ * products   where the attributes are the different product features
+ *  
+ * @author pranab
+ *
+ */
 public class SameTypeSimilarity  extends Configured implements Tool {
     @Override
     public int run(String[] args) throws Exception {
@@ -151,7 +158,7 @@ public class SameTypeSimilarity  extends Configured implements Tool {
         private String fieldDelimRegex;
         private int scale;
         private DistanceStrategy distStrategy;
-        private TextSimilarityStrategy textSimStrategy;
+        private DynamicAttrSimilarityStrategy textSimStrategy;
       
     	protected void setup(Context context) throws IOException, InterruptedException {
 			Configuration conf = context.getConfiguration();
