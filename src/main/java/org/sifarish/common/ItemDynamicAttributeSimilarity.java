@@ -30,16 +30,20 @@ import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.io.Text;
+import org.apache.hadoop.io.WritableComparable;
+import org.apache.hadoop.io.WritableComparator;
 import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.mapreduce.Mapper;
+import org.apache.hadoop.mapreduce.Partitioner;
 import org.apache.hadoop.mapreduce.Reducer;
 import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 import org.apache.hadoop.util.Tool;
+import org.apache.hadoop.util.ToolRunner;
 import org.chombo.util.Tuple;
 import org.sifarish.feature.DynamicAttrSimilarityStrategy;
-import org.sifarish.feature.SameTypeSimilarity.IdPairGroupComprator;
-import org.sifarish.feature.SameTypeSimilarity.IdPairPartitioner;
+import org.sifarish.feature.SameTypeSimilarity;
+import org.sifarish.feature.TextIntInt;
 import  org.chombo.util.Utility;
 
 /**
@@ -54,7 +58,7 @@ public class ItemDynamicAttributeSimilarity  extends Configured implements Tool{
     @Override
     public int run(String[] args) throws Exception   {
         Job job = new Job(getConf());
-        String jobName = "Item user popularity based similarity MR";
+        String jobName = "Item with dynamic attribute  similarity MR";
         job.setJobName(jobName);
         
         job.setJarByClass(ItemDynamicAttributeSimilarity.class);
@@ -108,6 +112,7 @@ public class ItemDynamicAttributeSimilarity  extends Configured implements Tool{
     		hash = (itemID.hashCode() %  bucketCount  + bucketCount) / 2 ;
 
     		for (int i = 0; i < bucketCount;  ++i) {
+    			keyHolder.initialize();
     			if (i < hash){
        				hashPair = hash * hashPairMult +  i;
        				keyHolder.add(hashPair);
@@ -141,12 +146,12 @@ public class ItemDynamicAttributeSimilarity  extends Configured implements Tool{
         	fieldDelimRegex = context.getConfiguration().get("field.delim.regex", "\\[\\]");
         	delimLength =  fieldDelim.length();
         	hashPairMult = context.getConfiguration().getInt("hash.pair.multiplier", 1000);
-        	hashPairMult = context.getConfiguration().getInt("hash.pair.multiplier", 1000);
         	String simAlgorithm = context.getConfiguration().get("similarity.algorithm", "cosine");
         	
         	Map<String, Object> params = new HashMap<String, Object>();
         	simStrategy = DynamicAttrSimilarityStrategy.createSimilarityStrategy(simAlgorithm, params);
         	simStrategy.setFieldDelimRegex(fieldDelimRegex);
+        	simStrategy.setBooleanVec(true);
            	scale = context.getConfiguration().getInt("distance.scale", 1000);
           }    
 
@@ -202,4 +207,35 @@ public class ItemDynamicAttributeSimilarity  extends Configured implements Tool{
         
     }
     
+    public static class IdPairPartitioner extends Partitioner<Tuple, Text> {
+	     @Override
+	     public int getPartition(Tuple key, Text value, int numPartitions) {
+	    	 //consider only base part of  key
+		     return ((Integer)key.get(0)).hashCode() % numPartitions;
+	     }
+  
+  }
+
+    
+    public static class IdPairGroupComprator extends WritableComparator {
+    	protected IdPairGroupComprator() {
+    		super(Tuple.class, true);
+    	}
+
+    	@Override
+    	public int compare(WritableComparable w1, WritableComparable w2) {
+    		//consider only the base part of the key
+    		Tuple t1 = (Tuple)w1;
+    		Tuple t2 = (Tuple)w2;
+    		
+    		int comp =((Integer)t1.get(0)).compareTo((Integer)t2.get(0));
+    		return comp;
+    	}
+     }
+  
+    public static void main(String[] args) throws Exception {
+        int exitCode = ToolRunner.run(new ItemDynamicAttributeSimilarity(), args);
+        System.exit(exitCode);
+    }
+
 }

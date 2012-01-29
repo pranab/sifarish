@@ -33,25 +33,8 @@ public class CosineSimilarity  extends DynamicAttrSimilarityStrategy{
 		String[] trgTerms = target.split(fieldDelimRegex);
 		
 		//count vectors
-		for (String srcTerm  :  srcTerms){
-			 int[] vec = countVec.get(srcTerm);
-			 if (null == vec) {
-				 vec = new int[2];
-				 vec[0] = vec[1] = 0;
-				 countVec.put(srcTerm, vec);
-			 }
-			 vec[0] = isBooleanVec ?  1 :  vec[0] + 1;
-		}
-		
-		for (String trgTerm  :  trgTerms){
-			 int[] vec = countVec.get(trgTerm);
-			 if (null == vec) {
-				 vec = new int[2];
-				 vec[0] = vec[1] = 0;
-				 countVec.put(trgTerm, vec);
-			 }
-			 vec[1] = isBooleanVec ?  1 :  vec[1] + 1;
-		}
+		initVector(srcTerms, 0);
+		initVector(trgTerms, 1);
 		
 		//distance
 		int crossProd = 0;
@@ -66,6 +49,28 @@ public class CosineSimilarity  extends DynamicAttrSimilarityStrategy{
 		}
 		distance = ((double)crossProd) /( Math.sqrt(srcSqSum) * Math.sqrt(trgSqSum));
 		return distance;
+	}
+	
+	private void initVector(String[] terms, int which) {
+		String attr;
+		int count = 0;
+		for (String term  : terms){
+			term = term.trim();
+			if (isCountIncluded){
+				String[] items = term.split(":");
+				term = items[0];
+				count = Integer.parseInt(items[1]);
+			} 
+			
+			 int[] vec = countVec.get(term);
+			 if (null == vec) {
+				 vec = new int[2];
+				 vec[0] = vec[1] = 0;
+				 countVec.put(term, vec);
+			 }
+			 vec[which] = isBooleanVec ?  1 : ( isCountIncluded? count : vec[which] + 1);
+		}
+		
 	}
 
 }
