@@ -31,13 +31,13 @@ import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.mapreduce.Mapper;
 import org.apache.hadoop.mapreduce.Partitioner;
 import org.apache.hadoop.mapreduce.Reducer;
-//import org.apache.hadoop.mapreduce.Mapper.Context;
 import org.apache.hadoop.mapreduce.Mapper.Context;
 import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 import org.apache.hadoop.util.Tool;
 import org.apache.hadoop.util.ToolRunner;
-import org.sifarish.util.Utility;
+import org.chombo.util.TextInt;
+import org.chombo.util.Utility;
 
 public class TopMatches extends Configured implements Tool {
 
@@ -55,7 +55,7 @@ public class TopMatches extends Configured implements Tool {
         job.setMapperClass(TopMatches.TopMatchesMapper.class);
         job.setReducerClass(TopMatches.TopMatchesReducer.class);
         
-        job.setMapOutputKeyClass(TextIntPair.class);
+        job.setMapOutputKeyClass(TextInt.class);
         job.setMapOutputValueClass(Text.class);
 
         job.setOutputKeyClass(NullWritable.class);
@@ -72,27 +72,34 @@ public class TopMatches extends Configured implements Tool {
         return status;
 	}
 	
-	public static class TopMatchesMapper extends Mapper<LongWritable, Text, TextIntPair, Text> {
+	public static class TopMatchesMapper extends Mapper<LongWritable, Text, TextInt, Text> {
 		private String srcEntityId;
 		private String trgEntityId;
 		private int rank;
-		private TextIntPair outKey = new TextIntPair();
+		private TextInt outKey = new TextInt();
 		private Text outVal = new Text();
+        private String fieldDelimRegex;
+        private String fieldDelim;
+
+        protected void setup(Context context) throws IOException, InterruptedException {
+           	fieldDelim = context.getConfiguration().get("field.delim", "\\[\\]");
+            fieldDelimRegex = context.getConfiguration().get("field.delim.regex", "\\[\\]");
+        }    
 
         @Override
         protected void map(LongWritable key, Text value, Context context)
             throws IOException, InterruptedException {
-            String[] items  =  value.toString().split(",");
+            String[] items  =  value.toString().split(fieldDelimRegex);
             srcEntityId = items[0];
             trgEntityId = items[1];
             rank = Integer.parseInt(items[items.length - 1]);
             outKey.set(srcEntityId, rank);
-            outVal.set(trgEntityId + "," + items[items.length - 1]);
+            outVal.set(trgEntityId + fieldDelim + items[items.length - 1]);
 			context.write(outKey, outVal);
         }
 	}
 	
-    public static class TopMatchesReducer extends Reducer<TextIntPair, Text, NullWritable, Text> {
+    public static class TopMatchesReducer extends Reducer<TextInt, Text, NullWritable, Text> {
     	private boolean nearestByCount;
     	private int topMatchCount;
     	private int topMatchDistance;
@@ -100,8 +107,10 @@ public class TopMatches extends Configured implements Tool {
 		private int count;
 		private int distance;
 		private Text outVal = new Text();
+        private String fieldDelim;
     	
         protected void setup(Context context) throws IOException, InterruptedException {
+           	fieldDelim = context.getConfiguration().get("field.delim", "\\[\\]");
         	nearestByCount = context.getConfiguration().getBoolean("nearest.by.count", true);
         	if (nearestByCount) {
         		topMatchCount = context.getConfiguration().getInt("top.match.count", 10);
@@ -110,14 +119,14 @@ public class TopMatches extends Configured implements Tool {
         	}
         }
     	
-    	protected void reduce(TextIntPair key, Iterable<Text> values, Context context)
+    	protected void reduce(TextInt key, Iterable<Text> values, Context context)
         	throws IOException, InterruptedException {
     		srcEntityId  = key.getFirst().toString();
     		count = 0;
         	for (Text value : values){
         		//count based neighbor
 				if (nearestByCount) {
-	        		outVal.set(srcEntityId + "," + value.toString());
+	        		outVal.set(srcEntityId +fieldDelim + value.toString());
 					context.write(NullWritable.get(), outVal);
 	        		if (++count == topMatchCount){
 	        			break;
@@ -136,9 +145,9 @@ public class TopMatches extends Configured implements Tool {
     	}
     }
 	
-    public static class IdRankPartitioner extends Partitioner<TextIntPair, Text> {
+    public static class IdRankPartitioner extends Partitioner<TextInt, Text> {
 	     @Override
-	     public int getPartition(TextIntPair key, Text value, int numPartitions) {
+	     public int getPartition(TextInt key, Text value, int numPartitions) {
 	    	 //consider only base part of  key
 		     Text id = key.getFirst();
 		     return id.hashCode() % numPartitions;
@@ -147,14 +156,14 @@ public class TopMatches extends Configured implements Tool {
     
     public static class IdRankGroupComprator extends WritableComparator {
     	protected IdRankGroupComprator() {
-    		super(TextIntPair.class, true);
+    		super(TextInt.class, true);
     	}
 
     	@Override
     	public int compare(WritableComparable w1, WritableComparable w2) {
     		//consider only the base part of the key
-    		Text t1 = ((TextIntPair)w1).getFirst();
-    		Text t2 = ((TextIntPair)w2).getFirst();
+    		Text t1 = ((TextInt)w1).getFirst();
+    		Text t2 = ((TextInt)w2).getFirst();
     		
     		int comp = t1.compareTo(t2);
     		return comp;

@@ -76,6 +76,10 @@ public class TextIntPair implements WritableComparable<TextIntPair> {
 		return first.hashCode() * 163 + second.hashCode();
 	}
 	
+	public int baseHashCode() {
+		return first.hashCode();
+	}
+
 	public boolean equals(Object obj) {
 		boolean isEqual =  false;
 		if (obj instanceof TextIntPair) {

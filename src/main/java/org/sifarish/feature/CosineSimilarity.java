@@ -48,6 +48,11 @@ public class CosineSimilarity  extends DynamicAttrSimilarityStrategy{
 			trgSqSum += val[1] * val[1];
 		}
 		distance = ((double)crossProd) /( Math.sqrt(srcSqSum) * Math.sqrt(trgSqSum));
+		if (distance > 0) {
+			System.out.println("source:" + src);
+			System.out.println("target:" + target);
+			System.out.println("distance: " + distance);
+		}
 		return distance;
 	}
 	

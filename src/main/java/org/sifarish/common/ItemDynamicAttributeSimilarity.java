@@ -20,10 +20,8 @@ package org.sifarish.common;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import org.apache.hadoop.conf.Configured;
 import org.apache.hadoop.fs.Path;
@@ -40,11 +38,9 @@ import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 import org.apache.hadoop.util.Tool;
 import org.apache.hadoop.util.ToolRunner;
-import org.chombo.util.Tuple;
+import org.chombo.util.IntPair;
+import org.chombo.util.Utility;
 import org.sifarish.feature.DynamicAttrSimilarityStrategy;
-import org.sifarish.feature.SameTypeSimilarity;
-import org.sifarish.feature.TextIntInt;
-import  org.chombo.util.Utility;
 
 /**
  * Mapreduce for finding similarities between items with dynamic set of attributes. For example,  products 
@@ -69,7 +65,7 @@ public class ItemDynamicAttributeSimilarity  extends Configured implements Tool{
         job.setMapperClass(ItemDynamicAttributeSimilarity.SimilarityMapper.class);
         job.setReducerClass(ItemDynamicAttributeSimilarity.SimilarityReducer.class);
         
-        job.setMapOutputKeyClass(Tuple.class);
+        job.setMapOutputKeyClass(IntPair.class);
         job.setMapOutputValueClass(Text.class);
 
         job.setOutputKeyClass(NullWritable.class);
@@ -86,7 +82,7 @@ public class ItemDynamicAttributeSimilarity  extends Configured implements Tool{
         return status;
     }
 
-    public static class SimilarityMapper extends Mapper<LongWritable, Text, Tuple, Text> {
+    public static class SimilarityMapper extends Mapper<LongWritable, Text, IntPair, Text> {
         private int bucketCount;
         private int hash;
         private String fieldDelimRegex;
@@ -94,10 +90,9 @@ public class ItemDynamicAttributeSimilarity  extends Configured implements Tool{
         private Integer one = 1;
         private Integer zero = 0;
         private String itemID;
-        private Tuple keyHolder = new Tuple();
+        private IntPair keyHolder = new IntPair();
         private Text valueHolder = new Text();
         private int hashPairMult;
-        private String[] parts = new String[2];
     	
         protected void setup(Context context) throws IOException, InterruptedException {
         	bucketCount = context.getConfiguration().getInt("bucket.count", 10);
@@ -112,32 +107,29 @@ public class ItemDynamicAttributeSimilarity  extends Configured implements Tool{
     		hash = (itemID.hashCode() %  bucketCount  + bucketCount) / 2 ;
 
     		for (int i = 0; i < bucketCount;  ++i) {
-    			keyHolder.initialize();
     			if (i < hash){
        				hashPair = hash * hashPairMult +  i;
-       				keyHolder.add(hashPair);
-       				keyHolder.add(zero);
+       				keyHolder.set(hashPair, zero);
        				valueHolder.set("0" + value.toString());
        	   		 } else {
     				hashPair =  i * hashPairMult  +  hash;
-       				keyHolder.add(hashPair);
-       				keyHolder.add(one);
+       				keyHolder.set(hashPair, one);
        				valueHolder.set("1" + value.toString());
     			} 
+    			//System.out.println("mapper hashPair: " + hashPair);
    	   			context.write(keyHolder, valueHolder);
     		}
         }
              
     }
     
-    public static class SimilarityReducer extends Reducer<Tuple, Text, NullWritable, Text> {
+    public static class SimilarityReducer extends Reducer<IntPair, Text, NullWritable, Text> {
         private Text valueHolder = new Text();
         private String fieldDelim;
     	private String fieldDelimRegex;
         private int delimLength;
         private int hashPairMult;
         private List<String[]> valueList = new ArrayList<String[]>();
-        private String[] parts = new String[2];
         private DynamicAttrSimilarityStrategy simStrategy;
         private int scale;
         
@@ -155,16 +147,20 @@ public class ItemDynamicAttributeSimilarity  extends Configured implements Tool{
            	scale = context.getConfiguration().getInt("distance.scale", 1000);
           }    
 
-        protected void reduce(Tuple  key, Iterable<Text> values, Context context)
+        protected void reduce(IntPair  key, Iterable<Text> values, Context context)
         throws IOException, InterruptedException {
         	double dist = 0;
         	valueList.clear();
-        	int firstPart = (Integer)key.get(0);
+        	int firstPart = key.getFirst().get();
+        	System.out.println("hashPair: " + firstPart);
         	if (firstPart / hashPairMult == firstPart % hashPairMult){
         		//same hash bucket
+    			context.getCounter("Reducer", "Same  Bucket Count").increment(1);
+    			System.out.println("**same bucket");
+    			
 	        	for (Text value : values){
 	        		String valSt = value.toString();
-        			splitKey(valSt.substring(1));
+        			String[] parts = splitKey(valSt.substring(1));
         			valueList.add(parts);
 	        	}   
 	        	
@@ -172,25 +168,31 @@ public class ItemDynamicAttributeSimilarity  extends Configured implements Tool{
 	        		String[] firstParts = valueList.get(i);
 	        		for (int j = i+1;  j < valueList.size();  ++j) {
 		        		String[] secondParts = valueList.get(j);
-        				dist = simStrategy.findDistance(firstParts[1], secondParts[1]) * scale;
+        				dist = ( 1.0 - simStrategy.findDistance(firstParts[1], secondParts[1]))  * scale;
+        				dist = dist < 0.0 ? 0.0 : dist;
 	   					valueHolder.set(firstParts[0] + fieldDelim + secondParts[0] + fieldDelim + (int)dist);
+	   	    			context.getCounter("Reducer", "Emit").increment(1);
 	   					context.write(NullWritable.get(), valueHolder);
 	        		}
 	        	}
         	} else {
         		//different hash bucket
+    			context.getCounter("Reducer", "Diff Bucket Count").increment(1);
+    			System.out.println("**diff  bucket");
 	        	for (Text value : values){
 	        		String valSt = value.toString();
 	        		if (valSt.startsWith("0")) {
-	        			splitKey(valSt.substring(1));
+	        			String[] parts = splitKey(valSt.substring(1));
 	        			valueList.add(parts);
 	        		} else {
-	        			splitKey(valSt.substring(1));
+	        			String[] parts = splitKey(valSt.substring(1));
 	        			
 	        			//match with all items of first set
 	        			for (String[] firstParts : valueList) {
-	        				dist = simStrategy.findDistance(firstParts[1], parts[1]) * scale;
+	        				dist = (1.0 - simStrategy.findDistance(firstParts[1], parts[1])) * scale;
+	        				dist = dist < 0.0 ? 0.0 : dist;
 		   					valueHolder.set(firstParts[0] + fieldDelim + parts[0] + fieldDelim + (int)dist);
+		   	    			context.getCounter("Reducer", "Emit").increment(1);
 		   					context.write(NullWritable.get(), valueHolder);
 	        			}
 	        		}
@@ -199,19 +201,21 @@ public class ItemDynamicAttributeSimilarity  extends Configured implements Tool{
        	
         }
         
-        private void  splitKey(String val) {
+        private String[]   splitKey(String val) {
+        	String[] parts = new String[2];
         	int pos = val.indexOf(fieldDelim);
-        	parts[0] = val.substring(0, pos-1);
+        	parts[0] = val.substring(0, pos);
         	parts[1] = val.substring( pos +delimLength);
+        	return parts;
         }
         
     }
     
-    public static class IdPairPartitioner extends Partitioner<Tuple, Text> {
+    public static class IdPairPartitioner extends Partitioner<IntPair, Text> {
 	     @Override
-	     public int getPartition(Tuple key, Text value, int numPartitions) {
+	     public int getPartition(IntPair key, Text value, int numPartitions) {
 	    	 //consider only base part of  key
-		     return ((Integer)key.get(0)).hashCode() % numPartitions;
+		     return key.baseHashCode() % numPartitions;
 	     }
   
   }
@@ -219,16 +223,16 @@ public class ItemDynamicAttributeSimilarity  extends Configured implements Tool{
     
     public static class IdPairGroupComprator extends WritableComparator {
     	protected IdPairGroupComprator() {
-    		super(Tuple.class, true);
+    		super(IntPair.class, true);
     	}
 
     	@Override
     	public int compare(WritableComparable w1, WritableComparable w2) {
     		//consider only the base part of the key
-    		Tuple t1 = (Tuple)w1;
-    		Tuple t2 = (Tuple)w2;
+    		IntPair t1 = (IntPair)w1;
+    		IntPair t2 = (IntPair)w2;
     		
-    		int comp =((Integer)t1.get(0)).compareTo((Integer)t2.get(0));
+    		int comp =t1.getFirst().compareTo(t2.getFirst());
     		return comp;
     	}
      }
