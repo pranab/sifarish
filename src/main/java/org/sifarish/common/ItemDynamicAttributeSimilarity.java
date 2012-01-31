@@ -152,11 +152,11 @@ public class ItemDynamicAttributeSimilarity  extends Configured implements Tool{
         	double dist = 0;
         	valueList.clear();
         	int firstPart = key.getFirst().get();
-        	System.out.println("hashPair: " + firstPart);
+        	//System.out.println("hashPair: " + firstPart);
         	if (firstPart / hashPairMult == firstPart % hashPairMult){
         		//same hash bucket
     			context.getCounter("Reducer", "Same  Bucket Count").increment(1);
-    			System.out.println("**same bucket");
+    			//System.out.println("**same bucket");
     			
 	        	for (Text value : values){
 	        		String valSt = value.toString();
@@ -178,7 +178,7 @@ public class ItemDynamicAttributeSimilarity  extends Configured implements Tool{
         	} else {
         		//different hash bucket
     			context.getCounter("Reducer", "Diff Bucket Count").increment(1);
-    			System.out.println("**diff  bucket");
+    			//System.out.println("**diff  bucket");
 	        	for (Text value : values){
 	        		String valSt = value.toString();
 	        		if (valSt.startsWith("0")) {
