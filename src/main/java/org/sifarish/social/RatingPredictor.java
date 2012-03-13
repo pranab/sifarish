@@ -27,8 +27,11 @@ import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.io.Text;
+import org.apache.hadoop.io.WritableComparable;
+import org.apache.hadoop.io.WritableComparator;
 import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.mapreduce.Mapper;
+import org.apache.hadoop.mapreduce.Partitioner;
 import org.apache.hadoop.mapreduce.Reducer;
 import org.apache.hadoop.mapreduce.Mapper.Context;
 import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
@@ -39,6 +42,8 @@ import org.chombo.util.TextPair;
 import org.chombo.util.Tuple;
 import org.chombo.util.Utility;
 import org.sifarish.feature.TextIntPair;
+import org.sifarish.feature.DiffTypeSimilarity.IdPairGroupComprator;
+import org.sifarish.feature.DiffTypeSimilarity.IdPairPartitioner;
 import org.apache.hadoop.mapred.FileSplit;
 
 /**
@@ -67,6 +72,9 @@ public class RatingPredictor extends Configured implements Tool{
         job.setOutputKeyClass(NullWritable.class);
         job.setOutputValueClass(Text.class);
  
+        job.setGroupingComparatorClass(ItemIdGroupComprator.class);
+        job.setPartitionerClass(ItemIdPartitioner.class);
+
         Utility.setConfiguration(job.getConfiguration());
         job.setNumReduceTasks(job.getConfiguration().getInt("num.reducer", 1));
         int status =  job.waitForCompletion(true) ? 0 : 1;
@@ -148,5 +156,28 @@ public class RatingPredictor extends Configured implements Tool{
            	}        	
         }
     }
+    
+    public static class ItemIdPartitioner extends Partitioner<TextInt, Tuple> {
+	     @Override
+	     public int getPartition(TextInt key, Tuple value, int numPartitions) {
+	    	 //consider only base part of  key
+		     return key.baseHashCode()% numPartitions;
+	     }
+   
+   }
+
+    public static class ItemIdGroupComprator extends WritableComparator {
+    	protected ItemIdGroupComprator() {
+    		super(TextInt.class, true);
+    	}
+
+    	@Override
+    	public int compare(WritableComparable w1, WritableComparable w2) {
+    		//consider only the base part of the key
+    		TextInt t1 = ((TextInt)w1);
+    		TextInt t2 = ((TextInt)w2);
+    		return t1.baseCompareTo(t2);
+    	}
+     }
     
 }
