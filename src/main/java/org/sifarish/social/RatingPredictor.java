@@ -23,28 +23,22 @@ import java.util.List;
 
 import org.apache.hadoop.conf.Configured;
 import org.apache.hadoop.fs.Path;
-import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.io.WritableComparable;
 import org.apache.hadoop.io.WritableComparator;
+import org.apache.hadoop.mapred.FileSplit;
 import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.mapreduce.Mapper;
 import org.apache.hadoop.mapreduce.Partitioner;
 import org.apache.hadoop.mapreduce.Reducer;
-import org.apache.hadoop.mapreduce.Mapper.Context;
 import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 import org.apache.hadoop.util.Tool;
 import org.chombo.util.TextInt;
-import org.chombo.util.TextPair;
 import org.chombo.util.Tuple;
 import org.chombo.util.Utility;
-import org.sifarish.feature.TextIntPair;
-import org.sifarish.feature.DiffTypeSimilarity.IdPairGroupComprator;
-import org.sifarish.feature.DiffTypeSimilarity.IdPairPartitioner;
-import org.apache.hadoop.mapred.FileSplit;
 
 /**
  * Predicts rating for an user and item. 2nd MR for slope one recommender
@@ -141,16 +135,18 @@ public class RatingPredictor extends Configured implements Tool{
            		if ( ((Integer)value.get(value.getSize()-1)) == 0) {
            			avRatingDiffs.add(value);
            		} else {
-           			String userID = value.getString(0);
-           			int rating = value.getInt(1);
-           			
-           			for (Tuple  ratingDiffTup : avRatingDiffs) {
-           				String itemID = ratingDiffTup.getString(0);
-           				int ratingDiff = ratingDiffTup.getInt(1);
-           				int weight = ratingDiffTup.getInt(2);
-           				
-           				valueOut.set(userID + fieldDelim + itemID + fieldDelim + (rating+ratingDiff) + fieldDelim + weight);
-           		   		context.write(NullWritable.get(), valueOut);
+           			if (!avRatingDiffs.isEmpty()) {
+	           			String userID = value.getString(0);
+	           			int rating = value.getInt(1);
+	           			
+	           			for (Tuple  ratingDiffTup : avRatingDiffs) {
+	           				String itemID = ratingDiffTup.getString(0);
+	           				int ratingDiff = ratingDiffTup.getInt(1);
+	           				int weight = ratingDiffTup.getInt(2);
+	           				
+	           				valueOut.set(userID + fieldDelim + itemID + fieldDelim + (rating+ratingDiff) + fieldDelim + weight);
+	           		   		context.write(NullWritable.get(), valueOut);
+	           			}
            			}
            		}
            	}        	
