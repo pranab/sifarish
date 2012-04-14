@@ -81,3 +81,12 @@ OR
 
 1. Use collaborative filtering recommender (not implemented yet)
 
+Configuration
+=============
+Put all config in a properties and pass it to Hadoop as below in your shell script
+-Dconf.path=/my/config/path/config.properties
+
+The properties file should have all the config values. There are some samples in the resource 
+directory
+
+
