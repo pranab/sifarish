@@ -33,6 +33,7 @@ import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.io.WritableComparable;
 import org.apache.hadoop.io.WritableComparator;
+import org.apache.hadoop.mapred.FileSplit;
 import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.mapreduce.Mapper;
 import org.apache.hadoop.mapreduce.Partitioner;
@@ -97,11 +98,18 @@ public class DiffTypeSimilarity  extends Configured implements Tool {
         private long hash;
         private int idOrdinal;
         private String fieldDelimRegex;
+        private boolean identifyWithFilePrefix;
+        private Entity entity;
+        private int filePrefixLength;
        
         protected void setup(Context context) throws IOException, InterruptedException {
         	bucketCount = context.getConfiguration().getInt("bucket.count", 1000);
         	fieldDelimRegex = context.getConfiguration().get("field.delim.regex", "\\[\\]");
-            
+        	identifyWithFilePrefix = context.getConfiguration().getBoolean("identify.with.file.prefix", false);
+        	if (identifyWithFilePrefix) {
+        		filePrefixLength = Integer.parseInt(context.getConfiguration().get("file.prefix.length"));
+        	}
+        	
 			Configuration conf = context.getConfiguration();
             String filePath = conf.get("schema.file.path");
             FileSystem dfs = FileSystem.get(conf);
@@ -118,9 +126,19 @@ public class DiffTypeSimilarity  extends Configured implements Tool {
         protected void map(LongWritable key, Text value, Context context)
             throws IOException, InterruptedException {
             String[] items  =  value.toString().split(fieldDelimRegex);
-            Entity entity = schema.getEntityBySize(items.length);
-            if (null != entity){
+            
+            if (null == entity) {
+            	if (identifyWithFilePrefix) {
+            		FileSplit fileInpSplit = (FileSplit)context.getInputSplit();
+            		String filePrefix = fileInpSplit.getPath().getName().substring(0, filePrefixLength);
+            		entity = schema.getEntityByFilePrefix(filePrefix);
+            	} else {
+            		entity = schema.getEntityBySize(items.length);
+            	}
         		idOrdinal = entity.getIdField().getOrdinal();
+            }
+
+            if (null != entity){
         		hash = items[idOrdinal].hashCode() %  bucketCount;
             	if (entity.getType() == 0){
             		for (int i = 0; i < bucketCount; ++i) {

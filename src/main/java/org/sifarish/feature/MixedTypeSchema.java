@@ -46,6 +46,18 @@ public class MixedTypeSchema  extends TypeSchema {
 		return entity;
 	}
 
+	public Entity getEntityByFilePrefix(String filePrefix) {
+		Entity entity = null;
+		for (Entity thisEntity : entities) {
+			if (thisEntity.getFilePrefix().equals(filePrefix)){
+				entity = thisEntity;
+				break;
+			}
+		}
+		
+		return entity;
+	}
+
 	public Entity getEntityByType(int type) {
 		Entity entity = null;
 		for (Entity thisEntity : entities) {

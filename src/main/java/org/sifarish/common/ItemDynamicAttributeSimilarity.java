@@ -103,6 +103,7 @@ public class ItemDynamicAttributeSimilarity  extends Configured implements Tool{
         @Override
         protected void map(LongWritable key, Text value, Context context)
             throws IOException, InterruptedException {
+        	//first token is nitem ID and the rest list of userID
         	itemID  =  value.toString().split(fieldDelimRegex)[0];
     		hash = (itemID.hashCode() %  bucketCount  + bucketCount) / 2 ;
 
@@ -168,8 +169,11 @@ public class ItemDynamicAttributeSimilarity  extends Configured implements Tool{
 	        		String[] firstParts = valueList.get(i);
 	        		for (int j = i+1;  j < valueList.size();  ++j) {
 		        		String[] secondParts = valueList.get(j);
+		        		//process 2 user vectors
         				dist = ( 1.0 - simStrategy.findDistance(firstParts[1], secondParts[1]))  * scale;
         				dist = dist < 0.0 ? 0.0 : dist;
+        				
+        				//2 items IDs followed by distance
 	   					valueHolder.set(firstParts[0] + fieldDelim + secondParts[0] + fieldDelim + (int)dist);
 	   	    			context.getCounter("Reducer", "Emit").increment(1);
 	   					context.write(NullWritable.get(), valueHolder);
@@ -189,8 +193,11 @@ public class ItemDynamicAttributeSimilarity  extends Configured implements Tool{
 	        			
 	        			//match with all items of first set
 	        			for (String[] firstParts : valueList) {
+	        				//process 2 user vectors
 	        				dist = (1.0 - simStrategy.findDistance(firstParts[1], parts[1])) * scale;
 	        				dist = dist < 0.0 ? 0.0 : dist;
+	        				
+	        				//2 item IDs followed by distance
 		   					valueHolder.set(firstParts[0] + fieldDelim + parts[0] + fieldDelim + (int)dist);
 		   	    			context.getCounter("Reducer", "Emit").increment(1);
 		   					context.write(NullWritable.get(), valueHolder);
@@ -204,7 +211,11 @@ public class ItemDynamicAttributeSimilarity  extends Configured implements Tool{
         private String[]   splitKey(String val) {
         	String[] parts = new String[2];
         	int pos = val.indexOf(fieldDelim);
+        	
+        	//itemID
         	parts[0] = val.substring(0, pos);
+        	
+        	//list of userID
         	parts[1] = val.substring( pos +delimLength);
         	return parts;
         }

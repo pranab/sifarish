@@ -24,6 +24,7 @@ public class Entity {
 	private String name;
 	private int type;
 	private int fieldCount;
+	private String filePrefix;
 	private List<Field> fields;
 	private List<FieldExtractor> fieldExtractors = new ArrayList<FieldExtractor>();
 	
@@ -47,6 +48,12 @@ public class Entity {
 		this.fieldCount = fieldCount;
 	}
 
+	public String getFilePrefix() {
+		return filePrefix;
+	}
+	public void setFilePrefix(String filePrefix) {
+		this.filePrefix = filePrefix;
+	}
 	public List<Field> getFields() {
 		return fields;
 	}
