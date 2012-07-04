@@ -24,6 +24,7 @@ public class Field {
 	private int ordinal = -1;
 	private boolean type;
 	private boolean id;
+	private boolean classAttribute;
 	private String dataType;
 	private int min;
 	private int max;
@@ -60,6 +61,12 @@ public class Field {
 	}
 	public void setId(boolean id) {
 		this.id = id;
+	}
+	public boolean isClassAttribute() {
+		return classAttribute;
+	}
+	public void setClassAttribute(boolean classAttribute) {
+		this.classAttribute = classAttribute;
 	}
 	public String getDataType() {
 		return dataType;

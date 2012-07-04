@@ -80,6 +80,17 @@ public class Entity {
 		return field;
 	}
 	
+	public Field getClassAttributeField() {
+		Field field = null;
+		for (Field thisField : fields) {
+			if (thisField.isClassAttribute()){
+				field = thisField;
+				break;
+			}
+		}
+		return field;
+	}
+	
 	public List<FieldExtractor> getExtractorsForField(int ordinal){
 		List<FieldExtractor> extractors =  new ArrayList<FieldExtractor>();
 		

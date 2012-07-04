@@ -93,6 +93,7 @@ public class DiffTypeSimilarity  extends Configured implements Tool {
     
     public static class SimilarityMapper extends Mapper<LongWritable, Text, LongWritable, Text> {
         private LongWritable keyHolder = new LongWritable();
+        private Text valueHolder = new Text();
         private MixedTypeSchema schema;
         private int bucketCount;
         private long hash;
@@ -140,15 +141,26 @@ public class DiffTypeSimilarity  extends Configured implements Tool {
 
             if (null != entity){
         		hash = items[idOrdinal].hashCode() %  bucketCount;
+        		hash = hash < 0 ?  -hash : hash;
             	if (entity.getType() == 0){
+            		if (identifyWithFilePrefix) {
+            			valueHolder.set ( "0," + value.toString());
+            		} else {
+            			valueHolder.set(value);
+            		}
             		for (int i = 0; i < bucketCount; ++i) {
             			keyHolder.set((hash * bucketCount + i) * 10);
-            			context.write(keyHolder, value);
+            			context.write(keyHolder, valueHolder);
             		}
             	} else {
+            		if (identifyWithFilePrefix) {
+            			valueHolder.set ( "1," + value.toString());
+            		} else {
+            			valueHolder.set(value);
+            		}
             		for (int i = 0; i < bucketCount; ++i) {
             			keyHolder.set(((i * bucketCount + hash ) * 10) + 1);
-            			context.write(keyHolder, value);
+            			context.write(keyHolder, valueHolder);
             		}
             	}
             } else {
@@ -166,6 +178,10 @@ public class DiffTypeSimilarity  extends Configured implements Tool {
         private int secondIdOrdinal;
         private String firstId;
         private String  secondId;
+        private int firstClassAttrOrdinal = -1;
+        private int secondClassAttrOrdinal = -1;
+        private String firstClassAttr;
+        private String secondClassAttr;
         private int sim;
         private List<Field> fields;
         private List<Field> targetFields;
@@ -179,8 +195,13 @@ public class DiffTypeSimilarity  extends Configured implements Tool {
         private boolean prntDetail;
         private DistanceStrategy distStrategy;
         private String fieldDelimRegex;
+        private String fieldDelim;
         private DynamicAttrSimilarityStrategy textSimStrategy;
         private boolean outputVerbose;
+        private boolean identifyWithFilePrefix;
+        private boolean firstType;
+        private String valueSt;
+        private String[] items;
  
         protected void setup(Context context) throws IOException, InterruptedException {
         	//load schema
@@ -195,14 +216,22 @@ public class DiffTypeSimilarity  extends Configured implements Tool {
         	firstTypeSize = schema.getEntityByType(0).getFieldCount();
         	firstIdOrdinal = schema.getEntityByType(0).getIdField().getOrdinal();
         	secondIdOrdinal = schema.getEntityByType(1).getIdField().getOrdinal();
+        	Field field = schema.getEntityByType(0).getClassAttributeField();
+        	if (null != field) {
+        		firstClassAttrOrdinal = field.getOrdinal();
+        		secondClassAttrOrdinal = schema.getEntityByType(0).getClassAttributeField().getOrdinal();
+        	}
+        	
         	fields = schema.getEntityByType(0).getFields();
         	targetFields = schema.getEntityByType(1).getFields();
         	scale = context.getConfiguration().getInt("distance.scale", 1000);
         	distStrategy = schema.createDistanceStrategy(scale);
         	fieldDelimRegex = context.getConfiguration().get("field.delim.regex", "\\[\\]");
+        	fieldDelim = context.getConfiguration().get("field.delim", ",");
         	textSimStrategy = schema.createTextSimilarityStrategy();
         	outputVerbose = context.getConfiguration().getBoolean("sim.output.verbose", true);
-        	
+           	identifyWithFilePrefix = context.getConfiguration().getBoolean("identify.with.file.prefix", false);
+                    	
         	System.out.println("firstTypeSize: " + firstTypeSize + " firstIdOrdinal:" +firstIdOrdinal + 
         			" secondIdOrdinal:" + secondIdOrdinal + " Source field count:" + fields.size() + 
         			" Target field count:" + targetFields.size());
@@ -214,22 +243,54 @@ public class DiffTypeSimilarity  extends Configured implements Tool {
         	srcCount = 0;
         	targetCount = 0;
         	simCount = 0;
+        	StringBuilder stBld = new  StringBuilder();
+        	
         	for (Text value : values){
         		String[] items = value.toString().split(fieldDelimRegex);
-        		if (items.length == firstTypeSize){
-        			firstTypeValues.add(value.toString());
+        		
+        		if ( identifyWithFilePrefix) {
+        			firstType = value.toString().startsWith("0");
+        			valueSt = value.toString().substring(2, value.toString().length());
+        		} else {
+        			firstType = items.length == firstTypeSize;
+        			valueSt = value.toString();
+        		}
+        		
+        		if (firstType){
+        			firstTypeValues.add(valueSt);
         			++srcCount;
         		} else {
-    				String second = value.toString();
-    				secondId = second.split(fieldDelimRegex)[secondIdOrdinal];
+    				String second = valueSt;
+    				items = second.split(fieldDelimRegex);
+    				secondId = items[secondIdOrdinal];
+    				if (secondClassAttrOrdinal >= 0) {
+    					secondClassAttr = items[secondClassAttrOrdinal];
+    				}
         			for (String first : firstTypeValues){
         				//prntDetail =  ++simResultCnt % 10000 == 0;
         				sim = findSimilarity(first, second, context);
-        				firstId = first.split(fieldDelimRegex)[firstIdOrdinal];
+        				items = first.split(fieldDelimRegex);
+        				firstId = items[firstIdOrdinal];
+           				if (firstClassAttrOrdinal >= 0) {
+           					firstClassAttr = items[firstClassAttrOrdinal];
+        				}
+            				
         				if (outputVerbose) {
-        					valueHolder.set(firstId + "," + second + "," + sim);
+        					if (firstClassAttrOrdinal > 0) {
+        						stBld.append(firstId).append(fieldDelim).append(firstClassAttr).append(fieldDelim).append(secondClassAttr).
+        							append(second).append(fieldDelim).append(sim);
+        					} else {
+        						stBld.append(firstId).append(fieldDelim).append(second).append(fieldDelim).append(sim);
+        					}
+        					valueHolder.set(stBld.toString());
         				} else {
-        					valueHolder.set(firstId + "," + secondId + "," + sim);
+        					if (firstClassAttrOrdinal > 0) {
+        						stBld.append(firstId).append(fieldDelim).append(secondId).append(fieldDelim).append(firstClassAttr).
+        							append(fieldDelim).append(secondClassAttr).append(sim);
+        					} else {
+        						stBld.append(firstId).append(fieldDelim).append(secondId).append(fieldDelim).append(sim);
+        					}
+        					valueHolder.set(stBld.toString());
         				}
         				context.write(NullWritable.get(), valueHolder);
         				++simCount;
