@@ -1,0 +1,77 @@
+{
+	"distAlgorithm" : "euclidean",
+	"numericDiffThreshold" : 0.20,
+	"entities" : 
+	[
+		{
+			"name" : "profile",
+			"type" : 0,
+			"fieldCount" : 5,
+			"filePrefix" : "train"
+			"fields" :
+			[
+				{
+					"name" : "referrer",
+					"ordinal" : 1,
+					"dataType" : "categorical",
+					"feature" : true
+				},
+				{
+					"name" : "count",
+					"ordinal" : 2,
+					"dataType" : "int",
+					"bucketWidth" : 1 ,
+					"feature" : true
+				},
+				{
+					"name" : "avTimeSpent",
+					"ordinal" : 4,
+					"dataType" : "int",
+					"bucketWidth" : 60,
+					"feature" : true
+				},
+				{
+					"name" : "status",
+					"ordinal" : 5,
+					"dataType" : "categorical",
+					"feature" : false
+				}
+			]
+		},
+		{
+			"name" : "loan",
+			"type" : 1,
+			"fieldCount" : 8,
+			"filePrefix" : "valid"
+			"fields" :
+			[
+				{
+					"name" : "referrer",
+					"ordinal" : 1,
+					"dataType" : "categorical",
+					"feature" : true
+				},
+				{
+					"name" : "count",
+					"ordinal" : 2,
+					"dataType" : "int",
+					"bucketWidth" : 1 ,
+					"feature" : true
+				},
+				{
+					"name" : "avTimeSpent",
+					"ordinal" : 4,
+					"dataType" : "int",
+					"bucketWidth" : 60,
+					"feature" : true
+				},
+				{
+					"name" : "status",
+					"ordinal" : 5,
+					"dataType" : "categorical",
+					"feature" : false
+				}
+			]
+		}
+	]
+}

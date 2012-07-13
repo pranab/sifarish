@@ -18,6 +18,8 @@
 package org.sifarish.feature;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.conf.Configured;
@@ -80,21 +82,32 @@ public class TopMatches extends Configured implements Tool {
 		private Text outVal = new Text();
         private String fieldDelimRegex;
         private String fieldDelim;
+        private boolean classify;
+        private String firstClassAttr;
+        private String secondClassAttr;
 
         protected void setup(Context context) throws IOException, InterruptedException {
            	fieldDelim = context.getConfiguration().get("field.delim", "\\[\\]");
             fieldDelimRegex = context.getConfiguration().get("field.delim.regex", "\\[\\]");
+            classify = context.getConfiguration().getBoolean("knn.classify", false);
         }    
 
         @Override
         protected void map(LongWritable key, Text value, Context context)
             throws IOException, InterruptedException {
             String[] items  =  value.toString().split(fieldDelimRegex);
+            
             srcEntityId = items[0];
             trgEntityId = items[1];
             rank = Integer.parseInt(items[items.length - 1]);
             outKey.set(srcEntityId, rank);
-            outVal.set(trgEntityId + fieldDelim + items[items.length - 1]);
+            if (classify) {
+            	firstClassAttr = items[2];
+            	secondClassAttr = items[3];
+	            outVal.set(trgEntityId + fieldDelim + firstClassAttr +  fieldDelim + secondClassAttr +  fieldDelim + items[items.length - 1]);
+            } else {
+	            outVal.set(trgEntityId + fieldDelim + items[items.length - 1]);
+            }
 			context.write(outKey, outVal);
         }
 	}
@@ -108,6 +121,10 @@ public class TopMatches extends Configured implements Tool {
 		private int distance;
 		private Text outVal = new Text();
         private String fieldDelim;
+        private boolean classify;
+        private List<String> neighbors = new ArrayList<String>();
+        private NearestNeighborClassifier classifier;
+        private String sourceClass;
     	
         protected void setup(Context context) throws IOException, InterruptedException {
            	fieldDelim = context.getConfiguration().get("field.delim", "\\[\\]");
@@ -117,17 +134,27 @@ public class TopMatches extends Configured implements Tool {
         	} else {
         		topMatchDistance = context.getConfiguration().getInt("top.match.distance", 200);
         	}
+            classify = context.getConfiguration().getBoolean("knn.classify", false);
+        	if (classify) {
+        		classifier = new VotingClassifier();
+        	}
         }
     	
     	protected void reduce(TextInt key, Iterable<Text> values, Context context)
         	throws IOException, InterruptedException {
     		srcEntityId  = key.getFirst().toString();
     		count = 0;
+    		neighbors.clear();
         	for (Text value : values){
         		//count based neighbor
 				if (nearestByCount) {
-	        		outVal.set(srcEntityId +fieldDelim + value.toString());
-					context.write(NullWritable.get(), outVal);
+					if (classify) {
+						neighbors.add(value.toString());
+						sourceClass = value.toString().split("*")[1];
+					} else  {
+						outVal.set(srcEntityId +fieldDelim + value.toString());
+						context.write(NullWritable.get(), outVal);
+					}
 	        		if (++count == topMatchCount){
 	        			break;
 	        		}
@@ -135,14 +162,27 @@ public class TopMatches extends Configured implements Tool {
 					//distance based neighbor
 					distance =Integer.parseInt( value.toString().split(",")[2]);
 					if (distance  <=  topMatchDistance ) {
-		        		outVal.set(srcEntityId + "," + value.toString());
-						context.write(NullWritable.get(), outVal);
+						if (classify) {
+							neighbors.add(value.toString());
+							sourceClass = value.toString().split("*")[1];
+						} else {
+							outVal.set(srcEntityId + "," + value.toString());
+							context.write(NullWritable.get(), outVal);
+						}
 					} else {
 						break;
 					}
 				}
-        	}    		
+        	}
+        	
+        	if (classify) {
+        		String predClass = classifier.classify(neighbors);
+				outVal.set(srcEntityId + "," + sourceClass + "," + predClass);
+				context.write(NullWritable.get(), outVal);
+        	}
     	}
+    	
+    	
     }
 	
     public static class IdRankPartitioner extends Partitioner<TextInt, Text> {
