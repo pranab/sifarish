@@ -90,11 +90,19 @@ public class SameTypeSimilarity  extends Configured implements Tool {
     }
     
     
+    /**
+     * @param args
+     * @throws Exception
+     */
     public static void main(String[] args) throws Exception {
         int exitCode = ToolRunner.run(new SameTypeSimilarity(), args);
         System.exit(exitCode);
     }
     
+    /**
+     * @author pranab
+     *
+     */
     public static class SimilarityMapper extends Mapper<LongWritable, Text, TextIntInt, Text> {
         private TextIntInt keyHolder = new TextIntInt();
         private Text valueHolder = new Text();
@@ -106,6 +114,9 @@ public class SameTypeSimilarity  extends Configured implements Tool {
         private  int partitonOrdinal;
         private int hashPair;
  
+        /* (non-Javadoc)
+         * @see org.apache.hadoop.mapreduce.Mapper#setup(org.apache.hadoop.mapreduce.Mapper.Context)
+         */
         protected void setup(Context context) throws IOException, InterruptedException {
         	bucketCount = context.getConfiguration().getInt("bucket.count", 1000);
         	fieldDelimRegex = context.getConfiguration().get("field.delim.regex", "\\[\\]");
@@ -122,6 +133,9 @@ public class SameTypeSimilarity  extends Configured implements Tool {
         	System.out.println("bucketCount: " + bucketCount + "partitonOrdinal: " + partitonOrdinal  + "idOrdinal:" + idOrdinal );
 
        }
+        /* (non-Javadoc)
+         * @see org.apache.hadoop.mapreduce.Mapper#map(KEYIN, VALUEIN, org.apache.hadoop.mapreduce.Mapper.Context)
+         */
         @Override
         protected void map(LongWritable key, Text value, Context context)
             throws IOException, InterruptedException {
@@ -146,6 +160,10 @@ public class SameTypeSimilarity  extends Configured implements Tool {
     	
     }
     
+    /**
+     * @author pranab
+     *
+     */
     public static class SimilarityReducer extends Reducer<TextIntInt, Text, NullWritable, Text> {
         private Text valueHolder = new Text();
         private List<String> valueList = new ArrayList<String>();
@@ -160,6 +178,9 @@ public class SameTypeSimilarity  extends Configured implements Tool {
         private DistanceStrategy distStrategy;
         private DynamicAttrSimilarityStrategy textSimStrategy;
       
+    	/* (non-Javadoc)
+    	 * @see org.apache.hadoop.mapreduce.Reducer#setup(org.apache.hadoop.mapreduce.Reducer.Context)
+    	 */
     	protected void setup(Context context) throws IOException, InterruptedException {
 			Configuration conf = context.getConfiguration();
             String filePath = conf.get("same.schema.file.path");
@@ -176,6 +197,9 @@ public class SameTypeSimilarity  extends Configured implements Tool {
         	textSimStrategy = schema.createTextSimilarityStrategy();
       }
         
+        /* (non-Javadoc)
+         * @see org.apache.hadoop.mapreduce.Reducer#reduce(KEYIN, java.lang.Iterable, org.apache.hadoop.mapreduce.Reducer.Context)
+         */
         protected void reduce(TextIntInt  key, Iterable<Text> values, Context context)
         throws IOException, InterruptedException {
         	valueList.clear();
@@ -224,6 +248,12 @@ public class SameTypeSimilarity  extends Configured implements Tool {
         	
         }    
         
+        /**
+         * @param first
+         * @param second
+         * @param context
+         * @return
+         */
         private int findDistance(String first, String second, Context context) {
         	int netDist = 0;
     		String[] firstItems = first.split(fieldDelimRegex);
@@ -312,6 +342,10 @@ public class SameTypeSimilarity  extends Configured implements Tool {
         
     }    
     
+    /**
+     * @author pranab
+     *
+     */
     public static class IdPairPartitioner extends Partitioner<TextIntInt, Text> {
 	     @Override
 	     public int getPartition(TextIntInt key, Text value, int numPartitions) {
@@ -321,6 +355,10 @@ public class SameTypeSimilarity  extends Configured implements Tool {
    
    }
    
+    /**
+     * @author pranab
+     *
+     */
     public static class IdPairGroupComprator extends WritableComparator {
     	protected IdPairGroupComprator() {
     		super(TextIntInt.class, true);

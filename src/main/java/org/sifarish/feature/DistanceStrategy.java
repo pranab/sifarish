@@ -17,6 +17,11 @@
 
 package org.sifarish.feature;
 
+/**
+ * Distance calculation strategy
+ * @author pranab
+ *
+ */
 public abstract class DistanceStrategy {
 	protected double sumWt;
 	protected int scale;
@@ -24,32 +29,57 @@ public abstract class DistanceStrategy {
 	protected double totalWt;
 	protected int count;
 	
+	/**
+	 * @param scale
+	 */
 	public DistanceStrategy(int scale) {
 		this.scale = scale;
 	}
 
+	/**
+	 * 
+	 */
 	public void initialize() {
 		sumWt = 0.0;
 		totalWt = 0.0;
 		count = 0;
 	}
 
+	/**
+	 * @param distance
+	 * @param weight
+	 */
 	public abstract void accumulate(double distance, double weight);
 	
+	/**
+	 * @return
+	 */
 	public abstract int getSimilarity();
 
+	/**
+	 * @return
+	 */
 	public int getScale() {
 		return scale;
 	}
 
+	/**
+	 * @param scale
+	 */
 	public void setScale(int scale) {
 		this.scale = scale;
 	}
 
+	/**
+	 * @return
+	 */
 	public double getPower() {
 		return power;
 	}
 
+	/**
+	 * @param power
+	 */
 	public void setPower(double power) {
 		this.power = power;
 	}

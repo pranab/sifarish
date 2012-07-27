@@ -19,38 +19,71 @@ package org.sifarish.feature;
 
 import java.util.Map;
 
+/**
+ * Entity attributes are variable and dynamic
+ * @author pranab
+ *
+ */
 public abstract class DynamicAttrSimilarityStrategy {
 	
 	protected String fieldDelimRegex = "\\s+";
 	protected boolean isBooleanVec;
 	protected boolean isCountIncluded;
 	
+	/**
+	 * @param src
+	 * @param target
+	 * @return
+	 */
 	public abstract double findDistance(String src, String target);
 	
+	/**
+	 * @return
+	 */
 	public String getFieldDelimRegex() {
 		return fieldDelimRegex;
 	}
 
+	/**
+	 * @param fieldDelimRegex
+	 */
 	public void setFieldDelimRegex(String fieldDelimRegex) {
 		this.fieldDelimRegex = fieldDelimRegex;
 	}
 
+	/**
+	 * @return
+	 */
 	public boolean isBooleanVec() {
 		return isBooleanVec;
 	}
 
+	/**
+	 * @param isBooleanVec
+	 */
 	public void setBooleanVec(boolean isBooleanVec) {
 		this.isBooleanVec = isBooleanVec;
 	}
 	
+	/**
+	 * @return
+	 */
 	public boolean isCountIncluded() {
 		return isCountIncluded;
 	}
 
+	/**
+	 * @param isCountIncluded
+	 */
 	public void setCountIncluded(boolean isCountIncluded) {
 		this.isCountIncluded = isCountIncluded;
 	}
 
+	/**
+	 * @param algorithm
+	 * @param params
+	 * @return
+	 */
 	public static DynamicAttrSimilarityStrategy createSimilarityStrategy(String algorithm, Map<String,Object> params) {
 		DynamicAttrSimilarityStrategy  simStrategy = null;
 		if (algorithm.equals("jaccard")){

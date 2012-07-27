@@ -21,8 +21,16 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * Majority voting knn classifier
+ * @author pranab
+ *
+ */
 public class VotingClassifier extends NearestNeighborClassifier {
 
+	/* (non-Javadoc)
+	 * @see org.sifarish.feature.NearestNeighborClassifier#classify(java.util.List)
+	 */
 	@Override
 	public String classify(List<String> neighbors) {
 		String clazz = null;

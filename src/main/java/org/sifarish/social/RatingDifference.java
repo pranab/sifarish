@@ -67,6 +67,10 @@ public class RatingDifference extends Configured implements Tool{
         return status;
     }
 
+    /**
+     * @author pranab
+     *
+     */
     public static class DiffMapper extends Mapper<LongWritable, Text, TextPair, IntWritable> {
     	private String fieldDelim;
     	private String subFieldDelim;
@@ -78,6 +82,9 @@ public class RatingDifference extends Configured implements Tool{
         	subFieldDelim = context.getConfiguration().get("field.delim", ":");
         }    
     	
+        /* (non-Javadoc)
+         * @see org.apache.hadoop.mapreduce.Mapper#map(KEYIN, VALUEIN, org.apache.hadoop.mapreduce.Mapper.Context)
+         */
         @Override
         protected void map(LongWritable key, Text value, Context context)
             throws IOException, InterruptedException {
@@ -104,6 +111,10 @@ public class RatingDifference extends Configured implements Tool{
         }
     }
     
+    /**
+     * @author pranab
+     *
+     */
     public static class DiffReducer extends Reducer<TextPair, IntWritable, NullWritable, Text> {
     	private String fieldDelim;
     	private int sum ;
@@ -111,10 +122,16 @@ public class RatingDifference extends Configured implements Tool{
     	private int avRating;
     	private Text valueOut = new Text();
     	
+        /* (non-Javadoc)
+         * @see org.apache.hadoop.mapreduce.Reducer#setup(org.apache.hadoop.mapreduce.Reducer.Context)
+         */
         protected void setup(Context context) throws IOException, InterruptedException {
         	fieldDelim = context.getConfiguration().get("field.delim", ",");
         } 	
         
+        /* (non-Javadoc)
+         * @see org.apache.hadoop.mapreduce.Reducer#reduce(KEYIN, java.lang.Iterable, org.apache.hadoop.mapreduce.Reducer.Context)
+         */
         protected void reduce(TextPair  key, Iterable<IntWritable> values, Context context)
         throws IOException, InterruptedException {
         	sum = count = 0;

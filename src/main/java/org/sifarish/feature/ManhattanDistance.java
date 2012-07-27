@@ -17,6 +17,11 @@
 
 package org.sifarish.feature;
 
+/**
+ * Manhattan distance
+ * @author pranab
+ *
+ */
 public class ManhattanDistance extends DistanceStrategy {
 
 	public ManhattanDistance(int scale) {

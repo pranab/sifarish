@@ -18,6 +18,10 @@ package org.sifarish.feature;
 
 import java.util.List;
 
+/**
+ * @author pranab
+ *
+ */
 public abstract class NearestNeighborClassifier {
 	public abstract String classify(List<String> neighbors);
 }

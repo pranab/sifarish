@@ -86,11 +86,19 @@ public class DiffTypeSimilarity  extends Configured implements Tool {
     
     
     
+    /**
+     * @param args
+     * @throws Exception
+     */
     public static void main(String[] args) throws Exception {
         int exitCode = ToolRunner.run(new DiffTypeSimilarity(), args);
         System.exit(exitCode);
     }
     
+    /**
+     * @author pranab
+     *
+     */
     public static class SimilarityMapper extends Mapper<LongWritable, Text, LongWritable, Text> {
         private LongWritable keyHolder = new LongWritable();
         private Text valueHolder = new Text();
@@ -103,6 +111,9 @@ public class DiffTypeSimilarity  extends Configured implements Tool {
         private Entity entity;
         private int filePrefixLength;
        
+        /* (non-Javadoc)
+         * @see org.apache.hadoop.mapreduce.Mapper#setup(org.apache.hadoop.mapreduce.Mapper.Context)
+         */
         protected void setup(Context context) throws IOException, InterruptedException {
         	bucketCount = context.getConfiguration().getInt("bucket.count", 1000);
         	fieldDelimRegex = context.getConfiguration().get("field.delim.regex", "\\[\\]");
@@ -120,9 +131,15 @@ public class DiffTypeSimilarity  extends Configured implements Tool {
             schema = mapper.readValue(fs, MixedTypeSchema.class);
        }
 
+        /* (non-Javadoc)
+         * @see org.apache.hadoop.mapreduce.Mapper#cleanup(org.apache.hadoop.mapreduce.Mapper.Context)
+         */
         protected void cleanup(Context context) throws IOException, InterruptedException {
         }
         
+        /* (non-Javadoc)
+         * @see org.apache.hadoop.mapreduce.Mapper#map(KEYIN, VALUEIN, org.apache.hadoop.mapreduce.Mapper.Context)
+         */
         @Override
         protected void map(LongWritable key, Text value, Context context)
             throws IOException, InterruptedException {
@@ -169,6 +186,10 @@ public class DiffTypeSimilarity  extends Configured implements Tool {
         }        
     }   
     
+    /**
+     * @author pranab
+     *
+     */
     public static class SimilarityReducer extends Reducer<LongWritable, Text, NullWritable, Text> {
         private Text valueHolder = new Text();
         private MixedTypeSchema schema;
@@ -203,6 +224,9 @@ public class DiffTypeSimilarity  extends Configured implements Tool {
         private String valueSt;
         private String[] items;
  
+        /* (non-Javadoc)
+         * @see org.apache.hadoop.mapreduce.Reducer#setup(org.apache.hadoop.mapreduce.Reducer.Context)
+         */
         protected void setup(Context context) throws IOException, InterruptedException {
         	//load schema
             Configuration conf = context.getConfiguration();
@@ -237,6 +261,9 @@ public class DiffTypeSimilarity  extends Configured implements Tool {
         			" Target field count:" + targetFields.size());
         }
         
+        /* (non-Javadoc)
+         * @see org.apache.hadoop.mapreduce.Reducer#reduce(KEYIN, java.lang.Iterable, org.apache.hadoop.mapreduce.Reducer.Context)
+         */
         protected void reduce(LongWritable key, Iterable<Text> values, Context context)
         throws IOException, InterruptedException {
         	firstTypeValues.clear();
@@ -304,6 +331,12 @@ public class DiffTypeSimilarity  extends Configured implements Tool {
         	
         }
         
+    	/**
+    	 * @param source
+    	 * @param target
+    	 * @param context
+    	 * @return
+    	 */
     	private int findSimilarity(String source, String target, Context context) {
     		int sim = 0;
     		mapFields(source, context);
@@ -405,6 +438,13 @@ public class DiffTypeSimilarity  extends Configured implements Tool {
     		return sim;
     	}
     	
+    	/**
+    	 * @param srcField
+    	 * @param srcVal
+    	 * @param trgField
+    	 * @param trgVal
+    	 * @return
+    	 */
     	private double getDistForNumeric(Field srcField, int srcVal, Field trgField, int trgVal){
     		double dist = 0;
     		boolean linear = false;
@@ -452,6 +492,11 @@ public class DiffTypeSimilarity  extends Configured implements Tool {
     		return dist;
     	}
     	
+    	/**
+    	 * @param trgField
+    	 * @param trgVal
+    	 * @return
+    	 */
     	private double getDistForMissingSrc(Field trgField, String trgVal){
     		double dist = 0;
 			if (trgField.getDataType().equals("categorical") || trgField.getDataType().equals("text")) {
@@ -471,6 +516,11 @@ public class DiffTypeSimilarity  extends Configured implements Tool {
     		return dist;
     	}
     	
+    	/**
+    	 * @param trgField
+    	 * @param mappedValues
+    	 * @return
+    	 */
     	private double getDistForMissingTrg(Field trgField, List<String> mappedValues){
     		double dist = 0;
 			if (trgField.getDataType().equals("categorical") || trgField.getDataType().equals("text")) {
@@ -491,6 +541,10 @@ public class DiffTypeSimilarity  extends Configured implements Tool {
     		return dist;
     	}
     	
+    	/**
+    	 * @param source
+    	 * @param context
+    	 */
     	private void mapFields(String source, Context context){
 	    	mappedFields.clear();
 			String[] srcItems = source.split(fieldDelimRegex);
@@ -557,6 +611,10 @@ public class DiffTypeSimilarity  extends Configured implements Tool {
 			}
 	    }
     	
+        /**
+         * @param mappedValues
+         * @return
+         */
         private int getAverageMappedValue(List<String> mappedValues){
     		int sum = 0;
     		int count = 0;
@@ -573,6 +631,10 @@ public class DiffTypeSimilarity  extends Configured implements Tool {
     
      
 
+    /**
+     * @author pranab
+     *
+     */
     public static class IdPairPartitioner extends Partitioner<LongWritable, Text> {
 	     @Override
 	     public int getPartition(LongWritable key, Text value, int numPartitions) {
@@ -583,6 +645,10 @@ public class DiffTypeSimilarity  extends Configured implements Tool {
     
     }
 
+    /**
+     * @author pranab
+     *
+     */
     public static class IdPairGroupComprator extends WritableComparator {
     	private static final int KEY_EXTENSION_SCALE = 10;
     	protected IdPairGroupComprator() {
@@ -600,6 +666,10 @@ public class DiffTypeSimilarity  extends Configured implements Tool {
     	}
      }
     
+    /**
+     * @author pranab
+     *
+     */
     public static class MappedValue {
     	private List<String> values = new ArrayList<String>();
     	private Field field;

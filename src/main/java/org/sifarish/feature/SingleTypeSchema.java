@@ -21,19 +21,35 @@ import java.util.List;
 
 import org.sifarish.util.Entity;
 
+/**
+ * @author pranab
+ *
+ */
 public class SingleTypeSchema  extends TypeSchema {
 	private Entity entity;
 	private int partitioningColumn = -1;
 	
+	/**
+	 * @return
+	 */
 	public Entity getEntity() {
 		return entity;
 	}
+	/**
+	 * @param entity
+	 */
 	public void setEntity(Entity entity) {
 		this.entity = entity;
 	}
+	/**
+	 * @return
+	 */
 	public int getPartitioningColumn() {
 		return partitioningColumn;
 	}
+	/**
+	 * @param partitioningColumn
+	 */
 	public void setPartitioningColumn(int partitioningColumn) {
 		this.partitioningColumn = partitioningColumn;
 	}

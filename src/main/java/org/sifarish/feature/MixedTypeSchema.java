@@ -23,17 +23,32 @@ import java.util.List;
 import org.sifarish.util.Entity;
 import org.sifarish.util.Field;
 
+/**
+ * Schema for mixed entity types
+ * @author pranab
+ *
+ */
 public class MixedTypeSchema  extends TypeSchema {
 	private List<Entity> entities;
 	
+	/**
+	 * @return
+	 */
 	public List<Entity> getEntities() {
 		return entities;
 	}
 
+	/**
+	 * @param entities
+	 */
 	public void setEntities(List<Entity> entities) {
 		this.entities = entities;
 	}
 	
+	/**
+	 * @param fieldCount
+	 * @return
+	 */
 	public Entity getEntityBySize(int fieldCount) {
 		Entity entity = null;
 		for (Entity thisEntity : entities) {
@@ -46,6 +61,10 @@ public class MixedTypeSchema  extends TypeSchema {
 		return entity;
 	}
 
+	/**
+	 * @param filePrefix
+	 * @return
+	 */
 	public Entity getEntityByFilePrefix(String filePrefix) {
 		Entity entity = null;
 		for (Entity thisEntity : entities) {
@@ -58,6 +77,10 @@ public class MixedTypeSchema  extends TypeSchema {
 		return entity;
 	}
 
+	/**
+	 * @param type
+	 * @return
+	 */
 	public Entity getEntityByType(int type) {
 		Entity entity = null;
 		for (Entity thisEntity : entities) {
@@ -70,6 +93,12 @@ public class MixedTypeSchema  extends TypeSchema {
 		return entity;
 	}
 
+	/**
+	 * @param thisValue
+	 * @param thatValue
+	 * @param ordinal
+	 * @return
+	 */
 	public double findCattegoricalDistance(String thisValue, String thatValue, int ordinal) {
 		double distance = 1.0;
 		
@@ -84,8 +113,5 @@ public class MixedTypeSchema  extends TypeSchema {
 		
 		return distance;
 	}
-	
-	
-	
 	
 }

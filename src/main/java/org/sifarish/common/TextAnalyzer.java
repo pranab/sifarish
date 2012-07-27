@@ -52,6 +52,10 @@ import org.sifarish.util.Field;
 import org.sifarish.util.FieldExtractor;
 import org.sifarish.util.Utility;
 
+/**
+ * @author pranab
+ *
+ */
 public class TextAnalyzer extends Configured implements Tool{
 	
     @Override
@@ -75,6 +79,10 @@ public class TextAnalyzer extends Configured implements Tool{
         return status;
     }
     
+    /**
+     * @author pranab
+     *
+     */
     public static class AnalyzerMapper extends Mapper<LongWritable, Text, NullWritable, Text> {
         private Text valueHolder = new Text();
         private String fieldDelim;
@@ -87,6 +95,9 @@ public class TextAnalyzer extends Configured implements Tool{
         private Map<Integer, String> extrtactedFields = new HashMap<Integer, String>();
         private Set<Integer> retainedFieldOrdinals = new HashSet<Integer>();
         	
+        /* (non-Javadoc)
+         * @see org.apache.hadoop.mapreduce.Mapper#setup(org.apache.hadoop.mapreduce.Mapper.Context)
+         */
         protected void setup(Context context) throws IOException, InterruptedException {
         	fieldDelim = context.getConfiguration().get("field.delim", "[]");
         	fieldDelimRegex = context.getConfiguration().get("field.delim.regex", "\\[\\]");
@@ -112,10 +123,16 @@ public class TextAnalyzer extends Configured implements Tool{
            
        }
 
+        /* (non-Javadoc)
+         * @see org.apache.hadoop.mapreduce.Mapper#cleanup(org.apache.hadoop.mapreduce.Mapper.Context)
+         */
         protected void cleanup(Context context) throws IOException, InterruptedException {
         	
         }
         
+        /* (non-Javadoc)
+         * @see org.apache.hadoop.mapreduce.Mapper#map(KEYIN, VALUEIN, org.apache.hadoop.mapreduce.Mapper.Context)
+         */
         @Override
         protected void map(LongWritable key, Text value, Context context)
             throws IOException, InterruptedException {
@@ -174,6 +191,10 @@ public class TextAnalyzer extends Configured implements Tool{
 			context.write(NullWritable.get(), valueHolder);
        }     
         
+        /**
+         * @param ordinal
+         * @param data
+         */
         private void findExtractedFields(int ordinal, String data) {
         	List<FieldExtractor> extractors = schema.getEntity().getExtractorsForField(ordinal);
         	for (FieldExtractor extractor : extractors) {
@@ -188,6 +209,11 @@ public class TextAnalyzer extends Configured implements Tool{
         	}
         }
 
+        /**
+         * @param text
+         * @return
+         * @throws IOException
+         */
         private String tokenize(String text) throws IOException {
             TokenStream stream = analyzer.tokenStream("contents", new StringReader(text));
             StringBuilder stBld = new StringBuilder();
@@ -203,6 +229,10 @@ public class TextAnalyzer extends Configured implements Tool{
     }    
     
     
+    /**
+     * @param args
+     * @throws Exception
+     */
     public static void main(String[] args) throws Exception {
         int exitCode = ToolRunner.run(new TextAnalyzer(), args);
         System.exit(exitCode);

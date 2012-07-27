@@ -17,11 +17,20 @@
 
 package org.sifarish.feature;
 
+/**
+ * Jaccard similarity
+ * @author pranab
+ *
+ */
 public class JaccardSimilarity extends DynamicAttrSimilarityStrategy {
 	private double srcNonMatchingTermWeight;
 	private double trgNonMatchingTermWeight;
 
 	
+	/**
+	 * @param srcNonMatchingTermWeight
+	 * @param trgNonMatchingTermWeight
+	 */
 	public JaccardSimilarity(double srcNonMatchingTermWeight, double trgNonMatchingTermWeight) {
 		super();
 		this.srcNonMatchingTermWeight = srcNonMatchingTermWeight;
@@ -29,6 +38,9 @@ public class JaccardSimilarity extends DynamicAttrSimilarityStrategy {
 	}
 
 
+	/* (non-Javadoc)
+	 * @see org.sifarish.feature.DynamicAttrSimilarityStrategy#findDistance(java.lang.String, java.lang.String)
+	 */
 	@Override
 	public double findDistance(String src, String target) {
 		double distance = 1.0;

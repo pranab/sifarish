@@ -82,6 +82,10 @@ public class ItemDynamicAttributeSimilarity  extends Configured implements Tool{
         return status;
     }
 
+    /**
+     * @author pranab
+     *
+     */
     public static class SimilarityMapper extends Mapper<LongWritable, Text, IntPair, Text> {
         private int bucketCount;
         private int hash;
@@ -94,12 +98,18 @@ public class ItemDynamicAttributeSimilarity  extends Configured implements Tool{
         private Text valueHolder = new Text();
         private int hashPairMult;
     	
+        /* (non-Javadoc)
+         * @see org.apache.hadoop.mapreduce.Mapper#setup(org.apache.hadoop.mapreduce.Mapper.Context)
+         */
         protected void setup(Context context) throws IOException, InterruptedException {
         	bucketCount = context.getConfiguration().getInt("bucket.count", 10);
         	fieldDelimRegex = context.getConfiguration().get("field.delim.regex", "\\[\\]");
         	hashPairMult = context.getConfiguration().getInt("hash.pair.multiplier", 1000);
         }    
         
+        /* (non-Javadoc)
+         * @see org.apache.hadoop.mapreduce.Mapper#map(KEYIN, VALUEIN, org.apache.hadoop.mapreduce.Mapper.Context)
+         */
         @Override
         protected void map(LongWritable key, Text value, Context context)
             throws IOException, InterruptedException {
@@ -124,6 +134,10 @@ public class ItemDynamicAttributeSimilarity  extends Configured implements Tool{
              
     }
     
+    /**
+     * @author pranab
+     *
+     */
     public static class SimilarityReducer extends Reducer<IntPair, Text, NullWritable, Text> {
         private Text valueHolder = new Text();
         private String fieldDelim;
@@ -134,6 +148,9 @@ public class ItemDynamicAttributeSimilarity  extends Configured implements Tool{
         private DynamicAttrSimilarityStrategy simStrategy;
         private int scale;
         
+        /* (non-Javadoc)
+         * @see org.apache.hadoop.mapreduce.Reducer#setup(org.apache.hadoop.mapreduce.Reducer.Context)
+         */
         protected void setup(Context context) throws IOException, InterruptedException {
         	fieldDelim = context.getConfiguration().get("field.delim", "[]");
         	fieldDelimRegex = context.getConfiguration().get("field.delim.regex", "\\[\\]");
@@ -148,6 +165,9 @@ public class ItemDynamicAttributeSimilarity  extends Configured implements Tool{
            	scale = context.getConfiguration().getInt("distance.scale", 1000);
           }    
 
+        /* (non-Javadoc)
+         * @see org.apache.hadoop.mapreduce.Reducer#reduce(KEYIN, java.lang.Iterable, org.apache.hadoop.mapreduce.Reducer.Context)
+         */
         protected void reduce(IntPair  key, Iterable<Text> values, Context context)
         throws IOException, InterruptedException {
         	double dist = 0;
@@ -208,6 +228,10 @@ public class ItemDynamicAttributeSimilarity  extends Configured implements Tool{
        	
         }
         
+        /**
+         * @param val
+         * @return
+         */
         private String[]   splitKey(String val) {
         	String[] parts = new String[2];
         	int pos = val.indexOf(fieldDelim);
@@ -222,6 +246,10 @@ public class ItemDynamicAttributeSimilarity  extends Configured implements Tool{
         
     }
     
+    /**
+     * @author pranab
+     *
+     */
     public static class IdPairPartitioner extends Partitioner<IntPair, Text> {
 	     @Override
 	     public int getPartition(IntPair key, Text value, int numPartitions) {
@@ -232,6 +260,10 @@ public class ItemDynamicAttributeSimilarity  extends Configured implements Tool{
   }
 
     
+    /**
+     * @author pranab
+     *
+     */
     public static class IdPairGroupComprator extends WritableComparator {
     	protected IdPairGroupComprator() {
     		super(IntPair.class, true);
@@ -248,6 +280,10 @@ public class ItemDynamicAttributeSimilarity  extends Configured implements Tool{
     	}
      }
   
+    /**
+     * @param args
+     * @throws Exception
+     */
     public static void main(String[] args) throws Exception {
         int exitCode = ToolRunner.run(new ItemDynamicAttributeSimilarity(), args);
         System.exit(exitCode);

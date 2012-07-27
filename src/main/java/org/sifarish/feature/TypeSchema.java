@@ -18,6 +18,11 @@
 
 package org.sifarish.feature;
 
+/**
+ * Base schema class
+ * @author pranab
+ *
+ */
 public class TypeSchema {
 	private String distAlgorithm;
 	private double minkowskiParam;

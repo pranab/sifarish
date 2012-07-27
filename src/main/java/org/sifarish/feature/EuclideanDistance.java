@@ -17,12 +17,23 @@
 
 package org.sifarish.feature;
 
+/**
+ * Euclidean ditance
+ * @author pranab
+ *
+ */
 public class EuclideanDistance extends DistanceStrategy {
 
+	/**
+	 * @param scale
+	 */
 	public EuclideanDistance(int scale) {
 		super(scale);
 	}
 
+	/* (non-Javadoc)
+	 * @see org.sifarish.feature.DistanceStrategy#accumulate(double, double)
+	 */
 	public void accumulate(double distance, double weight){
 		//sumWt +=  (distance * distance) / weight;
 		//totalWt += 1 / weight;
@@ -32,6 +43,9 @@ public class EuclideanDistance extends DistanceStrategy {
 		++count;
 	}
 	
+	/* (non-Javadoc)
+	 * @see org.sifarish.feature.DistanceStrategy#getSimilarity()
+	 */
 	public int getSimilarity() {
 		//int sim = (int)(Math.sqrt(sumWt) / totalWt * (double)scale);
 		int sim = (int)((Math.sqrt(sumWt) * scale) / count);

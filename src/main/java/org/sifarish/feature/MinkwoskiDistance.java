@@ -17,12 +17,23 @@
 
 package org.sifarish.feature;
 
+/**
+ * Monowski distance
+ * @author pranab
+ *
+ */
 public class MinkwoskiDistance extends DistanceStrategy {
 
+	/**
+	 * @param scale
+	 */
 	public MinkwoskiDistance(int scale) {
 		super(scale);
 	}
 
+	/* (non-Javadoc)
+	 * @see org.sifarish.feature.DistanceStrategy#accumulate(double, double)
+	 */
 	@Override
 	public void accumulate(double distance, double weight) {
 		if (distance < 0) {
@@ -35,6 +46,9 @@ public class MinkwoskiDistance extends DistanceStrategy {
 		++count;
 	}
 
+	/* (non-Javadoc)
+	 * @see org.sifarish.feature.DistanceStrategy#getSimilarity()
+	 */
 	@Override
 	public int getSimilarity() {
 //		int sim = (int)(Math.pow(sumWt, 1.0/power) / totalWt * (double)scale);

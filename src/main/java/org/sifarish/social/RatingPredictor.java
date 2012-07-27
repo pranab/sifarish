@@ -75,6 +75,10 @@ public class RatingPredictor extends Configured implements Tool{
         return status;
     }
     
+    /**
+     * @author pranab
+     *
+     */
     public static class PredictionMapper extends Mapper<LongWritable, Text, TextInt, Tuple> {
     	private String fieldDelim;
     	private String subFieldDelim;
@@ -85,6 +89,9 @@ public class RatingPredictor extends Configured implements Tool{
     	private Integer one = 1;
     	private Integer zero = 0;
     	
+        /* (non-Javadoc)
+         * @see org.apache.hadoop.mapreduce.Mapper#setup(org.apache.hadoop.mapreduce.Mapper.Context)
+         */
         protected void setup(Context context) throws IOException, InterruptedException {
         	fieldDelim = context.getConfiguration().get("field.delim", ",");
         	subFieldDelim = context.getConfiguration().get("field.delim", ":");
@@ -92,6 +99,9 @@ public class RatingPredictor extends Configured implements Tool{
         	isRatingFileSplit = ((FileSplit)context.getInputSplit()).getPath().getName().startsWith(ratingFilePrefix);
         }    
     	
+        /* (non-Javadoc)
+         * @see org.apache.hadoop.mapreduce.Mapper#map(KEYIN, VALUEIN, org.apache.hadoop.mapreduce.Mapper.Context)
+         */
         @Override
         protected void map(LongWritable key, Text value, Context context)
             throws IOException, InterruptedException {
@@ -119,15 +129,25 @@ public class RatingPredictor extends Configured implements Tool{
         }
     }    
 
+    /**
+     * @author pranab
+     *
+     */
     public static class PredictorReducer extends Reducer<TextInt, Tuple, NullWritable, Text> {
     	private String fieldDelim;
     	private Text valueOut = new Text();
     	private List<Tuple> avRatingDiffs = new ArrayList<Tuple>();
     	
+        /* (non-Javadoc)
+         * @see org.apache.hadoop.mapreduce.Reducer#setup(org.apache.hadoop.mapreduce.Reducer.Context)
+         */
         protected void setup(Context context) throws IOException, InterruptedException {
         	fieldDelim = context.getConfiguration().get("field.delim", ",");
         } 	
         
+        /* (non-Javadoc)
+         * @see org.apache.hadoop.mapreduce.Reducer#reduce(KEYIN, java.lang.Iterable, org.apache.hadoop.mapreduce.Reducer.Context)
+         */
         protected void reduce(TextInt  key, Iterable<Tuple> values, Context context)
         throws IOException, InterruptedException {
         	avRatingDiffs.clear();
@@ -153,6 +173,10 @@ public class RatingPredictor extends Configured implements Tool{
         }
     }
     
+    /**
+     * @author pranab
+     *
+     */
     public static class ItemIdPartitioner extends Partitioner<TextInt, Tuple> {
 	     @Override
 	     public int getPartition(TextInt key, Tuple value, int numPartitions) {
@@ -162,6 +186,10 @@ public class RatingPredictor extends Configured implements Tool{
    
    }
 
+    /**
+     * @author pranab
+     *
+     */
     public static class ItemIdGroupComprator extends WritableComparator {
     	protected ItemIdGroupComprator() {
     		super(TextInt.class, true);

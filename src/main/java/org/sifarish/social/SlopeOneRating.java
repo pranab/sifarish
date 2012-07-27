@@ -34,6 +34,10 @@ import org.chombo.util.IntPair;
 import org.chombo.util.TextPair;
 import org.chombo.util.Utility;
 
+/**
+ * @author pranab
+ *
+ */
 public class SlopeOneRating extends Configured implements Tool{
     @Override
     public int run(String[] args) throws Exception   {
@@ -61,15 +65,25 @@ public class SlopeOneRating extends Configured implements Tool{
         return status;
     }
     
+    /**
+     * @author pranab
+     *
+     */
     public static class SlopeOneMapper extends Mapper<LongWritable, Text, TextPair, IntPair> {
     	private String fieldDelim;
     	private TextPair keyOut = new TextPair();
     	private IntPair valOut = new IntPair();
     	
+        /* (non-Javadoc)
+         * @see org.apache.hadoop.mapreduce.Mapper#setup(org.apache.hadoop.mapreduce.Mapper.Context)
+         */
         protected void setup(Context context) throws IOException, InterruptedException {
         	fieldDelim = context.getConfiguration().get("field.delim", ",");
         }    
     	
+        /* (non-Javadoc)
+         * @see org.apache.hadoop.mapreduce.Mapper#map(KEYIN, VALUEIN, org.apache.hadoop.mapreduce.Mapper.Context)
+         */
         @Override
         protected void map(LongWritable key, Text value, Context context)
             throws IOException, InterruptedException {
@@ -80,6 +94,10 @@ public class SlopeOneRating extends Configured implements Tool{
         }   
     }
     
+    /**
+     * @author pranab
+     *
+     */
     public static class SlopeOneReducer extends Reducer<TextPair, IntPair, NullWritable, Text> {
     	private String fieldDelim;
     	private int sum ;
@@ -87,10 +105,16 @@ public class SlopeOneRating extends Configured implements Tool{
     	private int avRating;
     	private Text valueOut = new Text();
     	
+        /* (non-Javadoc)
+         * @see org.apache.hadoop.mapreduce.Reducer#setup(org.apache.hadoop.mapreduce.Reducer.Context)
+         */
         protected void setup(Context context) throws IOException, InterruptedException {
         	fieldDelim = context.getConfiguration().get("field.delim", ",");
         } 	
         
+        /* (non-Javadoc)
+         * @see org.apache.hadoop.mapreduce.Reducer#reduce(KEYIN, java.lang.Iterable, org.apache.hadoop.mapreduce.Reducer.Context)
+         */
         protected void reduce(TextPair  key, Iterable<IntPair> values, Context context)
         throws IOException, InterruptedException {
         	sum = sumWt = 0;

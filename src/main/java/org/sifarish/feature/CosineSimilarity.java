@@ -21,9 +21,17 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
 
+/**
+ * Cosine distance
+ * @author pranab
+ *
+ */
 public class CosineSimilarity  extends DynamicAttrSimilarityStrategy{
 	private Map<String, int[]> countVec = new HashMap<String, int[]>();
 
+	/* (non-Javadoc)
+	 * @see org.sifarish.feature.DynamicAttrSimilarityStrategy#findDistance(java.lang.String, java.lang.String)
+	 */
 	@Override
 	public double findDistance(String src, String target) {
 		double distance = 1.0;
@@ -56,6 +64,10 @@ public class CosineSimilarity  extends DynamicAttrSimilarityStrategy{
 		return distance;
 	}
 	
+	/**
+	 * @param terms
+	 * @param which
+	 */
 	private void initVector(String[] terms, int which) {
 		String attr;
 		int count = 0;

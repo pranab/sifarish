@@ -41,6 +41,11 @@ import org.apache.hadoop.util.ToolRunner;
 import org.chombo.util.TextInt;
 import org.chombo.util.Utility;
 
+/**
+ * Top match map reduce based on distance with neighbors
+ * @author pranab
+ *
+ */
 public class TopMatches extends Configured implements Tool {
 
 	@Override
@@ -74,6 +79,10 @@ public class TopMatches extends Configured implements Tool {
         return status;
 	}
 	
+	/**
+	 * @author pranab
+	 *
+	 */
 	public static class TopMatchesMapper extends Mapper<LongWritable, Text, TextInt, Text> {
 		private String srcEntityId;
 		private String trgEntityId;
@@ -86,12 +95,18 @@ public class TopMatches extends Configured implements Tool {
         private String firstClassAttr;
         private String secondClassAttr;
 
+        /* (non-Javadoc)
+         * @see org.apache.hadoop.mapreduce.Mapper#setup(org.apache.hadoop.mapreduce.Mapper.Context)
+         */
         protected void setup(Context context) throws IOException, InterruptedException {
            	fieldDelim = context.getConfiguration().get("field.delim", "\\[\\]");
             fieldDelimRegex = context.getConfiguration().get("field.delim.regex", "\\[\\]");
             classify = context.getConfiguration().getBoolean("knn.classify", false);
         }    
 
+        /* (non-Javadoc)
+         * @see org.apache.hadoop.mapreduce.Mapper#map(KEYIN, VALUEIN, org.apache.hadoop.mapreduce.Mapper.Context)
+         */
         @Override
         protected void map(LongWritable key, Text value, Context context)
             throws IOException, InterruptedException {
@@ -112,6 +127,10 @@ public class TopMatches extends Configured implements Tool {
         }
 	}
 	
+    /**
+     * @author pranab
+     *
+     */
     public static class TopMatchesReducer extends Reducer<TextInt, Text, NullWritable, Text> {
     	private boolean nearestByCount;
     	private int topMatchCount;
@@ -126,6 +145,9 @@ public class TopMatches extends Configured implements Tool {
         private NearestNeighborClassifier classifier;
         private String sourceClass;
     	
+        /* (non-Javadoc)
+         * @see org.apache.hadoop.mapreduce.Reducer#setup(org.apache.hadoop.mapreduce.Reducer.Context)
+         */
         protected void setup(Context context) throws IOException, InterruptedException {
            	fieldDelim = context.getConfiguration().get("field.delim", "\\[\\]");
         	nearestByCount = context.getConfiguration().getBoolean("nearest.by.count", true);
@@ -140,6 +162,9 @@ public class TopMatches extends Configured implements Tool {
         	}
         }
     	
+    	/* (non-Javadoc)
+    	 * @see org.apache.hadoop.mapreduce.Reducer#reduce(KEYIN, java.lang.Iterable, org.apache.hadoop.mapreduce.Reducer.Context)
+    	 */
     	protected void reduce(TextInt key, Iterable<Text> values, Context context)
         	throws IOException, InterruptedException {
     		srcEntityId  = key.getFirst().toString();
@@ -185,6 +210,10 @@ public class TopMatches extends Configured implements Tool {
     	
     }
 	
+    /**
+     * @author pranab
+     *
+     */
     public static class IdRankPartitioner extends Partitioner<TextInt, Text> {
 	     @Override
 	     public int getPartition(TextInt key, Text value, int numPartitions) {
@@ -194,11 +223,18 @@ public class TopMatches extends Configured implements Tool {
 	     }
    }
     
+    /**
+     * @author pranab
+     *
+     */
     public static class IdRankGroupComprator extends WritableComparator {
     	protected IdRankGroupComprator() {
     		super(TextInt.class, true);
     	}
 
+    	/* (non-Javadoc)
+    	 * @see org.apache.hadoop.io.WritableComparator#compare(org.apache.hadoop.io.WritableComparable, org.apache.hadoop.io.WritableComparable)
+    	 */
     	@Override
     	public int compare(WritableComparable w1, WritableComparable w2) {
     		//consider only the base part of the key
@@ -212,6 +248,7 @@ public class TopMatches extends Configured implements Tool {
 
 	/**
 	 * @param args
+	 * @throws Exception
 	 */
 	public static void main(String[] args) throws Exception {
         int exitCode = ToolRunner.run(new TopMatches(), args);
