@@ -20,6 +20,11 @@ package org.sifarish.util;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Entity
+ * @author pranab
+ *
+ */
 public class Entity {
 	private String name;
 	private int type;

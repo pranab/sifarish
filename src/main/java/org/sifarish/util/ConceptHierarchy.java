@@ -20,6 +20,11 @@ package org.sifarish.util;
 import java.util.List;
 
 
+/**
+ * Concept hierarchy
+ * @author pranab
+ *
+ */
 public class ConceptHierarchy {
 	private List<Concept> concepts;
 

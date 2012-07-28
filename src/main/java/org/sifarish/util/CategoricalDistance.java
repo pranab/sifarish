@@ -17,6 +17,11 @@
 
 package org.sifarish.util;
 
+/**
+ * Explicity set distance between two categorical values
+ * @author pranab
+ *
+ */
 public class CategoricalDistance {
 
 	private String thisValue;

@@ -19,6 +19,11 @@ package org.sifarish.util;
 
 import java.util.List;
 
+/**
+ * Field
+ * @author pranab
+ *
+ */
 public class Field {
 	private String name;
 	private int ordinal = -1;

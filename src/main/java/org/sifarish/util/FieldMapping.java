@@ -20,6 +20,11 @@ package org.sifarish.util;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Mapping between fields of two entities
+ * @author pranab
+ *
+ */
 public class FieldMapping {
 	private int matchingOrdinal = -1;
 	private List<FieldMapping.ValueMapping> valueMappings;

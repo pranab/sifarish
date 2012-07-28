@@ -22,6 +22,11 @@ import java.util.Properties;
 
 import org.apache.hadoop.conf.Configuration;
 
+/**
+ * Utility
+ * @author pranab
+ *
+ */
 public class Utility {
 
     public static void setConfiguration(Configuration conf) throws Exception{

@@ -20,6 +20,11 @@ package org.sifarish.util;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+/**
+ * Regex based field extractor
+ * @author pranab
+ *
+ */
 public class FieldExtractor {
 	private String name;
 	private int ordinal;
