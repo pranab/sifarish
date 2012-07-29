@@ -26,7 +26,7 @@ import java.text.SimpleDateFormat;
  * @author pranab
  *
  */
-public class TimeWindow {
+public class TimeWindow  extends StructuredAttribute{
 	private long start;
 	private long end;
 	private static DateFormat df = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
@@ -43,7 +43,8 @@ public class TimeWindow {
 		return end - start;
 	}
 	
-	public double distance(TimeWindow other) {
+	public double distance(StructuredAttribute otherAttr) {
+		TimeWindow other = (TimeWindow)otherAttr;
 		double distance = 0;
 		long overlap = 0;
 		long min = getLength() < other.getLength() ?  getLength() : other.getLength();
