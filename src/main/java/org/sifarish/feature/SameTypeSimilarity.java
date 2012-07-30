@@ -17,6 +17,7 @@
 package org.sifarish.feature;
 
 import java.io.IOException;
+import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -45,7 +46,10 @@ import org.codehaus.jackson.map.ObjectMapper;
 import org.sifarish.feature.DiffTypeSimilarity.IdPairGroupComprator;
 import org.sifarish.feature.DiffTypeSimilarity.IdPairPartitioner;
 import org.sifarish.util.Entity;
+import org.sifarish.util.Event;
 import org.sifarish.util.Field;
+import org.sifarish.util.Location;
+import org.sifarish.util.TimeWindow;
 import org.sifarish.util.Utility;
 
 
@@ -177,6 +181,7 @@ public class SameTypeSimilarity  extends Configured implements Tool {
         private int scale;
         private DistanceStrategy distStrategy;
         private DynamicAttrSimilarityStrategy textSimStrategy;
+        private String subFieldDelim;
       
     	/* (non-Javadoc)
     	 * @see org.apache.hadoop.mapreduce.Reducer#setup(org.apache.hadoop.mapreduce.Reducer.Context)
@@ -195,6 +200,7 @@ public class SameTypeSimilarity  extends Configured implements Tool {
         	scale = context.getConfiguration().getInt("distance.scale", 1000);
         	distStrategy = schema.createDistanceStrategy(scale);
         	textSimStrategy = schema.createTextSimilarityStrategy();
+        	subFieldDelim = context.getConfiguration().get("sub.field.delim.regex", ":");
       }
         
         /* (non-Javadoc)
@@ -253,8 +259,9 @@ public class SameTypeSimilarity  extends Configured implements Tool {
          * @param second
          * @param context
          * @return
+         * @throws IOException 
          */
-        private int findDistance(String first, String second, Context context) {
+        private int findDistance(String first, String second, Context context) throws IOException {
         	int netDist = 0;
     		String[] firstItems = first.split(fieldDelimRegex);
     		String[] secondItems = second.split(fieldDelimRegex);
@@ -282,53 +289,23 @@ public class SameTypeSimilarity  extends Configured implements Tool {
     				}
     			} else {
 	    			if (field.getDataType().equals("categorical")) {
+	    				//categorical
 	    				dist = field.findDistance(firstAttr, secondAttr);
 	    			} else if (field.getDataType().equals("int")) {
-	    				String[] firstValItems = firstAttr.split("\\s+");
-	    				String[] secondValItems = secondAttr.split("\\s+");
-	    				valid = false;
-	    				if (firstValItems.length == 1 && secondValItems.length == 1){
-	    					valid = true;
-	    				} else if (firstValItems.length == 2 && secondValItems.length == 2 && 
-	    						firstValItems[1].equals(unit) && secondValItems[1].equals(unit)) {
-	    					valid = true;
-	    				}
-	    				
-	    				if (valid)	{
-	    					try {
-	    						dist = field.findDistance(Integer.parseInt(firstValItems[0]), Integer.parseInt(secondValItems[0]), 
-	    							schema.getNumericDiffThreshold());
-	    					} catch (NumberFormatException nfEx) {
-	    						context.getCounter("Invalid Data Format", "Field:" + field.getOrdinal()).increment(1);
-	    						continue;
-	    					}
-	    				} else {
-	    					continue;
-	    				}
+	    				//int
+	    				dist = numericDistance(field,  firstAttr,  secondAttr,  true, context);
 	    			} else if (field.getDataType().equals("double")) {
-	    				String[] firstValItems = firstAttr.split("\\s+");
-	    				String[] secondValItems = secondAttr.split("\\s+");
-	    				valid = false;
-	    				if (firstValItems.length == 1 && secondValItems.length == 1){
-	    					valid = true;
-	    				} else if (firstValItems.length == 2 && secondValItems.length == 2 && 
-	    						firstValItems[1].equals(unit) && secondValItems[1].equals(unit)) {
-	    					valid = true;
-	    				}
-	    				
-	    				if (valid) {
-	    					try {
-	    						dist = field.findDistance(Double.parseDouble(firstValItems[0]), Double.parseDouble(secondValItems[0]), 
-	    								schema.getNumericDiffThreshold());
-	    					} catch (NumberFormatException nfEx) {
-	    						context.getCounter("Invalid Data Format", "Field:" + field.getOrdinal()).increment(1);
-	    						continue;
-	    					}
-	    				} else {
-	    					continue;
-	    				}
+	    				//double
+	    				dist =  numericDistance( field,  firstAttr,  secondAttr, false, context);
 	    			} else if (field.getDataType().equals("text")) { 
+	    				//text
 	    				dist = textSimStrategy.findDistance(firstAttr, secondAttr);	    				
+	    			} else if (field.getDataType().equals("timeWindow")) {
+	    				//time window
+	    				dist = timeWindowDistance(field, firstAttr,  secondAttr, context);
+	    			}  else if (field.getDataType().equals("event")) {
+	    				//time window
+	    				dist = eventDistance(field, firstAttr,  secondAttr, context);
 	    			}
     			}
 				distStrategy.accumulate(dist, field.getWeight());
@@ -338,8 +315,95 @@ public class SameTypeSimilarity  extends Configured implements Tool {
     		return netDist;
         }
         
+        /**
+         * @param field
+         * @param firstAttr
+         * @param secondAttr
+         * @param context
+         * @return
+         */
+        private double numericDistance(Field field, String firstAttr,  String secondAttr, boolean isInt, Context context) {
+        	double dist = 0;
+			String[] firstValItems = firstAttr.split("\\s+");
+			String[] secondValItems = secondAttr.split("\\s+");
+			boolean valid = false;
+    		String unit = field.getUnit();
+
+    		if (firstValItems.length == 1 && secondValItems.length == 1){
+				valid = true;
+			} else if (firstValItems.length == 2 && secondValItems.length == 2 && 
+					firstValItems[1].equals(unit) && secondValItems[1].equals(unit)) {
+				valid = true;
+			}
+			
+			if (valid) {
+				try {
+					if (isInt) {
+	    				dist = field.findDistance(Integer.parseInt(firstValItems[0]), Integer.parseInt(secondValItems[0]), 
+	        					schema.getNumericDiffThreshold());
+					} else {
+						dist = field.findDistance(Double.parseDouble(firstValItems[0]), Double.parseDouble(secondValItems[0]), 
+							schema.getNumericDiffThreshold());
+					}
+				} catch (NumberFormatException nfEx) {
+					context.getCounter("Invalid Data Format", "Field:" + field.getOrdinal()).increment(1);
+				}
+			} else {
+			}
+        	return dist;
+        }       
         
+        /**
+         * @param field
+         * @param firstAttr
+         * @param secondAttr
+         * @param context
+         * @return
+         */
+        private double timeWindowDistance(Field field, String firstAttr, String secondAttr,Context context) {
+        	double dist = 0;
+    		try {
+    			String[] subFields = firstAttr.split(subFieldDelim);
+    			TimeWindow firstTimeWindow = new TimeWindow(subFields[0], subFields[1]);
+    			subFields = secondAttr.split(subFieldDelim);
+    			TimeWindow secondTimeWindow = new TimeWindow(subFields[0], subFields[1]);
+    			dist = field.findDistance(firstTimeWindow, secondTimeWindow);
+    		} catch (ParseException e) {
+    			context.getCounter("Invalid Data Format", "Field:" + field.getOrdinal()).increment(1);
+    		}
+        	return dist;
+        }    
         
+        /**
+         * @param field
+         * @param firstAttr
+         * @param secondAttr
+         * @param context
+         * @return
+         */
+        private double eventDistance(Field field, String firstAttr, String secondAttr,Context context) {
+        	double dist = 0;
+    		try {
+    			String[] subFields = firstAttr.split(subFieldDelim);
+    			String description = subFields[0];
+    			Location location  = new Location( subFields[1], subFields[2], subFields[3]); 
+    			TimeWindow timeWindow = new TimeWindow(subFields[4], subFields[5]);
+    			Event firstEvent = new Event(description, location, timeWindow);
+    			
+    			subFields = secondAttr.split(subFieldDelim);
+    			description = subFields[0];
+    			location  = new Location( subFields[1], subFields[2], subFields[3]); 
+    			timeWindow = new TimeWindow(subFields[4], subFields[5]);
+    			Event secondEvent = new Event(description, location, timeWindow);
+ 
+    			dist = field.findDistance(firstEvent, secondEvent);
+    		} catch (ParseException e) {
+    			context.getCounter("Invalid Data Format", "Field:" + field.getOrdinal()).increment(1);
+    		}
+        	return dist;
+        }    
+
+    
     }    
     
     /**

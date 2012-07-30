@@ -134,6 +134,13 @@ public class Field {
 	public void setConceptHierarchy(ConceptHierarchy conceptHierarchy) {
 		this.conceptHierarchy = conceptHierarchy;
 	}
+	
+	/**
+	 * Distance between categorical
+	 * @param thisValue
+	 * @param thatValue
+	 * @return
+	 */
 	public double  findDistance(String thisValue, String thatValue) {
 		double distance = 1.0;
 		if (thisValue.equals(thatValue)) {
@@ -164,6 +171,13 @@ public class Field {
 		return distance;
 	}
 	
+	/**
+	 * Distance between int values
+	 * @param thisValue
+	 * @param thatValue
+	 * @param diffThreshold
+	 * @return
+	 */
 	public double  findDistance(int thisValue, int thatValue,  double diffThreshold) {
 		double distance = 1.0;
 		if (max > min) {
@@ -184,6 +198,13 @@ public class Field {
 		return distance;
 	}	
 
+	/**
+	 * Distance between double values
+	 * @param thisValue
+	 * @param thatValue
+	 * @param diffThreshold
+	 * @return
+	 */
 	public double  findDistance(double thisValue, double thatValue,  double diffThreshold) {
 		double distance = 1.0;
 		if (max > min) {
@@ -204,4 +225,13 @@ public class Field {
 		return distance;
 	}	
 
+	/**
+	 * Distance between structured attributes
+	 * @param thisValue
+	 * @param thatValue
+	 * @return
+	 */
+	public double  findDistance(StructuredAttribute  thisValue, StructuredAttribute  thatValue) {
+		return  thisValue.distance(thatValue);
+	}
 }
