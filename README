@@ -1,92 +1,114 @@
 Introduction
 ============
+Sifarish is a suite of recommendation engines implementaed in Hadoop. Various 
+algorithms, including  feature similarity based recommendation and collaborative 
+filtering based recommendation using social rating data will be available
 
-Sifarish is a suite of recommendation engines implementaed in Hadoop. Various algorithms, including 
-feature similarity based recommendation and collaborative filtering based recommendation using social 
-rating data will be available
 
 Similarity Based Recommendation
 ===============================
-
-In the absence of social rating data, the only options is a feature similarity based recommendation.
-Similarity is calculated based on distance between entities in a multi dimensional feature space. Some
-examples are - recommending jobs based on user's resume - recommending products based on user profile. These
-solutions are known as content based recommendation, because it's based innate features of some entity.
+In the absence of social rating data, the only options is a feature similarity 
+based recommendation. Similarity is calculated based on distance between entities 
+in a multi dimensional feature space. Some examples are - recommending jobs based 
+on user's resume - recommending products based on user profile. These
+solutions are known as content based recommendation, because it's based innate 
+features of some entity.
 
 There are two different solutions as follows
 1. Similarity between entities of different types (e.g. user profile and product)
 2. Similarity between entities of same type (e.g. product)
 
-Attribute meta data is defined in a json file. Both entities need not have the same set of attributes. 
-Mapping between attributes values from one entity to the other can be defined in the config file.
+Attribute meta data is defined in a json file. Both entities need not have the 
+same set of attributes. Mapping between attributes values from one entity to 
+the other can be defined in the config file.
 
-The data type supported are numerical (integer) and categorical. The distnace between categorical attributes 
-is is 0 if they are same 1 otherwise. If the atrributes are different, the distance can be configured to be 
-something other than. For numerical, the distance is simply the distance between the two values. Numerical 
-attributes are normalized using the difference between the min and max values.
+The data type supported are numerical (integer) and categorical. The distnace 
+between categorical attributes  is is 0 if they are same 1 otherwise. If the 
+atrributes are different, the distance can be configured to be  something other 
+than. For numerical, the distance is simply the distance between the two values. 
+Numerical  attributes are normalized using the difference between the min and max values.
  
-The distance algorithms can be chosed to be euclidian, manhattan or minkowski. The default algorithm is 
-euclidian. The distancs between different atrributes of different types are combined to find distance between
-two entity instances. Different weights can be assigned to the attributes to control the relative importance
-of different attributes.
+The distance algorithms can be chosed to be euclidian, manhattan or minkowski. The 
+default algorithm is euclidian. The distancs between different atrributes of different 
+types are combined to find distance between two entity instances. Different weights 
+can be assigned to the attributes to control the relative importance of different 
+attributes.
 
 
 Social Data Based Recommendation
 ================================
-These category of solutions are based user behavior data with respect to some product or service. 
-User behavior data is defined in terms of some explicit rating by user or it's derived from user 
-behavior in the site. There are 3 algorithms implemented for social recommendation. The essential 
-input to all these algorithms is a matrix of user and items. The value for a cell could be the rating
-as an integer. It could also be boolean, if the user's interest in an item is expressed as a boolean
+These category of solutions are based user behavior data with respect to some product 
+or service.  User behavior data is defined in terms of some explicit rating by user 
+or it's derived from user  behavior in the site. There are 3 algorithms implemented for 
+social recommendation. The essential  input to all these algorithms is a matrix of user 
+and items. The value for a cell could be the ratingas an integer. It could also be boolean, 
+if the user's interest in an item is expressed as a boolean
 
-1. Item similarity based on distance between two item vectors. The size of the vector is the number
-of users
-2. The so called slope one recommender, where rating for an item is predicted for an user based on
-average rating of items
+1. Item similarity based on distance between two item vectors. The size of the vector 
+is the number of users
+2. The so called slope one recommender, where rating for an item is predicted for an 
+user based on average rating of items
 3. Collaborative filtering, which is based on correlation between ratings of  items. Slope one 
 recommender is simplified version of collaborative filtering.
-
 
 
 Cold Starting Recommenders
 ==========================
 These solutions are used when enough social data is not avaialable
 
-1. If data contains text attributes, use TextAnalyzer MR to convert text to token stream using lucene
+1. If data contains text attributes, use TextAnalyzer MR to convert text to token stream 
+   using lucene
 2. Find similar items based on user profile. Use DiffTypeSimilarity MR
 3. Use TopMatches MR to find top n matches for a profile
+
 
 Warm Starting Recommenders
 ==========================
 When limited amount of user behavior data is available, these solutuions are appropriate
 
-1. If data contains text attributes, use TextAnalyzer MR to convert text to token stream using lucene
+1. If data contains text attributes, use TextAnalyzer MR to convert text to token stream 
+   using lucene
 2. Find similar items by pairing items with one another using SameTypeSimilarity MR
 3. Use TopMatches MR to find top n matches for a product
 
 
 Hot Starting Recommenders
 =========================
-When significant of user behavior data is available, these soltions can be used. In the order of 
-complexity, the choices are as follows. They are all based on social data
+When significant of user behavior data is available, these soltions can be used. In 
+the order of  complexity, the choices are as follows. They are all based on social data
 
 1. Find to item similarity based on social data using DynamicAttrSimilarityStrategy MR
 2. Use TopMatches MR to find top n matches for a product
 
 OR
 
-1. Use slope one recommender (not implemented yet)
+1. Use slope one recommender 
 
 OR
 
-1. Use collaborative filtering recommender (not implemented yet)
+1. Use collaborative filtering recommender (in progress)
+
+
+Complex Attributes
+==================
+I am in the process of adding more suppoort for structured fields e.g.,
+Location, Time Window, Ctaegorized Item, Product etc. These provide contextual
+dimensions to recommendation. They are paerticularly relevant for recommendation
+in the mobile space
+
+
+Diversilty, Unexpectedness
+==========================
+based on recent work in this as published by ACM, I am working on implementing some 
+algorithms to introduce more diversity and unexpectedness in recommendation
+
 
 Configuration
 =============
 Put all config in a properties and pass it to Hadoop as below in your shell script
 -Dconf.path=/my/config/path/config.properties
 
-The properties file should have all the config values. There are some samples in the resource 
-directory
+The properties file should have all the config values. There are some samples in the 
+resource  directory
 
 
