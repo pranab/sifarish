@@ -51,4 +51,15 @@ public class EuclideanDistance extends DistanceStrategy {
 		int sim = (int)((Math.sqrt(sumWt) * scale) / count);
 		return sim;
 	}
+
+	@Override
+	public double getSimilarity(boolean isScaled) {
+		double sim = 0;
+		if (isScaled) {
+			sim = ((Math.sqrt(sumWt) * scale) / count);
+		} else {
+			sim = ((Math.sqrt(sumWt)) / count);
+		}
+		return sim;
+	}
 }

@@ -17,12 +17,14 @@
 
 package org.sifarish.feature;
 
+import org.sifarish.util.IDistanceStrategy;
+
 /**
  * Distance calculation strategy
  * @author pranab
  *
  */
-public abstract class DistanceStrategy {
+public abstract class DistanceStrategy  implements  IDistanceStrategy {
 	protected double sumWt;
 	protected int scale;
 	protected double power;
@@ -56,6 +58,12 @@ public abstract class DistanceStrategy {
 	 */
 	public abstract int getSimilarity();
 
+	/**
+	 * @param isScaled
+	 * @return
+	 */
+	public abstract  double getSimilarity(boolean isScaled);
+	
 	/**
 	 * @return
 	 */

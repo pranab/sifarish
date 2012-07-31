@@ -26,17 +26,21 @@ public class Event extends StructuredAttribute {
 	private String description;
 	private Location location;
 	private TimeWindow timeWindow;
+	private double[] locationWeights;
 
-	public Event(String description, Location location, TimeWindow timeWindow) {
+	public Event(String description, Location location, TimeWindow timeWindow, double[] locationWeights) {
 		this.description = description;
 		this.location = location;
 		this.timeWindow = timeWindow;
+		this.locationWeights = locationWeights;
 	}
 
 	@Override
-	public double distance(StructuredAttribute otherAttr) {
+	public double distance(StructuredAttribute otherAttr, Field field) {
 		Event other = (Event)otherAttr;
-		double dist = ( location.distance(other.location) + timeWindow.distance(other.timeWindow)) / 2;
+		double dist = 0;
+		//TODO
+		
 		return dist;
 	}
 

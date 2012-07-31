@@ -194,6 +194,7 @@ public class SameTypeSimilarity  extends Configured implements Tool {
             FSDataInputStream fs = dfs.open(src);
             ObjectMapper mapper = new ObjectMapper();
             schema = mapper.readValue(fs, SingleTypeSchema.class);
+            schema.processStructuredFields();
         	
             idOrdinal = schema.getEntity().getIdField().getOrdinal();
         	fieldDelimRegex = context.getConfiguration().get("field.delim.regex", "\\[\\]");
@@ -303,8 +304,11 @@ public class SameTypeSimilarity  extends Configured implements Tool {
 	    			} else if (field.getDataType().equals("timeWindow")) {
 	    				//time window
 	    				dist = timeWindowDistance(field, firstAttr,  secondAttr, context);
+	    			}  else if (field.getDataType().equals("location")) {
+	    				//location
+	    				dist = locationDistance(field, firstAttr,  secondAttr, context);
 	    			}  else if (field.getDataType().equals("event")) {
-	    				//time window
+	    				//event
 	    				dist = eventDistance(field, firstAttr,  secondAttr, context);
 	    			}
     			}
@@ -367,6 +371,7 @@ public class SameTypeSimilarity  extends Configured implements Tool {
     			TimeWindow firstTimeWindow = new TimeWindow(subFields[0], subFields[1]);
     			subFields = secondAttr.split(subFieldDelim);
     			TimeWindow secondTimeWindow = new TimeWindow(subFields[0], subFields[1]);
+
     			dist = field.findDistance(firstTimeWindow, secondTimeWindow);
     		} catch (ParseException e) {
     			context.getCounter("Invalid Data Format", "Field:" + field.getOrdinal()).increment(1);
@@ -381,20 +386,40 @@ public class SameTypeSimilarity  extends Configured implements Tool {
          * @param context
          * @return
          */
+        private double locationDistance(Field field, String firstAttr, String secondAttr,Context context) {
+        	double dist = 0;
+			String[] subFields = firstAttr.split(subFieldDelim);
+			Location firstLocation  = new Location( subFields[0], subFields[1], subFields[2]); 
+		    subFields = secondAttr.split(subFieldDelim);
+			Location secondLocation  = new Location( subFields[0], subFields[1], subFields[2]); 
+
+			dist = field.findDistance(firstLocation, secondLocation);
+        	return dist;
+        }    
+
+        
+        /**
+         * @param field
+         * @param firstAttr
+         * @param secondAttr
+         * @param context
+         * @return
+         */
         private double eventDistance(Field field, String firstAttr, String secondAttr,Context context) {
         	double dist = 0;
     		try {
+    			double[] locationWeights = schema.getLocationComponentWeights();
     			String[] subFields = firstAttr.split(subFieldDelim);
     			String description = subFields[0];
     			Location location  = new Location( subFields[1], subFields[2], subFields[3]); 
     			TimeWindow timeWindow = new TimeWindow(subFields[4], subFields[5]);
-    			Event firstEvent = new Event(description, location, timeWindow);
+    			Event firstEvent = new Event(description, location, timeWindow, locationWeights);
     			
     			subFields = secondAttr.split(subFieldDelim);
     			description = subFields[0];
     			location  = new Location( subFields[1], subFields[2], subFields[3]); 
     			timeWindow = new TimeWindow(subFields[4], subFields[5]);
-    			Event secondEvent = new Event(description, location, timeWindow);
+    			Event secondEvent = new Event(description, location, timeWindow, locationWeights);
  
     			dist = field.findDistance(firstEvent, secondEvent);
     		} catch (ParseException e) {

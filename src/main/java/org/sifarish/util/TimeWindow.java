@@ -43,7 +43,7 @@ public class TimeWindow  extends StructuredAttribute{
 		return end - start;
 	}
 	
-	public double distance(StructuredAttribute otherAttr) {
+	public double distance(StructuredAttribute otherAttr, Field field) {
 		TimeWindow other = (TimeWindow)otherAttr;
 		double distance = 0;
 		long overlap = 0;

@@ -31,6 +31,8 @@ public class TypeSchema {
 	private String textMatchingAlgorithm;
 	private double srcNonMatchingTermWeight = 1.0;
 	private double trgNonMatchingTermWeight = 1.0;
+	private double[] locationComponentWeights;
+	private double[] eventComponentWeights;
 
 	public String getDistAlgorithm() {
 		return distAlgorithm;
@@ -83,6 +85,27 @@ public class TypeSchema {
 	public void setTrgNonMatchingTermWeight(double trgNonMatchingTermWeight) {
 		this.trgNonMatchingTermWeight = trgNonMatchingTermWeight;
 	}
+	public double[] getLocationComponentWeights() {
+		return locationComponentWeights;
+	}
+
+	public void setLocationComponentWeights(double[] locationComponentWeights) {
+		this.locationComponentWeights = locationComponentWeights;
+	}
+
+	public double[] getEventComponentWeights() {
+		return eventComponentWeights;
+	}
+
+	public void setEventComponentWeights(double[] eventComponentWeights) {
+		this.eventComponentWeights = eventComponentWeights;
+	}
+
+	/**
+	 * Entity distance strategy
+	 * @param scale
+	 * @return
+	 */
 	public DistanceStrategy createDistanceStrategy(int scale) {
 		DistanceStrategy distStrategy = null;
 		
@@ -98,6 +121,10 @@ public class TypeSchema {
 		return distStrategy;
 	}
 	
+	/**
+	 * Text similarity strategy
+	 * @return
+	 */
 	public DynamicAttrSimilarityStrategy createTextSimilarityStrategy() {
 		DynamicAttrSimilarityStrategy  textSimStrategy = null;
 		if (textMatchingAlgorithm.equals("jaccard")){

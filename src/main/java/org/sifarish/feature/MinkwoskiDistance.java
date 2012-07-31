@@ -56,4 +56,10 @@ public class MinkwoskiDistance extends DistanceStrategy {
 		return sim;
 	}
 
+	@Override
+	public double getSimilarity(boolean isScaled) {
+		// TODO Auto-generated method stub
+		return 0;
+	}
+
 }

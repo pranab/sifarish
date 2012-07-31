@@ -46,4 +46,10 @@ public class ManhattanDistance extends DistanceStrategy {
 		int sim = (int)((sumWt * scale) / count);
 		return sim;
 	}
+
+	@Override
+	public double getSimilarity(boolean isScaled) {
+		// TODO Auto-generated method stub
+		return 0;
+	}
 }

@@ -20,6 +20,8 @@ package org.sifarish.feature;
 import java.util.List;
 
 import org.sifarish.util.Entity;
+import org.sifarish.util.Field;
+import org.sifarish.util.IDistanceStrategy;
 
 /**
  * @author pranab
@@ -54,4 +56,21 @@ public class SingleTypeSchema  extends TypeSchema {
 		this.partitioningColumn = partitioningColumn;
 	}
 
+	/**
+	 * Process structured fields
+	 */
+	public void processStructuredFields() {
+		for (Field field : entity.getFields()) {
+			String distAlgorithm = field.getDistAlgorithm();
+			if (null != distAlgorithm) {
+				IDistanceStrategy distStrategy = null;
+				if (distAlgorithm.equals("euclidean")) {
+					distStrategy = new EuclideanDistance(1);
+				} else if (distAlgorithm.equals("manhattan")) {
+					distStrategy = new ManhattanDistance(1);
+				}		
+				field.setDistStrategy(distStrategy);
+			}
+		}
+	}
 }

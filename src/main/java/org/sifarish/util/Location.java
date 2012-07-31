@@ -27,7 +27,6 @@ public class Location extends StructuredAttribute {
 	private String landMark;
 	private String city;
 	private String state;
-	public static double[] componentWeights;
 	
 	/**
 	 * @param landMark
@@ -45,16 +44,21 @@ public class Location extends StructuredAttribute {
 	/* (non-Javadoc)
 	 * @see org.sifarish.util.StructuredAttribute#distance(org.sifarish.util.StructuredAttribute)
 	 */
-	public double distance(StructuredAttribute otherAttr) {
+	public double distance(StructuredAttribute otherAttr, Field field) {
+		IDistanceStrategy distStrategy = field.getDistStrategy();
+		double[] weights = field.getComponentWeights();
 		Location other = (Location)otherAttr;
 		double dist = 0;
 		if (null  != landMark) {
-			dist += (landMark.equals(other.landMark)? 0 : 1) * componentWeights[0];
+			dist = (landMark.equals(other.landMark)? 0 : 1);
+			distStrategy.accumulate(dist, weights[0]);
 		}
-		dist += (city.equals(other.city)? 0 : 1) * componentWeights[1];
-		dist += (state.equals(other.state)? 0 : 1) * componentWeights[2];
+		dist = city.equals(other.city)? 0 : 1;
+		distStrategy.accumulate(dist, weights[1]);
+		dist = state.equals(other.state)? 0 : 1;
+		distStrategy.accumulate(dist, weights[2]);
 
-		return dist;
+		return distStrategy.getSimilarity(false);
 	}
 
 }

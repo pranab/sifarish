@@ -15,22 +15,23 @@
  * permissions and limitations under the License.
  */
 
-
 package org.sifarish.util;
 
-/**
- * Structured attribute base class
- * @author pranab
- *
- */
-public abstract class StructuredAttribute {
+public interface IDistanceStrategy {
+	/**
+	 * @param distance
+	 * @param weight
+	 */
+	public  void accumulate(double distance, double weight);
 	
 	/**
-	 * Distance with another instance
-	 * @param other
-	 * @param weights
 	 * @return
 	 */
-	public abstract double distance(StructuredAttribute other, Field field);
-	
+	public  int getSimilarity();
+
+	/**
+	 * @param isScaled
+	 * @return
+	 */
+	public double getSimilarity(boolean isScaled);
 }

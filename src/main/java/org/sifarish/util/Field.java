@@ -40,7 +40,10 @@ public class Field {
 	private List<CategoricalDistance> categoricalDistances;
 	private String numDistFunction = "equalSoft";
 	private ConceptHierarchy conceptHierarchy;
-	
+	private String distAlgorithm;
+	private double[] componentWeights;
+
+	private IDistanceStrategy distStrategy;
 	
 	public boolean isType() {
 		return type;
@@ -135,6 +138,18 @@ public class Field {
 		this.conceptHierarchy = conceptHierarchy;
 	}
 	
+	public String getDistAlgorithm() {
+		return distAlgorithm;
+	}
+	public void setDistAlgorithm(String distAlgorithm) {
+		this.distAlgorithm = distAlgorithm;
+	}
+	public double[] getComponentWeights() {
+		return componentWeights;
+	}
+	public void setComponentWeights(double[] componentWeights) {
+		this.componentWeights = componentWeights;
+	}
 	/**
 	 * Distance between categorical
 	 * @param thisValue
@@ -231,7 +246,15 @@ public class Field {
 	 * @param thatValue
 	 * @return
 	 */
-	public double  findDistance(StructuredAttribute  thisValue, StructuredAttribute  thatValue) {
-		return  thisValue.distance(thatValue);
+	public double  findDistance(StructuredAttribute  thisValue, StructuredAttribute  thatValue ) {
+		return  thisValue.distance(thatValue, this);
 	}
+	
+	public IDistanceStrategy getDistStrategy() {
+		return distStrategy;
+	}
+	public void setDistStrategy(IDistanceStrategy distStrategy) {
+		this.distStrategy = distStrategy;
+	}
+	
 }
