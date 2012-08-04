@@ -49,7 +49,12 @@ public class ManhattanDistance extends DistanceStrategy {
 
 	@Override
 	public double getSimilarity(boolean isScaled) {
-		// TODO Auto-generated method stub
+		double sim = 0;
+		if (isScaled) {
+			sim = ((sumWt * scale) / count);
+		} else {
+			sim = ((sumWt) / count);
+		}
 		return 0;
 	}
 }

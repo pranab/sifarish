@@ -43,6 +43,10 @@ public class TimeWindow  extends StructuredAttribute{
 		return end - start;
 	}
 	
+	/* (non-Javadoc)
+	 * @see org.sifarish.util.StructuredAttribute#distance(org.sifarish.util.StructuredAttribute, org.sifarish.util.Field)
+	 * Based on the extent of overlap
+	 */
 	public double distance(StructuredAttribute otherAttr, Field field) {
 		TimeWindow other = (TimeWindow)otherAttr;
 		double distance = 0;
@@ -61,6 +65,7 @@ public class TimeWindow  extends StructuredAttribute{
 		} else {
 			distance = 1;
 		}
+		
 		if (overlap > 0) {
 			distance =( (double)overlap) / min;
 		}

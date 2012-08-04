@@ -111,4 +111,28 @@ Put all config in a properties and pass it to Hadoop as below in your shell scri
 The properties file should have all the config values. There are some samples in the 
 resource  directory
 
+Usage
+=====
+Here is sample script. You provide all the configurations needed through a properties
+file. The property file name is provided through the param conf.path.
 
+JAR_NAME=/..../sifarish/target/sifarish-1.0.jar
+CLASS_NAME=org.sifarish.common.ItemDynamicAttributeSimilarity
+
+echo "running mr"
+IN_PATH=/..../purch/item
+OUT_PATH=/..../purch/simi
+echo "input $IN_PATH output $OUT_PATH"
+hadoop fs -rmr $OUT_PATH
+echo "removed output dir"
+
+hadoop jar $JAR_NAME  $CLASS_NAME -Dconf.path=/.../purch.properties  $IN_PATH  $OUT_PATH
+
+Dependency
+==========
+This project depends on my other project chombo. You can distribute to cache by including the
+following in the hadoop jar command as follows
+ -libjars chombo-1.0.jar
+ 
+If running single node Haddop cluster on you locl machine, easiest thing to do is to copy
+the jar to the Hadoop installation lib directory

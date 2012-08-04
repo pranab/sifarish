@@ -58,7 +58,12 @@ public class MinkwoskiDistance extends DistanceStrategy {
 
 	@Override
 	public double getSimilarity(boolean isScaled) {
-		// TODO Auto-generated method stub
+		double dist = 0;
+		if (isScaled) {
+			dist = ((Math.pow(sumWt, 1.0/power)  * scale) / count);
+		} else {
+			dist = ((Math.pow(sumWt, 1.0/power) ) / count);
+		}
 		return 0;
 	}
 
