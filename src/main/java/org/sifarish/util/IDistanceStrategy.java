@@ -17,7 +17,17 @@
 
 package org.sifarish.util;
 
+/**
+ * @author pranab
+ *
+ */
 public interface IDistanceStrategy {
+	
+	/**
+	 * 
+	 */
+	public void initialize();
+	
 	/**
 	 * @param distance
 	 * @param weight

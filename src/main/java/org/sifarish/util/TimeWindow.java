@@ -35,7 +35,8 @@ public class TimeWindow  extends StructuredAttribute{
 		this.start = df.parse(start).getTime();
 		this.end = df.parse(end).getTime();
 		if (this.start > this.end) {
-			throw new IllegalArgumentException("start time should be less than end time");
+			throw new IllegalArgumentException("start time should be less than end time start:" + start + 
+					" end:" + end);
 		}
 	}
 	

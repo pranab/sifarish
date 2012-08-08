@@ -127,10 +127,12 @@ public class TypeSchema {
 	 */
 	public DynamicAttrSimilarityStrategy createTextSimilarityStrategy() {
 		DynamicAttrSimilarityStrategy  textSimStrategy = null;
-		if (textMatchingAlgorithm.equals("jaccard")){
-			textSimStrategy = new JaccardSimilarity(srcNonMatchingTermWeight, trgNonMatchingTermWeight);
-		} else if (textMatchingAlgorithm.equals("cosine")){
-			textSimStrategy = new CosineSimilarity();
+		if (null  !=  textMatchingAlgorithm) {
+			if (textMatchingAlgorithm.equals("jaccard")){
+				textSimStrategy = new JaccardSimilarity(srcNonMatchingTermWeight, trgNonMatchingTermWeight);
+			} else if (textMatchingAlgorithm.equals("cosine")){
+				textSimStrategy = new CosineSimilarity();
+			}
 		}
 		return textSimStrategy;
 	}	

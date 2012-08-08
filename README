@@ -132,7 +132,7 @@ Dependency
 ==========
 This project depends on my other project chombo. You can distribute to cache by including the
 following in the hadoop jar command as follows
- -libjars chombo-1.0.jar
+-libjars chombo-1.0.jar
  
-If running single node Haddop cluster on you locl machine, easiest thing to do is to copy
-the jar to the Hadoop installation lib directory
+If running single node Haddop cluster on you locl machine, easiest thing to do is to 
+copy the jar to the Hadoop installation lib directory

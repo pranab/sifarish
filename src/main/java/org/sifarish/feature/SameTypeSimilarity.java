@@ -201,7 +201,7 @@ public class SameTypeSimilarity  extends Configured implements Tool {
         	scale = context.getConfiguration().getInt("distance.scale", 1000);
         	distStrategy = schema.createDistanceStrategy(scale);
         	textSimStrategy = schema.createTextSimilarityStrategy();
-        	subFieldDelim = context.getConfiguration().get("sub.field.delim.regex", ":");
+        	subFieldDelim = context.getConfiguration().get("sub.field.delim.regex", "::");
       }
         
         /* (non-Javadoc)

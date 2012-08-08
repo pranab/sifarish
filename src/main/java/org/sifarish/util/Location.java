@@ -48,6 +48,7 @@ public class Location extends StructuredAttribute {
 		IDistanceStrategy distStrategy = field.getDistStrategy();
 		double[] weights = field.getComponentWeights();
 		Location other = (Location)otherAttr;
+		distStrategy.initialize();
 		double dist = 0;
 		if (null  != landMark) {
 			dist = (landMark.equals(other.landMark)? 0 : 1);
