@@ -15,7 +15,7 @@
  * permissions and limitations under the License.
  */
 
-package org.sifarish.social;
+package org.sifarish.common;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -36,30 +36,31 @@ import org.apache.hadoop.mapreduce.Reducer;
 import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 import org.apache.hadoop.util.Tool;
+import org.apache.hadoop.util.ToolRunner;
 import org.chombo.util.TextInt;
 import org.chombo.util.Tuple;
 import org.chombo.util.Utility;
 
 /**
  * Predicts rating for an user and item. based on another item the user has rated and the 
- * correlation between the items
+ * correlation between the items. This is the second MR to run after rating correlations are available
  * @author pranab
  *
  */
-public class RatingPredictor extends Configured implements Tool{
+public class UtilityPredictor extends Configured implements Tool{
     @Override
     public int run(String[] args) throws Exception   {
         Job job = new Job(getConf());
         String jobName = "Rating predictor  MR";
         job.setJobName(jobName);
         
-        job.setJarByClass(RatingPredictor.class);
+        job.setJarByClass(UtilityPredictor.class);
         
         FileInputFormat.addInputPath(job, new Path(args[0]));
         FileOutputFormat.setOutputPath(job, new Path(args[1]));
 
-        job.setMapperClass(RatingPredictor.PredictionMapper.class);
-        job.setReducerClass(RatingPredictor.PredictorReducer.class);
+        job.setMapperClass(UtilityPredictor.PredictionMapper.class);
+        job.setReducerClass(UtilityPredictor.PredictorReducer.class);
         
         job.setMapOutputKeyClass(TextInt.class);
         job.setMapOutputValueClass(Tuple.class);
@@ -143,7 +144,7 @@ public class RatingPredictor extends Configured implements Tool{
     public static class PredictorReducer extends Reducer<TextInt, Tuple, NullWritable, Text> {
     	private String fieldDelim;
     	private Text valueOut = new Text();
-    	private List<Tuple> avRatingDiffs = new ArrayList<Tuple>();
+    	private List<Tuple> ratingCorrelations = new ArrayList<Tuple>();
     	private boolean linearCorrelation;
     	private int correlationScale;
     	
@@ -161,22 +162,22 @@ public class RatingPredictor extends Configured implements Tool{
          */
         protected void reduce(TextInt  key, Iterable<Tuple> values, Context context)
         throws IOException, InterruptedException {
-        	avRatingDiffs.clear();
+        	ratingCorrelations.clear();
            	for(Tuple value : values) {
            		if ( ((Integer)value.get(value.getSize()-1)) == 0) {
-           			avRatingDiffs.add(value);
+           			ratingCorrelations.add(value);
            		} else {
-           			if (!avRatingDiffs.isEmpty()) {
+           			if (!ratingCorrelations.isEmpty()) {
 	           			String userID = value.getString(0);
 	           			int rating = value.getInt(1);
 	           			
-	           			for (Tuple  ratingDiffTup : avRatingDiffs) {
-	           				String itemID = ratingDiffTup.getString(0);
-	           				int ratingCorr = ratingDiffTup.getInt(1);
-	           				int weight = ratingDiffTup.getInt(2);
+	           			for (Tuple  ratingCorrTup : ratingCorrelations) {
+	           				String itemID = ratingCorrTup.getString(0);
+	           				int ratingCorr = ratingCorrTup.getInt(1);
+	           				int weight = ratingCorrTup.getInt(2);
 	           				
 	           				int predRating = linearCorrelation? (rating * ratingCorr) / correlationScale : rating + ratingCorr;
-	           				valueOut.set(userID + fieldDelim + itemID + fieldDelim + predRating + fieldDelim + weight);
+	           				valueOut.set(userID + fieldDelim + itemID + fieldDelim + predRating + fieldDelim + weight + fieldDelim +ratingCorr );
 	           		   		context.write(NullWritable.get(), valueOut);
 	           			}
            			}
@@ -216,4 +217,13 @@ public class RatingPredictor extends Configured implements Tool{
     	}
      }
     
+    /**
+     * @param args
+     * @throws Exception
+     */
+    public static void main(String[] args) throws Exception {
+        int exitCode = ToolRunner.run(new UtilityPredictor(), args);
+        System.exit(exitCode);
+    }
+   
 }

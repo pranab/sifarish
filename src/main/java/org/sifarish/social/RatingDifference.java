@@ -119,7 +119,7 @@ public class RatingDifference extends Configured implements Tool{
     	private String fieldDelim;
     	private int sum ;
     	private int count;
-    	private int avRating;
+    	private int avRatingDiff;
     	private Text valueOut = new Text();
     	
         /* (non-Javadoc)
@@ -139,8 +139,8 @@ public class RatingDifference extends Configured implements Tool{
         		sum += value.get();
         		++count;
         	}
-        	avRating = sum / count;
-        	valueOut.set(key.toString() + fieldDelim +  avRating + fieldDelim + count);
+        	avRatingDiff = sum / count;
+        	valueOut.set(key.toString() + fieldDelim +  avRatingDiff + fieldDelim + count);
 	   		context.write(NullWritable.get(), valueOut);
           }    	
     }        	

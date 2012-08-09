@@ -1,0 +1,40 @@
+{
+	"distAlgorithm" : "euclidean",
+	"entity" : 
+	{
+		"name" : "event",
+		"fields" :
+		[
+			{
+				"name" : "userID",
+				"ordinal" : 0,
+				"dataType" : "string"
+			},
+			{
+				"name" : "id",
+				"ordinal" : 1,
+				"id" : true,
+				"dataType" : "string"
+			},
+			{
+				"name" : "description",
+				"ordinal" : 2,
+				"dataType" : "string"
+			},
+			{
+				"name" : "location",
+				"ordinal" : 3,
+				"dataType" : "location",
+				"weight" : 1.1,
+				"distAlgorithm" : "euclidean",
+				"componentWeights" : [0.6,1.2,1.2]
+			},
+			{
+				"name" : "time",
+				"ordinal" : 4,
+				"dataType" : "timeWindow",
+				"weight" : 1.2
+			}
+		]
+	}
+}
