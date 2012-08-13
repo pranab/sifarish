@@ -123,7 +123,12 @@ public class UtilityPredictor extends Configured implements Tool{
         	} else {
         		//rating correlation value: item, correlation, weight
         		keyOut.set(items[0], 0);
-        		valOut.add(items[1], new Integer(items[2]), new Integer(items[3]), zero);
+   	   			if (linearCorrelation) {
+   	   				valOut.add(items[1], new Integer( items[2]), new Integer(items[3]), zero);
+   	   			} else {
+   	   				valOut.add(items[1], new Integer("-" + items[2]), new Integer(items[3]), zero);
+   	   			}
+        		
    	   			context.write(keyOut, valOut);
 
    	   			keyOut.set(items[1], 0);

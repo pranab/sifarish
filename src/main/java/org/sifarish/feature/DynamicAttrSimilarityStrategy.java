@@ -29,6 +29,7 @@ public abstract class DynamicAttrSimilarityStrategy {
 	protected String fieldDelimRegex = "\\s+";
 	protected boolean isBooleanVec;
 	protected boolean isCountIncluded;
+	protected  int intersectionLength;
 	
 	/**
 	 * @param src
@@ -77,6 +78,13 @@ public abstract class DynamicAttrSimilarityStrategy {
 	 */
 	public void setCountIncluded(boolean isCountIncluded) {
 		this.isCountIncluded = isCountIncluded;
+	}
+	
+	/**
+	 * @return
+	 */
+	public int getIntersectionLength() {
+		return intersectionLength;
 	}
 
 	/**

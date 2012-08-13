@@ -97,6 +97,7 @@ public class ItemDynamicAttributeSimilarity  extends Configured implements Tool{
         private IntPair keyHolder = new IntPair();
         private Text valueHolder = new Text();
         private int hashPairMult;
+        private int hashCode;
     	
         /* (non-Javadoc)
          * @see org.apache.hadoop.mapreduce.Mapper#setup(org.apache.hadoop.mapreduce.Mapper.Context)
@@ -115,7 +116,11 @@ public class ItemDynamicAttributeSimilarity  extends Configured implements Tool{
             throws IOException, InterruptedException {
         	//first token is nitem ID and the rest list of userID
         	itemID  =  value.toString().split(fieldDelimRegex)[0];
-    		hash = (itemID.hashCode() %  bucketCount  + bucketCount) / 2 ;
+        	hashCode = itemID.hashCode();
+        	if (hashCode < 0) {
+        		hashCode = - hashCode;
+        	}
+    		hash = (hashCode %  bucketCount) / 2 ;
 
     		for (int i = 0; i < bucketCount;  ++i) {
     			if (i < hash){
@@ -147,6 +152,7 @@ public class ItemDynamicAttributeSimilarity  extends Configured implements Tool{
         private List<String[]> valueList = new ArrayList<String[]>();
         private DynamicAttrSimilarityStrategy simStrategy;
         private int scale;
+        private boolean outputCorrelation;
         
         /* (non-Javadoc)
          * @see org.apache.hadoop.mapreduce.Reducer#setup(org.apache.hadoop.mapreduce.Reducer.Context)
@@ -163,6 +169,7 @@ public class ItemDynamicAttributeSimilarity  extends Configured implements Tool{
         	simStrategy.setFieldDelimRegex(fieldDelimRegex);
         	simStrategy.setBooleanVec(true);
            	scale = context.getConfiguration().getInt("distance.scale", 1000);
+           	outputCorrelation = context.getConfiguration().getBoolean("output.correlation", false);
           }    
 
         /* (non-Javadoc)
@@ -193,6 +200,10 @@ public class ItemDynamicAttributeSimilarity  extends Configured implements Tool{
         				dist = ( 1.0 - simStrategy.findDistance(firstParts[1], secondParts[1]))  * scale;
         				dist = dist < 0.0 ? 0.0 : dist;
         				
+        				if (outputCorrelation) {
+        					dist = scale - dist;
+        				}
+        				
         				//2 items IDs followed by distance
 	   					valueHolder.set(firstParts[0] + fieldDelim + secondParts[0] + fieldDelim + (int)dist);
 	   	    			context.getCounter("Reducer", "Emit").increment(1);
@@ -217,8 +228,13 @@ public class ItemDynamicAttributeSimilarity  extends Configured implements Tool{
 	        				dist = (1.0 - simStrategy.findDistance(firstParts[1], parts[1])) * scale;
 	        				dist = dist < 0.0 ? 0.0 : dist;
 	        				
-	        				//2 item IDs followed by distance
-		   					valueHolder.set(firstParts[0] + fieldDelim + parts[0] + fieldDelim + (int)dist);
+	        				if (outputCorrelation) {
+	        					dist = scale - dist;
+	        				}
+
+	        				//two  item IDs followed by distance anf intersection length
+		   					valueHolder.set(firstParts[0] + fieldDelim + parts[0] + fieldDelim + (int)dist + fieldDelim + 
+		   							simStrategy.getIntersectionLength());
 		   	    			context.getCounter("Reducer", "Emit").increment(1);
 		   					context.write(NullWritable.get(), valueHolder);
 	        			}

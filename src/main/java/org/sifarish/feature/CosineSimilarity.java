@@ -28,6 +28,7 @@ import java.util.Map.Entry;
  */
 public class CosineSimilarity  extends DynamicAttrSimilarityStrategy{
 	private Map<String, int[]> countVec = new HashMap<String, int[]>();
+	private int intersectionLength;
 
 	/* (non-Javadoc)
 	 * @see org.sifarish.feature.DynamicAttrSimilarityStrategy#findDistance(java.lang.String, java.lang.String)
@@ -36,6 +37,7 @@ public class CosineSimilarity  extends DynamicAttrSimilarityStrategy{
 	public double findDistance(String src, String target) {
 		double distance = 1.0;
 		countVec.clear();
+		intersectionLength = 0;
 		
 		String[] srcTerms = src.split(fieldDelimRegex);
 		String[] trgTerms = target.split(fieldDelimRegex);
@@ -54,6 +56,9 @@ public class CosineSimilarity  extends DynamicAttrSimilarityStrategy{
 			crossProd += val[0] * val[1];
 			srcSqSum += val[0] * val[0];
 			trgSqSum += val[1] * val[1];
+			if (val[0] > 0 && val[1] > 0) {
+				++intersectionLength;
+			}
 		}
 		distance = ((double)crossProd) /( Math.sqrt(srcSqSum) * Math.sqrt(trgSqSum));
 		if (distance > 0) {
@@ -89,5 +94,6 @@ public class CosineSimilarity  extends DynamicAttrSimilarityStrategy{
 		}
 		
 	}
+
 
 }

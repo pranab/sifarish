@@ -61,6 +61,7 @@ public class JaccardSimilarity extends DynamicAttrSimilarityStrategy {
 		int trgNonMatchCount = trgTerms.length - matchCount;
 		distance = 1.0 - (double)matchCount / ((double)matchCount + srcNonMatchingTermWeight * srcNonMatchCount +
 				trgNonMatchingTermWeight * trgNonMatchCount);
+		intersectionLength = matchCount;
 		return distance;
 	}
 
