@@ -111,12 +111,12 @@ public class RatingPredictor extends Configured implements Tool{
         	String[] items = value.toString().split(fieldDelim);
         	if (isRatingFileSplit) {
         		//user rating
-        		String userID = items[0];
+        		String itemID = items[0];
                	for (int i = 1; i < items.length; ++i) {
                		valOut.initialize();
             		ratings = items[i].split(subFieldDelim);
-            		keyOut.set(ratings[0], 1);
-            		valOut.add(userID,  new Integer(ratings[1]), one);
+            		keyOut.set(itemID, 1);
+            		valOut.add(ratings[0],  new Integer(ratings[1]), one);
        	   			context.write(keyOut, valOut);
                	}
         	} else {

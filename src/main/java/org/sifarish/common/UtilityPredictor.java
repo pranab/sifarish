@@ -112,16 +112,16 @@ public class UtilityPredictor extends Configured implements Tool{
         	String[] items = value.toString().split(fieldDelim);
         	if (isRatingFileSplit) {
         		//user rating
-        		String userID = items[0];
+        		String itemID = items[0];
                	for (int i = 1; i < items.length; ++i) {
                		valOut.initialize();
             		ratings = items[i].split(subFieldDelim);
-            		keyOut.set(ratings[0], 1);
-            		valOut.add(userID,  new Integer(ratings[1]), one);
+            		keyOut.set(itemID, 1);
+            		valOut.add(ratings[0],  new Integer(ratings[1]), one);
        	   			context.write(keyOut, valOut);
                	}
         	} else {
-        		//rating correlation
+        		//rating correlation value: item, correlation, weight
         		keyOut.set(items[0], 0);
         		valOut.add(items[1], new Integer(items[2]), new Integer(items[3]), zero);
    	   			context.write(keyOut, valOut);
@@ -147,6 +147,7 @@ public class UtilityPredictor extends Configured implements Tool{
     	private List<Tuple> ratingCorrelations = new ArrayList<Tuple>();
     	private boolean linearCorrelation;
     	private int correlationScale;
+    	private int maxRating;
     	
         /* (non-Javadoc)
          * @see org.apache.hadoop.mapreduce.Reducer#setup(org.apache.hadoop.mapreduce.Reducer.Context)
@@ -155,6 +156,7 @@ public class UtilityPredictor extends Configured implements Tool{
         	fieldDelim = context.getConfiguration().get("field.delim", ",");
         	linearCorrelation = context.getConfiguration().getBoolean("correlation.linear", true);
         	correlationScale = context.getConfiguration().getInt("correlation.linear.scale", 1000);
+           	maxRating = context.getConfiguration().getInt("max.rating", 5);
         } 	
         
         /* (non-Javadoc)
@@ -176,7 +178,8 @@ public class UtilityPredictor extends Configured implements Tool{
 	           				int ratingCorr = ratingCorrTup.getInt(1);
 	           				int weight = ratingCorrTup.getInt(2);
 	           				
-	           				int predRating = linearCorrelation? (rating * ratingCorr) / correlationScale : rating + ratingCorr;
+	           				int predRating = linearCorrelation? (rating * ratingCorr) / maxRating : 
+	           					(rating  * correlationScale + ratingCorr) /maxRating ;
 	           				valueOut.set(userID + fieldDelim + itemID + fieldDelim + predRating + fieldDelim + weight + fieldDelim +ratingCorr );
 	           		   		context.write(NullWritable.get(), valueOut);
 	           			}
