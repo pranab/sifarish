@@ -23,6 +23,8 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import org.apache.commons.lang3.ArrayUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.conf.Configured;
 import org.apache.hadoop.fs.FSDataInputStream;
@@ -37,15 +39,11 @@ import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.mapreduce.Mapper;
 import org.apache.hadoop.mapreduce.Partitioner;
 import org.apache.hadoop.mapreduce.Reducer;
-import org.apache.hadoop.mapreduce.Mapper.Context;
 import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 import org.apache.hadoop.util.Tool;
 import org.apache.hadoop.util.ToolRunner;
 import org.codehaus.jackson.map.ObjectMapper;
-import org.sifarish.feature.DiffTypeSimilarity.IdPairGroupComprator;
-import org.sifarish.feature.DiffTypeSimilarity.IdPairPartitioner;
-import org.sifarish.util.Entity;
 import org.sifarish.util.Event;
 import org.sifarish.util.Field;
 import org.sifarish.util.Location;
@@ -182,6 +180,7 @@ public class SameTypeSimilarity  extends Configured implements Tool {
         private DistanceStrategy distStrategy;
         private DynamicAttrSimilarityStrategy textSimStrategy;
         private String subFieldDelim;
+        private int[] facetedFields;
       
     	/* (non-Javadoc)
     	 * @see org.apache.hadoop.mapreduce.Reducer#setup(org.apache.hadoop.mapreduce.Reducer.Context)
@@ -202,6 +201,16 @@ public class SameTypeSimilarity  extends Configured implements Tool {
         	distStrategy = schema.createDistanceStrategy(scale);
         	textSimStrategy = schema.createTextSimilarityStrategy();
         	subFieldDelim = context.getConfiguration().get("sub.field.delim.regex", "::");
+        	
+        	//faceted fields
+        	String facetedFieldValues =  conf.get("faceted.field.ordinal");
+        	if (!StringUtils.isBlank(facetedFieldValues)) {
+        		String[] items = facetedFieldValues.split(",");
+        		facetedFields = new int[items.length];
+        		for (int i = 0; i < items.length; ++i) {
+        			facetedFields[i] = Integer.parseInt(items[i]);
+        		}
+        	}
       }
         
         /* (non-Javadoc)
@@ -271,6 +280,13 @@ public class SameTypeSimilarity  extends Configured implements Tool {
     		distStrategy.initialize();
     		
     		for (Field field :  schema.getEntity().getFields()) {
+    			if (null != facetedFields) {
+    				//if facetted but field not included, then skit it
+    				if (!ArrayUtils.contains(facetedFields, field.getOrdinal())) {
+    					continue;
+    				}
+    			}
+    			
     			String firstAttr = "";
     			if (field.getOrdinal() < firstItems.length ){
     				firstAttr = firstItems[field.getOrdinal()];
