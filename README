@@ -5,8 +5,8 @@ algorithms, including  feature similarity based recommendation and collaborative
 filtering based recommendation using social rating data will be available
 
 
-Similarity Based Recommendation
-===============================
+Content Similarity Based Recommendation
+=======================================
 In the absence of social rating data, the only options is a feature similarity 
 based recommendation. Similarity is calculated based on distance between entities 
 in a multi dimensional feature space. Some examples are - recommending jobs based 
@@ -35,8 +35,8 @@ can be assigned to the attributes to control the relative importance of differen
 attributes.
 
 
-Social Data Based Recommendation
-================================
+Social Interaction Data Based Recommendation
+============================================
 These category of solutions are based user behavior data with respect to some product 
 or service.  User behavior data is defined in terms of some explicit rating by user 
 or it's derived from user  behavior in the site. There are 3 algorithms implemented for 
@@ -77,31 +77,37 @@ Hot Starting Recommenders
 When significant of user behavior data is available, these soltions can be used. In 
 the order of  complexity, the choices are as follows. They are all based on social data
 
-1. Find to item similarity based on social data using DynamicAttrSimilarityStrategy MR
-2. Use TopMatches MR to find top n matches for a product
+There two phases for collaborative filetering based recommendation using social data
+1. Find correlation between items 2. Predict rating based on items alreadyv rated and 
+result of 1
 
+Items Correlation
+1. Find  item similarity based on social data using DynamicAttrSimilarityStrategy MR
 OR
-
-1. Use slope one recommender 
-
+2. Use RatingDifference to find mean rating difference (aka slope one recommender) correlation
 OR
+3. Use collaborative filtering recommender (in progress)
 
-1. Use collaborative filtering recommender (in progress)
-
+Rating Prediction
+1. Run UtilityPredictor on the result of 1 or 2 or 3 followed by UtilityAggregator
 
 Complex Attributes
 ==================
 I am in the process of adding more suppoort for structured fields e.g.,
 Location, Time Window, Ctaegorized Item, Product etc. These provide contextual
-dimensions to recommendation. They are paerticularly relevant for recommendation
+dimensions to recommendation. They are particularly relevant for recommendation
 in the mobile space
 
 
 Diversilty, Unexpectedness
 ==========================
-based on recent work in this as published by ACM, I am working on implementing some 
-algorithms to introduce more diversity and unexpectedness in recommendation
+Based on recent work in this as published by ACM, I am working on implementing some 
+algorithms to introduce  diversity and novelty in recommendation
 
+Facted Match
+============
+For content based recommendation, faceted match is supported as faceted search in Solr.
+Faceted fields are specified through a configuration parameter
 
 Configuration
 =============
