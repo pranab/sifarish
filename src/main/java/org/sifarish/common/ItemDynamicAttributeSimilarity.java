@@ -167,7 +167,12 @@ public class ItemDynamicAttributeSimilarity  extends Configured implements Tool{
         	Map<String, Object> params = new HashMap<String, Object>();
         	simStrategy = DynamicAttrSimilarityStrategy.createSimilarityStrategy(simAlgorithm, params);
         	simStrategy.setFieldDelimRegex(fieldDelimRegex);
-        	simStrategy.setBooleanVec(true);
+        	boolean booleanVec = context.getConfiguration().getBoolean("vec.type.boolean", true);
+        	simStrategy.setBooleanVec(booleanVec);
+        	if (!booleanVec) {
+            	boolean countIncluded = context.getConfiguration().getBoolean("vec.count.included", true);
+        		simStrategy.setCountIncluded(countIncluded);
+        	}
            	scale = context.getConfiguration().getInt("distance.scale", 1000);
            	outputCorrelation = context.getConfiguration().getBoolean("output.correlation", false);
           }    
