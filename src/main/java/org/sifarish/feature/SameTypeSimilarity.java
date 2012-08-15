@@ -115,6 +115,7 @@ public class SameTypeSimilarity  extends Configured implements Tool {
         private String fieldDelimRegex;
         private  int partitonOrdinal;
         private int hashPair;
+        private int hashCode;
  
         /* (non-Javadoc)
          * @see org.apache.hadoop.mapreduce.Mapper#setup(org.apache.hadoop.mapreduce.Mapper.Context)
@@ -143,9 +144,13 @@ public class SameTypeSimilarity  extends Configured implements Tool {
             throws IOException, InterruptedException {
             String[] items  =  value.toString().split(fieldDelimRegex);
             
-           String partition = partitonOrdinal >= 0 ? items[partitonOrdinal] :  "none";
-            		
-    		hash = (items[idOrdinal].hashCode() %  bucketCount  + bucketCount) / 2 ;
+            String partition = partitonOrdinal >= 0 ? items[partitonOrdinal] :  "none";
+            	
+       		hashCode = items[idOrdinal].hashCode();
+       		if (hashCode < 0) {
+       			hashCode = - hashCode;
+       		}
+    		hash = (hashCode %  bucketCount) / 2 ;
     		for (int i = 0; i < bucketCount;  ++i) {
     			if (i < hash){
        				hashPair = hash * 1000 +  i;
