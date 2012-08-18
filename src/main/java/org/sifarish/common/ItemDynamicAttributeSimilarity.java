@@ -154,6 +154,7 @@ public class ItemDynamicAttributeSimilarity  extends Configured implements Tool{
         private int scale;
         private boolean outputCorrelation;
         
+        
         /* (non-Javadoc)
          * @see org.apache.hadoop.mapreduce.Reducer#setup(org.apache.hadoop.mapreduce.Reducer.Context)
          */
@@ -183,6 +184,8 @@ public class ItemDynamicAttributeSimilarity  extends Configured implements Tool{
         protected void reduce(IntPair  key, Iterable<Text> values, Context context)
         throws IOException, InterruptedException {
         	double dist = 0;
+        	int intLength = -1;
+        	
         	valueList.clear();
         	int firstPart = key.getFirst().get();
         	//System.out.println("hashPair: " + firstPart);
@@ -207,10 +210,14 @@ public class ItemDynamicAttributeSimilarity  extends Configured implements Tool{
         				
         				if (outputCorrelation) {
         					dist = scale - dist;
+        					intLength = simStrategy.getIntersectionLength();
+            				//2 items IDs followed by distance and intersection l;ength
+    	   					valueHolder.set(firstParts[0] + fieldDelim + secondParts[0] + fieldDelim + (int)dist +fieldDelim + intLength );
+        				} else {
+            				//2 items IDs followed by distance
+    	   					valueHolder.set(firstParts[0] + fieldDelim + secondParts[0] + fieldDelim + (int)dist);
         				}
         				
-        				//2 items IDs followed by distance
-	   					valueHolder.set(firstParts[0] + fieldDelim + secondParts[0] + fieldDelim + (int)dist);
 	   	    			context.getCounter("Reducer", "Emit").increment(1);
 	   					context.write(NullWritable.get(), valueHolder);
 	        		}
@@ -235,11 +242,14 @@ public class ItemDynamicAttributeSimilarity  extends Configured implements Tool{
 	        				
 	        				if (outputCorrelation) {
 	        					dist = scale - dist;
+	        					intLength = simStrategy.getIntersectionLength();
+	            				//2 items IDs followed by distance and intersection l;ength
+	    	   					valueHolder.set(firstParts[0] + fieldDelim + parts[0] + fieldDelim + (int)dist +fieldDelim + intLength );
+	        				} else {
+	            				//2 items IDs followed by distance
+	    	   					valueHolder.set(firstParts[0] + fieldDelim + parts[0] + fieldDelim + (int)dist);
 	        				}
 
-	        				//two  item IDs followed by distance anf intersection length
-		   					valueHolder.set(firstParts[0] + fieldDelim + parts[0] + fieldDelim + (int)dist + fieldDelim + 
-		   							simStrategy.getIntersectionLength());
 		   	    			context.getCounter("Reducer", "Emit").increment(1);
 		   					context.write(NullWritable.get(), valueHolder);
 	        			}
