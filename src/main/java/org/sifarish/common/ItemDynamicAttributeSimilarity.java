@@ -140,6 +140,7 @@ public class ItemDynamicAttributeSimilarity  extends Configured implements Tool{
     			} 
     			//System.out.println("mapper hashPair: " + hashPair);
    	   			context.write(keyHolder, valueHolder);
+   	   			keyHolder.initialize();
     		}
         }
              
