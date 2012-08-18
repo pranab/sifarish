@@ -39,6 +39,7 @@ import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 import org.apache.hadoop.util.Tool;
 import org.apache.hadoop.util.ToolRunner;
 import org.chombo.util.IntPair;
+import org.chombo.util.Tuple;
 import org.chombo.util.Utility;
 import org.sifarish.feature.DynamicAttrSimilarityStrategy;
 
@@ -65,7 +66,7 @@ public class ItemDynamicAttributeSimilarity  extends Configured implements Tool{
         job.setMapperClass(ItemDynamicAttributeSimilarity.SimilarityMapper.class);
         job.setReducerClass(ItemDynamicAttributeSimilarity.SimilarityReducer.class);
         
-        job.setMapOutputKeyClass(IntPair.class);
+        job.setMapOutputKeyClass(Tuple.class);
         job.setMapOutputValueClass(Text.class);
 
         job.setOutputKeyClass(NullWritable.class);
@@ -86,7 +87,7 @@ public class ItemDynamicAttributeSimilarity  extends Configured implements Tool{
      * @author pranab
      *
      */
-    public static class SimilarityMapper extends Mapper<LongWritable, Text, IntPair, Text> {
+    public static class SimilarityMapper extends Mapper<LongWritable, Text, Tuple, Text> {
         private int bucketCount;
         private int hash;
         private String fieldDelimRegex;
@@ -94,10 +95,11 @@ public class ItemDynamicAttributeSimilarity  extends Configured implements Tool{
         private Integer one = 1;
         private Integer zero = 0;
         private String itemID;
-        private IntPair keyHolder = new IntPair();
+        private Tuple keyHolder = new Tuple();
         private Text valueHolder = new Text();
         private int hashPairMult;
         private int hashCode;
+        private int partitonFieldOrdinal;
     	
         /* (non-Javadoc)
          * @see org.apache.hadoop.mapreduce.Mapper#setup(org.apache.hadoop.mapreduce.Mapper.Context)
@@ -106,6 +108,7 @@ public class ItemDynamicAttributeSimilarity  extends Configured implements Tool{
         	bucketCount = context.getConfiguration().getInt("bucket.count", 10);
         	fieldDelimRegex = context.getConfiguration().get("field.delim.regex", "\\[\\]");
         	hashPairMult = context.getConfiguration().getInt("hash.pair.multiplier", 1000);
+        	partitonFieldOrdinal = context.getConfiguration().getInt("paritioning.field.ordinal", -1);
         }    
         
         /* (non-Javadoc)
@@ -114,22 +117,25 @@ public class ItemDynamicAttributeSimilarity  extends Configured implements Tool{
         @Override
         protected void map(LongWritable key, Text value, Context context)
             throws IOException, InterruptedException {
-        	//first token is nitem ID and the rest list of userID
-        	itemID  =  value.toString().split(fieldDelimRegex)[0];
+        	//first token is entity ID and the rest list attributes
+        	String[] items  =  value.toString().split(fieldDelimRegex);
+        	itemID  =  items[0];
         	hashCode = itemID.hashCode();
         	if (hashCode < 0) {
         		hashCode = - hashCode;
         	}
     		hash = (hashCode %  bucketCount) / 2 ;
-
+    		String partition = partitonFieldOrdinal >= 0 ? items[partitonFieldOrdinal] :  "none";
+    		
+    		keyHolder.initialize();
     		for (int i = 0; i < bucketCount;  ++i) {
     			if (i < hash){
        				hashPair = hash * hashPairMult +  i;
-       				keyHolder.set(hashPair, zero);
+       				keyHolder.add(partition, hashPair, zero);
        				valueHolder.set("0" + value.toString());
        	   		 } else {
     				hashPair =  i * hashPairMult  +  hash;
-       				keyHolder.set(hashPair, one);
+       				keyHolder.add(partition, hashPair, one);
        				valueHolder.set("1" + value.toString());
     			} 
     			//System.out.println("mapper hashPair: " + hashPair);
@@ -143,7 +149,7 @@ public class ItemDynamicAttributeSimilarity  extends Configured implements Tool{
      * @author pranab
      *
      */
-    public static class SimilarityReducer extends Reducer<IntPair, Text, NullWritable, Text> {
+    public static class SimilarityReducer extends Reducer<Tuple, Text, NullWritable, Text> {
         private Text valueHolder = new Text();
         private String fieldDelim;
     	private String fieldDelimRegex;
@@ -153,6 +159,7 @@ public class ItemDynamicAttributeSimilarity  extends Configured implements Tool{
         private DynamicAttrSimilarityStrategy simStrategy;
         private int scale;
         private boolean outputCorrelation;
+        private int partitonFieldOrdinal;
         
         
         /* (non-Javadoc)
@@ -176,18 +183,19 @@ public class ItemDynamicAttributeSimilarity  extends Configured implements Tool{
         	}
            	scale = context.getConfiguration().getInt("distance.scale", 1000);
            	outputCorrelation = context.getConfiguration().getBoolean("output.correlation", false);
+           	partitonFieldOrdinal = context.getConfiguration().getInt("paritioning.field.ordinal", -1);
           }    
 
         /* (non-Javadoc)
          * @see org.apache.hadoop.mapreduce.Reducer#reduce(KEYIN, java.lang.Iterable, org.apache.hadoop.mapreduce.Reducer.Context)
          */
-        protected void reduce(IntPair  key, Iterable<Text> values, Context context)
+        protected void reduce(Tuple  key, Iterable<Text> values, Context context)
         throws IOException, InterruptedException {
         	double dist = 0;
         	int intLength = -1;
         	
         	valueList.clear();
-        	int firstPart = key.getFirst().get();
+        	int firstPart = key.getInt(1);
         	//System.out.println("hashPair: " + firstPart);
         	if (firstPart / hashPairMult == firstPart % hashPairMult){
         		//same hash bucket
@@ -236,7 +244,7 @@ public class ItemDynamicAttributeSimilarity  extends Configured implements Tool{
 	        			
 	        			//match with all items of first set
 	        			for (String[] firstParts : valueList) {
-	        				//process 2 user vectors
+	        				//process 2 entity vectors
 	        				dist = (1.0 - simStrategy.findDistance(firstParts[1], parts[1])) * scale;
 	        				dist = dist < 0.0 ? 0.0 : dist;
 	        				
@@ -267,11 +275,19 @@ public class ItemDynamicAttributeSimilarity  extends Configured implements Tool{
         	String[] parts = new String[2];
         	int pos = val.indexOf(fieldDelim);
         	
-        	//itemID
+        	//entity ID
         	parts[0] = val.substring(0, pos);
         	
-        	//list of userID
-        	parts[1] = val.substring( pos +delimLength);
+        	//list of attributes
+        	if (partitonFieldOrdinal >= 0) {
+        		//partitioning field in the second
+        		val = val.substring( pos + delimLength);
+        		pos = val.indexOf(fieldDelim);
+        		parts[1] = val.substring( pos + delimLength);
+        	} else {
+        		//attributes from the second field onwards
+        		parts[1] = val.substring( pos + delimLength);
+        	}
         	return parts;
         }
         
@@ -281,11 +297,11 @@ public class ItemDynamicAttributeSimilarity  extends Configured implements Tool{
      * @author pranab
      *
      */
-    public static class IdPairPartitioner extends Partitioner<IntPair, Text> {
+    public static class IdPairPartitioner extends Partitioner<Tuple, Text> {
 	     @Override
-	     public int getPartition(IntPair key, Text value, int numPartitions) {
+	     public int getPartition(Tuple key, Text value, int numPartitions) {
 	    	 //consider only base part of  key
-		     return key.baseHashCode() % numPartitions;
+		     return key.hashCodeBase() % numPartitions;
 	     }
   
   }
@@ -297,16 +313,16 @@ public class ItemDynamicAttributeSimilarity  extends Configured implements Tool{
      */
     public static class IdPairGroupComprator extends WritableComparator {
     	protected IdPairGroupComprator() {
-    		super(IntPair.class, true);
+    		super(Tuple.class, true);
     	}
 
     	@Override
     	public int compare(WritableComparable w1, WritableComparable w2) {
     		//consider only the base part of the key
-    		IntPair t1 = (IntPair)w1;
-    		IntPair t2 = (IntPair)w2;
+    		Tuple t1 = (Tuple)w1;
+    		Tuple t2 = (Tuple)w2;
     		
-    		int comp =t1.getFirst().compareTo(t2.getFirst());
+    		int comp =t1.compareToBase(t2);
     		return comp;
     	}
      }
