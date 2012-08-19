@@ -101,6 +101,7 @@ public class UtilityPredictor extends Configured implements Tool{
         	String ratingFilePrefix = context.getConfiguration().get("rating.file.prefix", "rating");
         	isRatingFileSplit = ((FileSplit)context.getInputSplit()).getPath().getName().startsWith(ratingFilePrefix);
         	linearCorrelation = context.getConfiguration().getBoolean("correlation.linear", true);
+        	System.out.println("isRatingFileSplit:" + isRatingFileSplit);
         }    
     	
         /* (non-Javadoc)
@@ -154,6 +155,12 @@ public class UtilityPredictor extends Configured implements Tool{
     	private boolean linearCorrelation;
     	private int correlationScale;
     	private int maxRating;
+    	private String userID;
+    	private String itemID;
+    	private int rating;
+    	private int ratingCorr;
+    	private int weight;
+    	private long logCounter = 0;
     	
         /* (non-Javadoc)
          * @see org.apache.hadoop.mapreduce.Reducer#setup(org.apache.hadoop.mapreduce.Reducer.Context)
@@ -171,24 +178,31 @@ public class UtilityPredictor extends Configured implements Tool{
         protected void reduce(TextInt  key, Iterable<Tuple> values, Context context)
         throws IOException, InterruptedException {
         	ratingCorrelations.clear();
+        	++logCounter;
            	for(Tuple value : values) {
            		if ( ((Integer)value.get(value.getSize()-1)) == 0) {
-           			ratingCorrelations.add(value);
+           			//in rating correlation
+           			ratingCorrelations.add(value.createClone());
+					context.getCounter("Predictor", "Rating correlation").increment(1);
            		} else {
+           			//in user rating
            			if (!ratingCorrelations.isEmpty()) {
 	           			String userID = value.getString(0);
-	           			int rating = value.getInt(1);
+	           			rating = value.getInt(1);
 	           			
-	           			for (Tuple  ratingCorrTup : ratingCorrelations) {
-	           				String itemID = ratingCorrTup.getString(0);
-	           				int ratingCorr = ratingCorrTup.getInt(1);
-	           				int weight = ratingCorrTup.getInt(2);
+	    				//all rating correlations
+	           			for (Tuple  ratingCorrTup : ratingCorrelations) { 
+        					context.getCounter("Predictor", "User rating").increment(1);
+	           				itemID = ratingCorrTup.getString(0);
+	           				ratingCorr = ratingCorrTup.getInt(1);
+	           				weight = ratingCorrTup.getInt(2);
 	           				
 	           				int predRating = linearCorrelation? (rating * ratingCorr) / maxRating : 
 	           					(rating  * correlationScale + ratingCorr) /maxRating ;
 	           				if (predRating > 0) {
 	           					valueOut.set(userID + fieldDelim + itemID + fieldDelim + predRating + fieldDelim + weight + fieldDelim +ratingCorr );
 	           					context.write(NullWritable.get(), valueOut);
+	        					context.getCounter("Predictor", "Rating correlation").increment(1);
 	           				}
 	           			}
            			}
