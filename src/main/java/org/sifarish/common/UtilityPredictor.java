@@ -28,7 +28,7 @@ import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.io.WritableComparable;
 import org.apache.hadoop.io.WritableComparator;
-import org.apache.hadoop.mapred.FileSplit;
+import  org.apache.hadoop.mapreduce.lib.input.FileSplit;
 import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.mapreduce.Mapper;
 import org.apache.hadoop.mapreduce.Partitioner;
@@ -97,7 +97,7 @@ public class UtilityPredictor extends Configured implements Tool{
          */
         protected void setup(Context context) throws IOException, InterruptedException {
         	fieldDelim = context.getConfiguration().get("field.delim", ",");
-        	subFieldDelim = context.getConfiguration().get("field.delim", ":");
+        	subFieldDelim = context.getConfiguration().get("sub.field.delim", ":");
         	String ratingFilePrefix = context.getConfiguration().get("rating.file.prefix", "rating");
         	isRatingFileSplit = ((FileSplit)context.getInputSplit()).getPath().getName().startsWith(ratingFilePrefix);
         	linearCorrelation = context.getConfiguration().getBoolean("correlation.linear", true);
@@ -123,15 +123,16 @@ public class UtilityPredictor extends Configured implements Tool{
         	} else {
         		//rating correlation value: item, correlation, weight
         		keyOut.set(items[0], 0);
+        		valOut.initialize();
    	   			if (linearCorrelation) {
    	   				valOut.add(items[1], new Integer( items[2]), new Integer(items[3]), zero);
    	   			} else {
    	   				valOut.add(items[1], new Integer("-" + items[2]), new Integer(items[3]), zero);
    	   			}
-        		
    	   			context.write(keyOut, valOut);
 
    	   			keyOut.set(items[1], 0);
+        		valOut.initialize();
    	   			if (linearCorrelation) {
    	   				valOut.add(items[0], new Integer( items[2]), new Integer(items[3]), zero);
    	   			} else {
@@ -185,8 +186,10 @@ public class UtilityPredictor extends Configured implements Tool{
 	           				
 	           				int predRating = linearCorrelation? (rating * ratingCorr) / maxRating : 
 	           					(rating  * correlationScale + ratingCorr) /maxRating ;
-	           				valueOut.set(userID + fieldDelim + itemID + fieldDelim + predRating + fieldDelim + weight + fieldDelim +ratingCorr );
-	           		   		context.write(NullWritable.get(), valueOut);
+	           				if (predRating > 0) {
+	           					valueOut.set(userID + fieldDelim + itemID + fieldDelim + predRating + fieldDelim + weight + fieldDelim +ratingCorr );
+	           					context.write(NullWritable.get(), valueOut);
+	           				}
 	           			}
            			}
            		}
