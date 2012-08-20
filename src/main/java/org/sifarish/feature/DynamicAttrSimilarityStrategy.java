@@ -31,12 +31,19 @@ public abstract class DynamicAttrSimilarityStrategy {
 	protected boolean isCountIncluded;
 	protected  int intersectionLength;
 	
+	
 	/**
 	 * @param src
 	 * @param target
 	 * @return
 	 */
-	public abstract double findDistance(String src, String target);
+	public  double findDistance(String src, String target) {
+		return 1.0;
+	}
+	
+	public  double findDistance(String srcEntityID, String src, String targetEntityID, String target, String groupingID) {
+		return 1.0;
+	}
 	
 	/**
 	 * @return
