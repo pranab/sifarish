@@ -30,6 +30,7 @@ import org.apache.hadoop.mapreduce.Reducer;
 import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 import org.apache.hadoop.util.Tool;
+import org.apache.hadoop.util.ToolRunner;
 import org.chombo.util.IntPair;
 import org.chombo.util.TextPair;
 import org.chombo.util.Tuple;
@@ -139,33 +140,33 @@ public class UtilityAggregator extends Configured implements Tool{
          */
         protected void reduce(TextPair  key, Iterable<Tuple> values, Context context)
         throws IOException, InterruptedException {
+			sum = sumWt = 0;
+			int count = 0;
 			if (ratingAggregatorAverage) {
 				//average
-				sum = sumWt = 0;
-				int count = 0;
 				for(Tuple value : values) {
 					if (value.getInt(0) > maxRating) {
 						maxRating = value.getInt(0);
 					}
 					if (weightedAverage) {
 						sum += value.getInt(0) * value.getInt(1);
-						sumWt += value.getInt(1);
+						sumWt += value.getInt(1) * value.getInt(2);
 					} else {
 						sum += value.getInt(0);
-						++sumWt;
+						sumWt += value.getInt(2);
 					}
 					distSum += (corrScale - value.getInt(2));
 					++count;
 				}
-				avRating = sum / (sumWt *  maxRating);
+				avRating = (sum * corrScale)/ sumWt ;
 				avDist = distSum / count;
 				getDiversity();
 			} else {
 				//median
 			}
 			
-			utilityScore = (UTILITY_SCORE_SCALE - diversityWeight) * avRating + diversityWeight * diversity;
-        	valueOut.set(key.getFirst() + fieldDelim + key.getSecond() + fieldDelim + utilityScore);
+			utilityScore = ((UTILITY_SCORE_SCALE - diversityWeight) * avRating + diversityWeight * diversity) / UTILITY_SCORE_SCALE ;
+        	valueOut.set(key.getFirst() + fieldDelim + key.getSecond() + fieldDelim + utilityScore + fieldDelim + count);
 	   		context.write(NullWritable.get(), valueOut);
         }
         
@@ -178,9 +179,19 @@ public class UtilityAggregator extends Configured implements Tool{
         	double b1 = 2.0   / diversityThresholdDbl;
         	double b2 = b1  / (2.0 * diversityThresholdDbl);
         	
-        	double distDbl =  ((double)diversityThreshold) / corrScale;
+        	double distDbl =  ((double)avDist) / corrScale;
         	diversity = (int)( (b1 * distDbl  - b2 *  distDbl *  distDbl) * corrScale);
         }
         
     }
+    
+    /**
+     * @param args
+     * @throws Exception
+     */
+    public static void main(String[] args) throws Exception {
+        int exitCode = ToolRunner.run(new UtilityAggregator(), args);
+        System.exit(exitCode);
+    }
+   
 }
