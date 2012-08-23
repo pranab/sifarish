@@ -161,6 +161,7 @@ public class UtilityPredictor extends Configured implements Tool{
     	private int ratingCorr;
     	private int weight;
     	private long logCounter = 0;
+    	private double correlationModifier;
     	
         /* (non-Javadoc)
          * @see org.apache.hadoop.mapreduce.Reducer#setup(org.apache.hadoop.mapreduce.Reducer.Context)
@@ -170,6 +171,7 @@ public class UtilityPredictor extends Configured implements Tool{
         	linearCorrelation = context.getConfiguration().getBoolean("correlation.linear", true);
         	correlationScale = context.getConfiguration().getInt("correlation.linear.scale", 1000);
            	maxRating = context.getConfiguration().getInt("max.rating", 5);
+           	correlationModifier = context.getConfiguration().getFloat("correlation.modifier", (float)1.0);
         } 	
         
         /* (non-Javadoc)
@@ -197,6 +199,7 @@ public class UtilityPredictor extends Configured implements Tool{
 	           				ratingCorr = ratingCorrTup.getInt(1);
 	           				weight = ratingCorrTup.getInt(2);
 	           				
+	           				modifyCorrelation();
 	           				int predRating = linearCorrelation? (rating * ratingCorr) / maxRating : 
 	           					(rating  * correlationScale + ratingCorr) /maxRating ;
 	           				if (predRating > 0) {
@@ -208,6 +211,16 @@ public class UtilityPredictor extends Configured implements Tool{
            			}
            		}
            	}        	
+        }
+        
+        
+        /**
+         * 
+         */
+        private void modifyCorrelation() {
+        	double ratingCorrDb  =( (double)ratingCorr) / correlationScale;
+        	ratingCorrDb = Math.pow(ratingCorrDb, correlationModifier);
+        	ratingCorr = (int)(ratingCorrDb * correlationScale);
         }
     }
     

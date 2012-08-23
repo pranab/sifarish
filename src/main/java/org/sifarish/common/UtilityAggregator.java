@@ -110,15 +110,9 @@ public class UtilityAggregator extends Configured implements Tool{
     	private boolean weightedAverage;
     	private boolean ratingAggregatorAverage;
     	private int distSum;
-    	private int  avDist;
     	private int corrScale;
     	private int maxRating;
-    	private int diversity;
-    	private int diversityThreshold;
-    	private int diversityWeight;
     	private int utilityScore;
-    	private boolean linearCorrelation;
-    	private final int UTILITY_SCORE_SCALE = 10;
     	
         /* (non-Javadoc)
          * @see org.apache.hadoop.mapreduce.Reducer#setup(org.apache.hadoop.mapreduce.Reducer.Context)
@@ -127,12 +121,8 @@ public class UtilityAggregator extends Configured implements Tool{
         	fieldDelim = context.getConfiguration().get("field.delim", ",");
         	weightedAverage = context.getConfiguration().getBoolean("weighted.average", true);
         	ratingAggregatorAverage = context.getConfiguration().getBoolean("rating.aggregator.average", true);
-        	linearCorrelation = context.getConfiguration().getBoolean("correlation.linear", true);
         	corrScale = context.getConfiguration().getInt("corr.scale", 1000);
         	maxRating = context.getConfiguration().getInt("max.rating", 5);
-        	diversityThreshold = context.getConfiguration().getInt("diversity.threshold",400);
-        	diversityWeight = context.getConfiguration().getInt("diversity.weight",4);
-        	
         } 	
         
         /* (non-Javadoc)
@@ -159,29 +149,15 @@ public class UtilityAggregator extends Configured implements Tool{
 					++count;
 				}
 				avRating = (sum * corrScale)/ sumWt ;
-				avDist = distSum / count;
-				getDiversity();
 			} else {
 				//median
 			}
 			
-			utilityScore = ((UTILITY_SCORE_SCALE - diversityWeight) * avRating + diversityWeight * diversity) / UTILITY_SCORE_SCALE ;
+			utilityScore = avRating;
         	valueOut.set(key.getFirst() + fieldDelim + key.getSecond() + fieldDelim + utilityScore + fieldDelim + count);
 	   		context.write(NullWritable.get(), valueOut);
         }
         
-        /**
-         *  Find diversity from distance
-         */
-        private void getDiversity() {
-        	//diversity increases with distance upto a max then decreases
-        	double diversityThresholdDbl = ((double)diversityThreshold) / corrScale;
-        	double b1 = 2.0   / diversityThresholdDbl;
-        	double b2 = b1  / (2.0 * diversityThresholdDbl);
-        	
-        	double distDbl =  ((double)avDist) / corrScale;
-        	diversity = (int)( (b1 * distDbl  - b2 *  distDbl *  distDbl) * corrScale);
-        }
         
     }
     
