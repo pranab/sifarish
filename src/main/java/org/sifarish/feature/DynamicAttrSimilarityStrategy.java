@@ -30,6 +30,8 @@ public abstract class DynamicAttrSimilarityStrategy {
 	protected boolean isBooleanVec;
 	protected boolean isCountIncluded;
 	protected  int intersectionLength;
+	protected String matcherClass;
+	protected String matchContext;
 	
 	
 	/**
@@ -92,6 +94,22 @@ public abstract class DynamicAttrSimilarityStrategy {
 	 */
 	public int getIntersectionLength() {
 		return intersectionLength;
+	}
+
+	public String getMatcherClass() {
+		return matcherClass;
+	}
+
+	public void setMatcherClass(String matcherClass) {
+		this.matcherClass = matcherClass;
+	}
+
+	public String getMatchContext() {
+		return matchContext;
+	}
+
+	public void setMatchContext(String matchContext) {
+		this.matchContext = matchContext;
 	}
 
 	/**

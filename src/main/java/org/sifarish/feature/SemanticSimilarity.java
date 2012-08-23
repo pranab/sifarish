@@ -17,17 +17,48 @@
 
 package org.sifarish.feature;
 
+import java.util.Iterator;
+
+import org.sifarish.common.TaggedEntity;
+
 /**
  * @author pranab
  *
  */
 public class SemanticSimilarity extends DynamicAttrSimilarityStrategy {
-
+	private TaggedEntity  thisEntity;
+	private TaggedEntity  thatEntity;
+	
+	public SemanticSimilarity() throws ClassNotFoundException, InstantiationException, IllegalAccessException  {
+        Class<?> iterCls = Class.forName(matcherClass);
+        thisEntity = (TaggedEntity)iterCls.newInstance();
+        thatEntity = (TaggedEntity)iterCls.newInstance();
+	}
+	
 	@Override
-	public double findDistance(String srcEntityID, String src,
-			String targetEntityID, String target, String groupingID) {
-		// TODO Auto-generated method stub
-		return 1.0;
+	public double findDistance(String thisEntityID, String thisTag,
+			String thatEntityID, String thatTag, String groupingID) {
+		thisEntity.setEntityID(thisEntityID);
+		thisEntity.setGroupID(groupingID);
+		thatEntity.setEntityID(thisEntityID);
+		thatEntity.setGroupID(groupingID);
+		
+		int matchScoreMax = 0;
+		int matchScore;
+		String[] thisTagItems = thisTag.split(fieldDelimRegex);
+		String[] thatTagItems = thatTag.split(fieldDelimRegex);
+		for (String thisTagItem : thisTagItems) {
+			thisEntity.setTag(thisTagItem);
+			for (String thatTagItem :thatTagItems) {
+				thatEntity.setTag(thatTagItem);
+				matchScore = thisEntity.match(thatEntity);
+				if (matchScore > matchScoreMax) {
+					matchScoreMax = matchScore;
+				}
+			}
+		}
+		
+		return ((double)matchScoreMax) / 10;
 	}
 
 }

@@ -26,6 +26,9 @@ import org.chombo.util.Pair;
 public abstract class TaggedEntity extends Pair<String, String> {
 	private String groupID;
 	
+	public TaggedEntity() {
+	}
+	
 	/**
 	 * @param entityID
 	 * @param groupID
@@ -36,6 +39,30 @@ public abstract class TaggedEntity extends Pair<String, String> {
 		this.groupID = groupID;
 	}
 	
+	public String getEntityID() {
+		return getLeft();
+	}
+
+	public void setEntityID(String entityID) {
+		setLeft(entityID);
+	}
+
+	public String getTag() {
+		return getRight();
+	}
+
+	public void setTag(String tag) {
+		setRight(tag);
+	}
+
+	public String getGroupID() {
+		return groupID;
+	}
+
+	public void setGroupID(String groupID) {
+		this.groupID = groupID;
+	}
+
 	/**
 	 * @param other
 	 * @return
