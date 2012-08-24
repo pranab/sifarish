@@ -68,5 +68,11 @@ public abstract class TaggedEntity extends Pair<String, String> {
 	 * @return
 	 */
 	public abstract int match(TaggedEntity other) ;
+	
+	/**
+	 * Context data related to the last match
+	 * @return
+	 */
+	public abstract String matchingContext();
 
 }

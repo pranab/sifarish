@@ -174,6 +174,9 @@ public class ItemDynamicAttributeSimilarity  extends Configured implements Tool{
         	String simAlgorithm = context.getConfiguration().get("similarity.algorithm", "cosine");
         	
         	Map<String, Object> params = new HashMap<String, Object>();
+        	params.put("matcherClass", context.getConfiguration().get("semantic.matcher.class"));
+        	params.put("srcNonMatchingTermWeight", context.getConfiguration().get("jaccard.srcNonMatchingTermWeight"));
+        	params.put("trgNonMatchingTermWeight", context.getConfiguration().get("jaccard.trgNonMatchingTermWeight"));
         	simStrategy = DynamicAttrSimilarityStrategy.createSimilarityStrategy(simAlgorithm, params);
         	simStrategy.setFieldDelimRegex(fieldDelimRegex);
         	boolean booleanVec = context.getConfiguration().getBoolean("vec.type.boolean", true);
@@ -182,6 +185,7 @@ public class ItemDynamicAttributeSimilarity  extends Configured implements Tool{
             	boolean countIncluded = context.getConfiguration().getBoolean("vec.count.included", true);
         		simStrategy.setCountIncluded(countIncluded);
         	}
+        	
            	scale = context.getConfiguration().getInt("distance.scale", 1000);
            	outputCorrelation = context.getConfiguration().getBoolean("output.correlation", false);
            	partitonFieldOrdinal = context.getConfiguration().getInt("paritioning.field.ordinal", -1);

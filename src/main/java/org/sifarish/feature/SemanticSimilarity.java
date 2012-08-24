@@ -17,7 +17,7 @@
 
 package org.sifarish.feature;
 
-import java.util.Iterator;
+import java.io.IOException;
 
 import org.sifarish.common.TaggedEntity;
 
@@ -29,10 +29,19 @@ public class SemanticSimilarity extends DynamicAttrSimilarityStrategy {
 	private TaggedEntity  thisEntity;
 	private TaggedEntity  thatEntity;
 	
-	public SemanticSimilarity() throws ClassNotFoundException, InstantiationException, IllegalAccessException  {
-        Class<?> iterCls = Class.forName(matcherClass);
-        thisEntity = (TaggedEntity)iterCls.newInstance();
-        thatEntity = (TaggedEntity)iterCls.newInstance();
+	public SemanticSimilarity(String matcherClass) throws IOException   {
+        Class<?> iterCls;
+		try {
+			iterCls = Class.forName(matcherClass);
+			thisEntity = (TaggedEntity)iterCls.newInstance();
+			thatEntity = (TaggedEntity)iterCls.newInstance();
+		} catch (ClassNotFoundException e) {
+			throw new IOException("failed to intialize SemanticSimilarity");
+		}catch (InstantiationException e) {
+			throw new IOException("failed to intialize SemanticSimilarity");
+		} catch (IllegalAccessException e) {
+			throw new IOException("failed to intialize SemanticSimilarity");
+		}
 	}
 	
 	@Override
@@ -54,6 +63,7 @@ public class SemanticSimilarity extends DynamicAttrSimilarityStrategy {
 				matchScore = thisEntity.match(thatEntity);
 				if (matchScore > matchScoreMax) {
 					matchScoreMax = matchScore;
+					matchingContext = thisEntity.matchingContext();
 				}
 			}
 		}

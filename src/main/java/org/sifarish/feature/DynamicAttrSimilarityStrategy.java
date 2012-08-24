@@ -17,6 +17,7 @@
 
 package org.sifarish.feature;
 
+import java.io.IOException;
 import java.util.Map;
 
 /**
@@ -31,7 +32,7 @@ public abstract class DynamicAttrSimilarityStrategy {
 	protected boolean isCountIncluded;
 	protected  int intersectionLength;
 	protected String matcherClass;
-	protected String matchContext;
+	protected String matchingContext;
 	
 	
 	/**
@@ -104,20 +105,22 @@ public abstract class DynamicAttrSimilarityStrategy {
 		this.matcherClass = matcherClass;
 	}
 
-	public String getMatchContext() {
-		return matchContext;
+	public String getMatchingContext() {
+		return matchingContext;
 	}
 
-	public void setMatchContext(String matchContext) {
-		this.matchContext = matchContext;
+	public void setMatchingContext(String matchingContext) {
+		this.matchingContext = matchingContext;
 	}
 
 	/**
 	 * @param algorithm
 	 * @param params
 	 * @return
+	 * @throws IOException 
 	 */
-	public static DynamicAttrSimilarityStrategy createSimilarityStrategy(String algorithm, Map<String,Object> params) {
+	public static DynamicAttrSimilarityStrategy createSimilarityStrategy(String algorithm, Map<String,Object> params) 
+		throws IOException {
 		DynamicAttrSimilarityStrategy  simStrategy = null;
 		if (algorithm.equals("jaccard")){
 			double srcNonMatchingTermWeight = (Double)params.get("srcNonMatchingTermWeight");
@@ -125,7 +128,10 @@ public abstract class DynamicAttrSimilarityStrategy {
 			simStrategy = new JaccardSimilarity(srcNonMatchingTermWeight, trgNonMatchingTermWeight);
 		} else if (algorithm.equals("cosine")){
 			simStrategy = new CosineSimilarity();
-		}
+		} else if (algorithm.equals("semantic")){
+			String matcherClass =(String) params.get("matcherClass");
+			simStrategy = new SemanticSimilarity(matcherClass);
+		} 
 		return simStrategy;
 	}	
 	
