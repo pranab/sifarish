@@ -121,7 +121,7 @@ public class UtilityAggregator extends Configured implements Tool{
         	fieldDelim = context.getConfiguration().get("field.delim", ",");
         	weightedAverage = context.getConfiguration().getBoolean("weighted.average", true);
         	ratingAggregatorAverage = context.getConfiguration().getBoolean("rating.aggregator.average", true);
-        	corrScale = context.getConfiguration().getInt("corr.scale", 1000);
+        	corrScale = context.getConfiguration().getInt("correlation.scale", 1000);
         	maxRating = context.getConfiguration().getInt("max.rating", 5);
         } 	
         

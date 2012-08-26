@@ -1,0 +1,97 @@
+Rating data
+===========
+The format is as follows
+
+item1,user1:3,user2:4,..
+item2,user2:5,user4:2,...
+
+Ypu can use ratings.rb as follows to generate ratings data
+ruby ratings.rb <item_count> <user_count>
+
+User count should be an order of magnitude higher than item count
+
+
+Rating correlation
+==================
+Correlation can be calculated in various ways. We will be using cosine similarity.
+
+Here is shell script to calculate correlation. Rating data should be copied to 
+IN_PATH directory
+
+JAR_NAME=/home/pranab/Projects/sifarish/target/sifarish-1.0.jar
+CLASS_NAME=org.sifarish.common.ItemDynamicAttributeSimilarity
+
+echo "running mr"
+IN_PATH=/user/pranab/reco/item
+OUT_PATH=/user/pranab/reco/simi
+echo "input $IN_PATH output $OUT_PATH"
+hadoop fs -rmr $OUT_PATH
+echo "removed output dir"
+
+hadoop jar $JAR_NAME  $CLASS_NAME -Dconf.path=/home/pranab/Projects/bin/sifarish/reco.properties  $IN_PATH  $OUT_PATH
+
+Rating Predictor
+================
+The next step is to predict rating based on items already rated by user and the correlation
+calculated in the first MR
+
+The shell scripts is as follows. The input directory is the output directory of the previous
+MR. The rating file should also be copied there
+
+JAR_NAME=/home/pranab/Projects/sifarish/target/sifarish-1.0.jar
+CLASS_NAME=org.sifarish.common.UtilityPredictor
+
+echo "running mr"
+IN_PATH=/user/pranab/reco/simi
+OUT_PATH=/user/pranab/reco/utpr
+echo "input $IN_PATH output $OUT_PATH"
+hadoop fs -rmr $OUT_PATH
+echo "removed output dir"
+
+hadoop jar $JAR_NAME  $CLASS_NAME -Dconf.path=/home/pranab/Projects/bin/sifarish/reco.properties  $IN_PATH  $OUT_PATH
+
+Aggregate Rating Predictor
+==========================
+This predicts the final rating by aggregating contribution from all items rated by the user
+
+Here is the sample shell script. It's input is the output of the previous MR 
+
+JAR_NAME=/home/pranab/Projects/sifarish/target/sifarish-1.0.jar
+CLASS_NAME=org.sifarish.common.UtilityAggregator
+
+echo "running mr"
+IN_PATH=/user/pranab/reco/utpr
+OUT_PATH=/user/pranab/reco/utag
+echo "input $IN_PATH output $OUT_PATH"
+hadoop fs -rmr $OUT_PATH
+echo "removed output dir"
+
+hadoop jar $JAR_NAME  $CLASS_NAME -Dconf.path=/home/pranab/Projects/bin/sifarish/reco.properties  $IN_PATH  $OUT_PATH
+
+Configuration
+=============
+Here is a sample properties file (reco.properties) containing all the configurations
+
+field.delim.regex=,
+field.delim=,
+num.reducer=1
+bucket.count=10
+hash.pair.multiplier=1000
+similarity.algorithm=cosine
+vec.type.boolean=false
+vec.count.included=true
+distance.scale=1000
+output.correlation=true
+correlation.linear=true
+correlation.linear.scale=1000
+max.rating=5
+sub.field.delim=:
+rating.file.prefix=rating
+correlation.modifier=1.5
+weighted.average=false
+rating.aggregator.average=true
+correlation.scale=1000
+
+
+
+ 
