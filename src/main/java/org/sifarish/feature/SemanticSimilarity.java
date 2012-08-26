@@ -18,6 +18,9 @@
 package org.sifarish.feature;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 
 import org.sifarish.common.TaggedEntity;
 
@@ -28,13 +31,17 @@ import org.sifarish.common.TaggedEntity;
 public class SemanticSimilarity extends DynamicAttrSimilarityStrategy {
 	private TaggedEntity  thisEntity;
 	private TaggedEntity  thatEntity;
+	private int topMatchCount;
+	private List<MatchedItem> matchedItems = new ArrayList<MatchedItem>();
+	private static final int SCORE_MAX = 10;
 	
-	public SemanticSimilarity(String matcherClass) throws IOException   {
+	public SemanticSimilarity(String matcherClass, int topMatchCount) throws IOException   {
         Class<?> iterCls;
 		try {
 			iterCls = Class.forName(matcherClass);
 			thisEntity = (TaggedEntity)iterCls.newInstance();
 			thatEntity = (TaggedEntity)iterCls.newInstance();
+			this.topMatchCount = topMatchCount;
 		} catch (ClassNotFoundException e) {
 			throw new IOException("failed to intialize SemanticSimilarity");
 		}catch (InstantiationException e) {
@@ -54,6 +61,8 @@ public class SemanticSimilarity extends DynamicAttrSimilarityStrategy {
 		
 		int matchScoreMax = 0;
 		int matchScore;
+		String matchingContext;
+		int avScore = 0;
 		String[] thisTagItems = thisTag.split(fieldDelimRegex);
 		String[] thatTagItems = thatTag.split(fieldDelimRegex);
 		for (String thisTagItem : thisTagItems) {
@@ -64,11 +73,46 @@ public class SemanticSimilarity extends DynamicAttrSimilarityStrategy {
 				if (matchScore > matchScoreMax) {
 					matchScoreMax = matchScore;
 					matchingContext = thisEntity.matchingContext();
+					matchedItems.add(new MatchedItem(matchScore, matchingContext));
 				}
 			}
 		}
 		
-		return ((double)matchScoreMax) / 10;
+		//sort them
+		Collections.sort(matchedItems);
+		matchingContexts = new String[topMatchCount];
+		for (int i = 0; i < topMatchCount; ++i) {
+			matchingContexts[i] = matchedItems.get(i).getContext();
+			avScore += matchedItems.get(i).getScore();
+		}
+		avScore /= topMatchCount;
+		
+		return ((double)avScore) / SCORE_MAX;
+	}
+	
+	private static class MatchedItem  implements Comparable<MatchedItem>{
+		private int score;
+		private String context;
+		
+		public MatchedItem(int score, String context) {
+			super();
+			this.score = score;
+			this.context = context;
+		}
+
+		public int getScore() {
+			return score;
+		}
+
+		public String getContext() {
+			return context;
+		}
+
+		@Override
+		public int compareTo(MatchedItem other) {
+			return  other.score - score ;
+		}
+		
 	}
 
 }

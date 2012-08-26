@@ -26,13 +26,11 @@ import java.util.Map;
  *
  */
 public abstract class DynamicAttrSimilarityStrategy {
-	
 	protected String fieldDelimRegex = "\\s+";
 	protected boolean isBooleanVec;
 	protected boolean isCountIncluded;
 	protected  int intersectionLength;
-	protected String matcherClass;
-	protected String matchingContext;
+	protected String[] matchingContexts;
 	
 	
 	/**
@@ -97,20 +95,8 @@ public abstract class DynamicAttrSimilarityStrategy {
 		return intersectionLength;
 	}
 
-	public String getMatcherClass() {
-		return matcherClass;
-	}
-
-	public void setMatcherClass(String matcherClass) {
-		this.matcherClass = matcherClass;
-	}
-
-	public String getMatchingContext() {
-		return matchingContext;
-	}
-
-	public void setMatchingContext(String matchingContext) {
-		this.matchingContext = matchingContext;
+	public String[] getMatchingContexts() {
+		return matchingContexts;
 	}
 
 	/**
@@ -130,7 +116,8 @@ public abstract class DynamicAttrSimilarityStrategy {
 			simStrategy = new CosineSimilarity();
 		} else if (algorithm.equals("semantic")){
 			String matcherClass =(String) params.get("matcherClass");
-			simStrategy = new SemanticSimilarity(matcherClass);
+			int  topMatchCount =(Integer) params.get("topMatchCount");
+			simStrategy = new SemanticSimilarity(matcherClass, topMatchCount);
 		} 
 		return simStrategy;
 	}	

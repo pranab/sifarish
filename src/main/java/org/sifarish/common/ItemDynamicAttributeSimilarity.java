@@ -175,6 +175,7 @@ public class ItemDynamicAttributeSimilarity  extends Configured implements Tool{
         	
         	Map<String, Object> params = new HashMap<String, Object>();
         	params.put("matcherClass", context.getConfiguration().get("semantic.matcher.class"));
+        	params.put("topMatchCount", context.getConfiguration().getInt("semantic.top.match.count", 5));
         	params.put("srcNonMatchingTermWeight", context.getConfiguration().get("jaccard.srcNonMatchingTermWeight"));
         	params.put("trgNonMatchingTermWeight", context.getConfiguration().get("jaccard.trgNonMatchingTermWeight"));
         	simStrategy = DynamicAttrSimilarityStrategy.createSimilarityStrategy(simAlgorithm, params);
@@ -200,6 +201,7 @@ public class ItemDynamicAttributeSimilarity  extends Configured implements Tool{
         	int intLength = -1;
         	
         	valueList.clear();
+        	StringBuilder stBld = new StringBuilder();
         	int firstPart = key.getInt(1);
         	//System.out.println("hashPair: " + firstPart);
         	if (firstPart / hashPairMult == firstPart % hashPairMult){
@@ -224,13 +226,19 @@ public class ItemDynamicAttributeSimilarity  extends Configured implements Tool{
         				if (outputCorrelation) {
         					dist = scale - dist;
         					intLength = simStrategy.getIntersectionLength();
-            				//2 items IDs followed by distance and intersection l;ength
-    	   					valueHolder.set(firstParts[0] + fieldDelim + secondParts[0] + fieldDelim + (int)dist +fieldDelim + intLength );
+            				//2 items IDs followed by distance and intersection length
+        					stBld.append(firstParts[0]).append(fieldDelim).append(secondParts[0]).append(fieldDelim).
+        						append( (int)dist).append(fieldDelim).append(intLength);
         				} else {
             				//2 items IDs followed by distance
-    	   					valueHolder.set(firstParts[0] + fieldDelim + secondParts[0] + fieldDelim + (int)dist);
+    	   					stBld.append(firstParts[0]).append(fieldDelim).append(secondParts[0]).append(fieldDelim).
+    	   						append( (int)dist);
         				}
         				
+        				//if there any matching context data
+        				appendMatchingContexts(stBld);
+
+        				valueHolder.set(stBld.toString());
 	   	    			context.getCounter("Reducer", "Emit").increment(1);
 	   					context.write(NullWritable.get(), valueHolder);
 	        		}
@@ -257,12 +265,18 @@ public class ItemDynamicAttributeSimilarity  extends Configured implements Tool{
 	        					dist = scale - dist;
 	        					intLength = simStrategy.getIntersectionLength();
 	            				//2 items IDs followed by distance and intersection l;ength
-	    	   					valueHolder.set(firstParts[0] + fieldDelim + parts[0] + fieldDelim + (int)dist +fieldDelim + intLength );
-	        				} else {
+	           					stBld.append(firstParts[0]).append(fieldDelim).append(parts[0]).append(fieldDelim).
+	           						append( (int)dist).append(fieldDelim).append(intLength);
+ 	        				} else {
 	            				//2 items IDs followed by distance
-	    	   					valueHolder.set(firstParts[0] + fieldDelim + parts[0] + fieldDelim + (int)dist);
+	    	   					stBld.append(firstParts[0]).append(fieldDelim).append(parts[0]).append(fieldDelim).
+    	   						append( (int)dist);
 	        				}
 
+	        				//if there any matching context data
+	        				appendMatchingContexts(stBld);
+
+	        				valueHolder.set(stBld.toString());
 		   	    			context.getCounter("Reducer", "Emit").increment(1);
 		   					context.write(NullWritable.get(), valueHolder);
 	        			}
@@ -271,6 +285,19 @@ public class ItemDynamicAttributeSimilarity  extends Configured implements Tool{
         	}
        	
         }
+        
+        /**
+         * @param stBld
+         */
+        private void appendMatchingContexts(StringBuilder stBld) {
+			String[]   matchingContexts = simStrategy.getMatchingContexts();
+			if (null  !=  matchingContexts) {
+				for (String matchingContext :  matchingContexts) {
+					stBld.append(fieldDelim).append(matchingContext);
+				}
+			}
+        }
+        
         
         /**
          * @param val
