@@ -161,6 +161,8 @@ public class ItemDynamicAttributeSimilarity  extends Configured implements Tool{
         private int scale;
         private boolean outputCorrelation;
         private int partitonFieldOrdinal;
+        private int intLength;
+        private int minIntLength;
         
         
         /* (non-Javadoc)
@@ -190,6 +192,7 @@ public class ItemDynamicAttributeSimilarity  extends Configured implements Tool{
            	scale = context.getConfiguration().getInt("distance.scale", 1000);
            	outputCorrelation = context.getConfiguration().getBoolean("output.correlation", false);
            	partitonFieldOrdinal = context.getConfiguration().getInt("paritioning.field.ordinal", -1);
+           	minIntLength =  context.getConfiguration().getInt("min.intersection.length", 2);
           }    
 
         /* (non-Javadoc)
@@ -198,7 +201,7 @@ public class ItemDynamicAttributeSimilarity  extends Configured implements Tool{
         protected void reduce(Tuple  key, Iterable<Text> values, Context context)
         throws IOException, InterruptedException {
         	double dist = 0;
-        	int intLength = -1;
+        	intLength = -1;
         	
         	valueList.clear();
         	StringBuilder stBld = new StringBuilder();
@@ -223,26 +226,30 @@ public class ItemDynamicAttributeSimilarity  extends Configured implements Tool{
         				dist = ( 1.0 - simStrategy.findDistance(firstParts[1], secondParts[1]))  * scale;
         				dist = dist < 0.0 ? 0.0 : dist;
         				
-        				if (outputCorrelation) {
-        					dist = scale - dist;
-        					intLength = simStrategy.getIntersectionLength();
-            				//2 items IDs followed by distance and intersection length
-        					stBld.append(firstParts[0]).append(fieldDelim).append(secondParts[0]).append(fieldDelim).
-        						append( (int)dist).append(fieldDelim).append(intLength);
-        				} else {
-            				//2 items IDs followed by distance
-    	   					stBld.append(firstParts[0]).append(fieldDelim).append(secondParts[0]).append(fieldDelim).
-    	   						append( (int)dist);
-        				}
-        				
-        				//if there any matching context data
-        				appendMatchingContexts(stBld);
-
-        				valueHolder.set(stBld.toString());
-	   	    			context.getCounter("Reducer", "Emit").increment(1);
-	   					context.write(NullWritable.get(), valueHolder);
-	        		}
-	        	}
+    					intLength = simStrategy.getIntersectionLength();
+    					if( intLength >= minIntLength) {
+	        				if (outputCorrelation) {
+	        					dist = scale - dist;
+	            				//2 items IDs followed by distance and intersection length
+	        					stBld.append(firstParts[0]).append(fieldDelim).append(secondParts[0]).append(fieldDelim).
+	        						append( (int)dist).append(fieldDelim).append(intLength);
+	        				} else {
+	            				//2 items IDs followed by distance
+	    	   					stBld.append(firstParts[0]).append(fieldDelim).append(secondParts[0]).append(fieldDelim).
+	    	   						append( (int)dist);
+	        				}
+	        				
+	        				//if there any matching context data
+	        				appendMatchingContexts(stBld);
+	
+	        				valueHolder.set(stBld.toString());
+		   	    			context.getCounter("Reducer", "Emit").increment(1);
+		   					context.write(NullWritable.get(), valueHolder);
+	    				} else {
+		   	    			context.getCounter("Correlation Intersection", "Below threshold").increment(1);
+	    				} //if int length
+	        		}//for
+	        	}//for
         	} else {
         		//different hash bucket
     			context.getCounter("Reducer", "Diff Bucket Count").increment(1);
@@ -261,28 +268,32 @@ public class ItemDynamicAttributeSimilarity  extends Configured implements Tool{
 	        				dist = (1.0 - simStrategy.findDistance(firstParts[1], parts[1])) * scale;
 	        				dist = dist < 0.0 ? 0.0 : dist;
 	        				
-	        				if (outputCorrelation) {
-	        					dist = scale - dist;
-	        					intLength = simStrategy.getIntersectionLength();
-	            				//2 items IDs followed by distance and intersection l;ength
-	           					stBld.append(firstParts[0]).append(fieldDelim).append(parts[0]).append(fieldDelim).
-	           						append( (int)dist).append(fieldDelim).append(intLength);
- 	        				} else {
-	            				//2 items IDs followed by distance
-	    	   					stBld.append(firstParts[0]).append(fieldDelim).append(parts[0]).append(fieldDelim).
-    	   						append( (int)dist);
-	        				}
-
-	        				//if there any matching context data
-	        				appendMatchingContexts(stBld);
-
-	        				valueHolder.set(stBld.toString());
-		   	    			context.getCounter("Reducer", "Emit").increment(1);
-		   					context.write(NullWritable.get(), valueHolder);
-	        			}
-	        		}
-	        	}
-        	}
+        					intLength = simStrategy.getIntersectionLength();
+        					if( intLength >= minIntLength) {
+		        				if (outputCorrelation) {
+		        					dist = scale - dist;
+		            				//2 items IDs followed by distance and intersection l;ength
+		           					stBld.append(firstParts[0]).append(fieldDelim).append(parts[0]).append(fieldDelim).
+		           						append( (int)dist).append(fieldDelim).append(intLength);
+	 	        				} else {
+		            				//2 items IDs followed by distance
+		    	   					stBld.append(firstParts[0]).append(fieldDelim).append(parts[0]).append(fieldDelim).
+	    	   						append( (int)dist);
+		        				}
+	
+		        				//if there any matching context data
+		        				appendMatchingContexts(stBld);
+	
+		        				valueHolder.set(stBld.toString());
+			   	    			context.getCounter("Reducer", "Emit").increment(1);
+			   					context.write(NullWritable.get(), valueHolder);
+		        			} else {
+			   	    			context.getCounter("Correlation Intersection", "Below threshold").increment(1);
+		        			}//if int length
+	        			}//for
+	        		}//if
+	        	}//for
+        	}//if
        	
         }
         
