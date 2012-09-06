@@ -181,11 +181,16 @@ public class SameTypeSimilarity  extends Configured implements Tool {
         private int dist;
         private int idOrdinal;
         private String fieldDelimRegex;
+        private String fieldDelim;
         private int scale;
         private DistanceStrategy distStrategy;
         private DynamicAttrSimilarityStrategy textSimStrategy;
         private String subFieldDelim;
         private int[] facetedFields;
+        private int[] passiveFields ;
+        private boolean includePassiveFields;
+        private String[] firstItems;
+        private String[] secondItems;
       
     	/* (non-Javadoc)
     	 * @see org.apache.hadoop.mapreduce.Reducer#setup(org.apache.hadoop.mapreduce.Reducer.Context)
@@ -201,11 +206,12 @@ public class SameTypeSimilarity  extends Configured implements Tool {
             schema.processStructuredFields();
         	
             idOrdinal = schema.getEntity().getIdField().getOrdinal();
-        	fieldDelimRegex = context.getConfiguration().get("field.delim.regex", "\\[\\]");
-        	scale = context.getConfiguration().getInt("distance.scale", 1000);
+        	fieldDelimRegex = conf.get("field.delim.regex", "\\[\\]");
+        	fieldDelim = context.getConfiguration().get("field.delim", ",");
+        	scale = conf.getInt("distance.scale", 1000);
         	distStrategy = schema.createDistanceStrategy(scale);
         	textSimStrategy = schema.createTextSimilarityStrategy();
-        	subFieldDelim = context.getConfiguration().get("sub.field.delim.regex", "::");
+        	subFieldDelim = conf.get("sub.field.delim.regex", "::");
         	
         	//faceted fields
         	String facetedFieldValues =  conf.get("faceted.field.ordinal");
@@ -216,6 +222,9 @@ public class SameTypeSimilarity  extends Configured implements Tool {
         			facetedFields[i] = Integer.parseInt(items[i]);
         		}
         	}
+        	
+        	//carry along passive fields in output
+        	includePassiveFields = conf.getBoolean("include.passive.fields", false);
       }
         
         /* (non-Javadoc)
@@ -240,7 +249,7 @@ public class SameTypeSimilarity  extends Configured implements Tool {
 	            		secondId =  second.split(fieldDelimRegex)[idOrdinal];
 	            		if (!firstId.equals(secondId)){
 		        			dist  = findDistance( first,  second,  context);
-		   					valueHolder.set(firstId + "," + secondId + "," + dist);
+		   					valueHolder.set(createValueField());
 		   					context.write(NullWritable.get(), valueHolder);
 	            		} else {
 	    					context.getCounter("Distance Data", "Same ID").increment(1);
@@ -260,7 +269,7 @@ public class SameTypeSimilarity  extends Configured implements Tool {
 	            		for (String first : valueList){
 	                		firstId =  first.split(fieldDelimRegex)[idOrdinal];
 		        			dist  = findDistance( first,  second,  context);
-		   					valueHolder.set(firstId + "," + secondId + "," + dist);
+		   					valueHolder.set(createValueField());
 		   					context.write(NullWritable.get(), valueHolder);
 	            		}
 	        		}
@@ -278,31 +287,47 @@ public class SameTypeSimilarity  extends Configured implements Tool {
          */
         private int findDistance(String first, String second, Context context) throws IOException {
         	int netDist = 0;
-    		String[] firstItems = first.split(fieldDelimRegex);
-    		String[] secondItems = second.split(fieldDelimRegex);
+    		firstItems = first.split(fieldDelimRegex);
+    		secondItems = second.split(fieldDelimRegex);
     		double dist = 0;
     		boolean valid = false;
     		distStrategy.initialize();
+    		List<Integer> activeFields = null;
     		
     		for (Field field :  schema.getEntity().getFields()) {
     			if (null != facetedFields) {
-    				//if facetted but field not included, then skit it
+    				//if facetted set but field not included, then skip it
     				if (!ArrayUtils.contains(facetedFields, field.getOrdinal())) {
     					continue;
     				}
     			}
     			
+    			//track fields participating is dist calculation
+    			if (includePassiveFields && null == passiveFields) {
+    				if (null == activeFields) {
+    					activeFields = new ArrayList<Integer>();
+    				}
+    				activeFields.add(field.getOrdinal());
+    			}
+    			
+    			//extract fields
     			String firstAttr = "";
     			if (field.getOrdinal() < firstItems.length ){
     				firstAttr = firstItems[field.getOrdinal()];
-    			} 
+    			} else {
+    				throw new IOException("invalid field ordinal");
+    			}
+    			
     			String secondAttr = "";
     			if (field.getOrdinal() < secondItems.length ){
     				secondAttr = secondItems[field.getOrdinal()];
+    			}else {
+    				throw new IOException("invalid field ordinal");
     			}
     			String unit = field.getUnit();
     			
     			if (firstAttr.isEmpty() || secondAttr.isEmpty() ) {
+    				//handle missing value
 					context.getCounter("Missing Data", "Field:" + field.getOrdinal()).increment(1);
     				if (schema.getMissingValueHandler().equals("default")) {
     					dist = 1.0;
@@ -336,8 +361,49 @@ public class SameTypeSimilarity  extends Configured implements Tool {
 				distStrategy.accumulate(dist, field.getWeight());
     		}  
     		
+    		//initialize passive fields
+			if (includePassiveFields && null == passiveFields) {
+				intializePassiveFieldOrdinal(activeFields, firstItems.length);
+			}
+			
     		netDist = distStrategy.getSimilarity();
     		return netDist;
+        }
+        
+        /**
+         * @param activeFields
+         * @param numFields
+         */
+        private void intializePassiveFieldOrdinal(List<Integer> activeFields, int numFields) {
+        	int len = numFields - activeFields.size();
+        	if (len > 0) {
+	        	passiveFields = new int[len];
+	        	for (int i = 0,j=0; i < numFields; ++i) {
+	        		if (!activeFields.contains(i) ) {
+	        			passiveFields[j++] = i;
+	        		}
+	        	}
+        	}
+        }
+        
+        /**
+         * @return
+         */
+        private String createValueField() {
+        	StringBuilder stBld = new StringBuilder();
+        	stBld.append(firstId).append(fieldDelim).append(secondId).append(fieldDelim);
+        	
+        	//include passive fields
+        	if (null != passiveFields) {
+        		for (int i :  passiveFields) {
+        			stBld.append(firstItems[i]).append(fieldDelim);
+        		}
+        		for (int i :  passiveFields) {
+        			stBld.append(secondItems[i]).append(fieldDelim);
+        		}
+        	}
+        	stBld.append(dist);
+        	return stBld.toString();
         }
         
         /**
