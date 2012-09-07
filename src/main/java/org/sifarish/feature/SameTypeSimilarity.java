@@ -191,7 +191,10 @@ public class SameTypeSimilarity  extends Configured implements Tool {
         private boolean includePassiveFields;
         private String[] firstItems;
         private String[] secondItems;
-      
+        private int  distThreshold;
+        private boolean  outputIdFirst ;
+        
+        
     	/* (non-Javadoc)
     	 * @see org.apache.hadoop.mapreduce.Reducer#setup(org.apache.hadoop.mapreduce.Reducer.Context)
     	 */
@@ -209,9 +212,13 @@ public class SameTypeSimilarity  extends Configured implements Tool {
         	fieldDelimRegex = conf.get("field.delim.regex", "\\[\\]");
         	fieldDelim = context.getConfiguration().get("field.delim", ",");
         	scale = conf.getInt("distance.scale", 1000);
-        	distStrategy = schema.createDistanceStrategy(scale);
-        	textSimStrategy = schema.createTextSimilarityStrategy();
         	subFieldDelim = conf.get("sub.field.delim.regex", "::");
+        	
+        	//distance calculation strategy
+        	distStrategy = schema.createDistanceStrategy(scale);
+
+        	//text field similarity calculation strategy
+        	textSimStrategy = schema.createTextSimilarityStrategy();
         	
         	//faceted fields
         	String facetedFieldValues =  conf.get("faceted.field.ordinal");
@@ -225,6 +232,13 @@ public class SameTypeSimilarity  extends Configured implements Tool {
         	
         	//carry along passive fields in output
         	includePassiveFields = conf.getBoolean("include.passive.fields", false);
+        	
+        	//distance threshold for output
+        	distThreshold = conf.getInt("dist.threshold", scale);
+        	
+        	//output ID first
+        	 outputIdFirst =   conf.getBoolean("output.id.first", true);      	
+
       }
         
         /* (non-Javadoc)
@@ -249,8 +263,10 @@ public class SameTypeSimilarity  extends Configured implements Tool {
 	            		secondId =  second.split(fieldDelimRegex)[idOrdinal];
 	            		if (!firstId.equals(secondId)){
 		        			dist  = findDistance( first,  second,  context);
-		   					valueHolder.set(createValueField());
-		   					context.write(NullWritable.get(), valueHolder);
+		        			if (dist <= distThreshold) {
+		        				valueHolder.set(createValueField());
+		        				context.write(NullWritable.get(), valueHolder);
+		        			}
 	            		} else {
 	    					context.getCounter("Distance Data", "Same ID").increment(1);
 	    					System.out.println("Repeat:" + firstId );
@@ -269,8 +285,10 @@ public class SameTypeSimilarity  extends Configured implements Tool {
 	            		for (String first : valueList){
 	                		firstId =  first.split(fieldDelimRegex)[idOrdinal];
 		        			dist  = findDistance( first,  second,  context);
-		   					valueHolder.set(createValueField());
-		   					context.write(NullWritable.get(), valueHolder);
+		        			if (dist <= distThreshold) {
+		        				valueHolder.set(createValueField());
+		        				context.write(NullWritable.get(), valueHolder);
+		        			}
 	            		}
 	        		}
 	        	}
@@ -391,7 +409,10 @@ public class SameTypeSimilarity  extends Configured implements Tool {
          */
         private String createValueField() {
         	StringBuilder stBld = new StringBuilder();
-        	stBld.append(firstId).append(fieldDelim).append(secondId).append(fieldDelim);
+        	
+        	if (outputIdFirst) {
+        		stBld.append(firstId).append(fieldDelim).append(secondId).append(fieldDelim);
+        	}
         	
         	//include passive fields
         	if (null != passiveFields) {
@@ -402,6 +423,11 @@ public class SameTypeSimilarity  extends Configured implements Tool {
         			stBld.append(secondItems[i]).append(fieldDelim);
         		}
         	}
+        	
+        	if (!outputIdFirst) {
+        		stBld.append(firstId).append(fieldDelim).append(secondId).append(fieldDelim);
+        	}
+
         	stBld.append(dist);
         	return stBld.toString();
         }
