@@ -51,20 +51,18 @@ public class SemanticSimilarity extends DynamicAttrSimilarityStrategy {
 		}
 	}
 	
-	@Override
-	public double findDistance(String thisEntityID, String thisTag,
-			String thatEntityID, String thatTag, String groupingID) {
-		thisEntity.setEntityID(thisEntityID);
-		thisEntity.setGroupID(groupingID);
-		thatEntity.setEntityID(thisEntityID);
-		thatEntity.setGroupID(groupingID);
-		
+	/**
+	 * @param src
+	 * @param target
+	 * @return
+	 */
+	public  double findDistance(String src, String target) {
 		int matchScoreMax = 0;
 		int matchScore;
 		String matchingContext;
 		int avScore = 0;
-		String[] thisTagItems = thisTag.split(fieldDelimRegex);
-		String[] thatTagItems = thatTag.split(fieldDelimRegex);
+		String[] thisTagItems = src.split(fieldDelimRegex);
+		String[] thatTagItems = target.split(fieldDelimRegex);
 		for (String thisTagItem : thisTagItems) {
 			thisEntity.setTag(thisTagItem);
 			for (String thatTagItem :thatTagItems) {
@@ -88,6 +86,17 @@ public class SemanticSimilarity extends DynamicAttrSimilarityStrategy {
 		avScore /= topMatchCount;
 		
 		return ((double)avScore) / SCORE_MAX;
+	}
+	
+	@Override
+	public double findDistance(String thisEntityID, String thisTag,
+			String thatEntityID, String thatTag, String groupingID) {
+		thisEntity.setEntityID(thisEntityID);
+		thisEntity.setGroupID(groupingID);
+		thatEntity.setEntityID(thisEntityID);
+		thatEntity.setGroupID(groupingID);
+		
+		return findDistance( thisTag, thatTag);
 	}
 	
 	private static class MatchedItem  implements Comparable<MatchedItem>{

@@ -58,9 +58,13 @@ public class TimeWindow  extends StructuredAttribute{
 				distance = 1;
 			} else if (end < other.end) {
 				overlap =  end - other.start;
-			} 
-		} else if (start < other.end) {
-			if (end > other.end) {
+			} else {
+				overlap =  other.end - other.start;
+			}
+		}  else if (start < other.end) {
+			if (end <= other.end) {
+				overlap = end - start;
+			} else {
 				overlap = other.end - start;
 			}
 		} else {
