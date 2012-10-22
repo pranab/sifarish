@@ -38,11 +38,11 @@ public abstract class DynamicAttrSimilarityStrategy {
 	 * @param target
 	 * @return
 	 */
-	public  double findDistance(String src, String target) {
+	public  double findDistance(String src, String target)  throws IOException {
 		return 1.0;
 	}
 	
-	public  double findDistance(String srcEntityID, String src, String targetEntityID, String target, String groupingID) {
+	public  double findDistance(String srcEntityID, String src, String targetEntityID, String target, String groupingID)  throws IOException {
 		return 1.0;
 	}
 	
@@ -117,7 +117,7 @@ public abstract class DynamicAttrSimilarityStrategy {
 		} else if (algorithm.equals("semantic")){
 			String matcherClass =(String) params.get("matcherClass");
 			int  topMatchCount =(Integer) params.get("topMatchCount");
-			simStrategy = new SemanticSimilarity(matcherClass, topMatchCount);
+			simStrategy = new SemanticSimilarity(matcherClass, topMatchCount, params);
 		} 
 		return simStrategy;
 	}	

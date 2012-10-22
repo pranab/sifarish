@@ -17,6 +17,9 @@
 
 package org.sifarish.common;
 
+import java.io.IOException;
+import java.util.Map;
+
 import org.chombo.util.Pair;
 
 /**
@@ -25,6 +28,7 @@ import org.chombo.util.Pair;
  */
 public abstract class TaggedEntity extends Pair<String, String> {
 	private String groupID;
+	protected Map<String,Object> params;
 	
 	public TaggedEntity() {
 	}
@@ -38,6 +42,8 @@ public abstract class TaggedEntity extends Pair<String, String> {
 		super(entityID, tag);
 		this.groupID = groupID;
 	}
+	
+	
 	
 	public String getEntityID() {
 		return getLeft();
@@ -67,12 +73,27 @@ public abstract class TaggedEntity extends Pair<String, String> {
 	 * @param other
 	 * @return
 	 */
-	public abstract int match(TaggedEntity other) ;
+	public abstract int match(TaggedEntity other) throws IOException ;
 	
 	/**
 	 * Context data related to the last match
 	 * @return
 	 */
 	public abstract String matchingContext();
+
+
+	/**
+	 * @return
+	 */
+	public Map<String, Object> getParams() {
+		return params;
+	}
+
+	/**
+	 * @param params
+	 */
+	public void setParams(Map<String, Object> params) {
+		this.params = params;
+	}
 
 }

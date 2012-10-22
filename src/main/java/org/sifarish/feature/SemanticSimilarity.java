@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 
 import org.sifarish.common.TaggedEntity;
 
@@ -35,7 +36,7 @@ public class SemanticSimilarity extends DynamicAttrSimilarityStrategy {
 	private List<MatchedItem> matchedItems = new ArrayList<MatchedItem>();
 	private static final int SCORE_MAX = 10;
 	
-	public SemanticSimilarity(String matcherClass, int topMatchCount) throws IOException   {
+	public SemanticSimilarity(String matcherClass, int topMatchCount, Map<String,Object> params) throws IOException   {
         Class<?> iterCls;
 		try {
 			iterCls = Class.forName(matcherClass);
@@ -55,8 +56,9 @@ public class SemanticSimilarity extends DynamicAttrSimilarityStrategy {
 	 * @param src
 	 * @param target
 	 * @return
+	 * @throws IOException 
 	 */
-	public  double findDistance(String src, String target) {
+	public  double findDistance(String src, String target) throws IOException {
 		int matchScoreMax = 0;
 		int matchScore;
 		String matchingContext;
@@ -90,7 +92,7 @@ public class SemanticSimilarity extends DynamicAttrSimilarityStrategy {
 	
 	@Override
 	public double findDistance(String thisEntityID, String thisTag,
-			String thatEntityID, String thatTag, String groupingID) {
+			String thatEntityID, String thatTag, String groupingID) throws IOException {
 		thisEntity.setEntityID(thisEntityID);
 		thisEntity.setGroupID(groupingID);
 		thatEntity.setEntityID(thisEntityID);

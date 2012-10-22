@@ -336,8 +336,9 @@ public class DiffTypeSimilarity  extends Configured implements Tool {
     	 * @param target
     	 * @param context
     	 * @return
+    	 * @throws IOException 
     	 */
-    	private int findSimilarity(String source, String target, Context context) {
+    	private int findSimilarity(String source, String target, Context context) throws IOException {
     		int sim = 0;
     		mapFields(source, context);
     		String[] trgItems = target.split(fieldDelimRegex);

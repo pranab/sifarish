@@ -43,6 +43,8 @@ import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 import org.apache.hadoop.util.Tool;
 import org.apache.hadoop.util.ToolRunner;
+import org.apache.log4j.Level;
+import org.apache.log4j.Logger;
 import org.codehaus.jackson.map.ObjectMapper;
 import org.sifarish.util.Event;
 import org.sifarish.util.Field;
@@ -116,6 +118,7 @@ public class SameTypeSimilarity  extends Configured implements Tool {
         private  int partitonOrdinal;
         private int hashPair;
         private int hashCode;
+        private static final Logger LOG = Logger.getLogger(SimilarityMapper.class);
  
         /* (non-Javadoc)
          * @see org.apache.hadoop.mapreduce.Mapper#setup(org.apache.hadoop.mapreduce.Mapper.Context)
@@ -133,7 +136,10 @@ public class SameTypeSimilarity  extends Configured implements Tool {
             schema = mapper.readValue(fs, SingleTypeSchema.class);
             partitonOrdinal = schema.getPartitioningColumn();
             idOrdinal = schema.getEntity().getIdField().getOrdinal();
-        	System.out.println("bucketCount: " + bucketCount + "partitonOrdinal: " + partitonOrdinal  + "idOrdinal:" + idOrdinal );
+            if (conf.getBoolean("debug.on", false)) {
+            	LOG.setLevel(Level.DEBUG);
+            }
+        	LOG.debug("bucketCount: " + bucketCount + "partitonOrdinal: " + partitonOrdinal  + "idOrdinal:" + idOrdinal );
 
        }
         /* (non-Javadoc)
@@ -193,6 +199,7 @@ public class SameTypeSimilarity  extends Configured implements Tool {
         private String[] secondItems;
         private int  distThreshold;
         private boolean  outputIdFirst ;
+        private static final Logger LOG = Logger.getLogger(SimilarityMapper.class);
         
         
     	/* (non-Javadoc)
@@ -239,6 +246,9 @@ public class SameTypeSimilarity  extends Configured implements Tool {
         	//output ID first
         	 outputIdFirst =   conf.getBoolean("output.id.first", true);      	
 
+             if (conf.getBoolean("debug.on", false)) {
+             	LOG.setLevel(Level.DEBUG);
+             }
       }
         
         /* (non-Javadoc)
@@ -269,7 +279,7 @@ public class SameTypeSimilarity  extends Configured implements Tool {
 		        			}
 	            		} else {
 	    					context.getCounter("Distance Data", "Same ID").increment(1);
-	    					System.out.println("Repeat:" + firstId );
+	    					LOG.debug("Repeat:" + firstId );
 	            		}
 	   				}
 	        	}
