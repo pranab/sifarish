@@ -70,7 +70,7 @@ public class ResourceDescribedEntity extends TaggedEntity {
 	private void loadModel() throws IOException {
 		if (null == model) {
 			FileSystem dfs = FileSystem.get((Configuration)params.get("config"));
-            Path src = new Path((String)params.get("modelFilePath"));
+            Path src = new Path((String)params.get("semantic.rdf.modelFilePath"));
             FSDataInputStream fs = dfs.open(src);			
             
             model = ModelFactory.createDefaultModel();	

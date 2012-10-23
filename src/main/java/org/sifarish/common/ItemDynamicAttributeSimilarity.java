@@ -23,6 +23,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.conf.Configured;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.LongWritable;
@@ -169,31 +170,49 @@ public class ItemDynamicAttributeSimilarity  extends Configured implements Tool{
          * @see org.apache.hadoop.mapreduce.Reducer#setup(org.apache.hadoop.mapreduce.Reducer.Context)
          */
         protected void setup(Context context) throws IOException, InterruptedException {
-        	fieldDelim = context.getConfiguration().get("field.delim", "[]");
-        	fieldDelimRegex = context.getConfiguration().get("field.delim.regex", "\\[\\]");
+        	Configuration conf = context.getConfiguration();
+        	
+        	fieldDelim = conf.get("field.delim", "[]");
+        	fieldDelimRegex = conf.get("field.delim.regex", "\\[\\]");
         	delimLength =  fieldDelim.length();
-        	hashPairMult = context.getConfiguration().getInt("hash.pair.multiplier", 1000);
-        	String simAlgorithm = context.getConfiguration().get("similarity.algorithm", "cosine");
+        	hashPairMult = conf.getInt("hash.pair.multiplier", 1000);
+        	String simAlgorithm = conf.get("similarity.algorithm", "cosine");
         	
         	Map<String, Object> params = new HashMap<String, Object>();
-        	params.put("matcherClass", context.getConfiguration().get("semantic.matcher.class"));
-        	params.put("topMatchCount", context.getConfiguration().getInt("semantic.top.match.count", 5));
-        	params.put("srcNonMatchingTermWeight", context.getConfiguration().get("jaccard.srcNonMatchingTermWeight"));
-        	params.put("trgNonMatchingTermWeight", context.getConfiguration().get("jaccard.trgNonMatchingTermWeight"));
+        	params.put("matcherClass", conf.get("semantic.matcher.class"));
+        	params.put("topMatchCount", conf.getInt("semantic.top.match.count", 5));
+        	params.put("config", conf);
+        	loadSemanticMatcherParams( conf,  params); 
+        	
+        	params.put("srcNonMatchingTermWeight", conf.get("jaccard.srcNonMatchingTermWeight"));
+        	params.put("trgNonMatchingTermWeight", conf.get("jaccard.trgNonMatchingTermWeight"));
         	simStrategy = DynamicAttrSimilarityStrategy.createSimilarityStrategy(simAlgorithm, params);
+        	
         	simStrategy.setFieldDelimRegex(fieldDelimRegex);
-        	boolean booleanVec = context.getConfiguration().getBoolean("vec.type.boolean", true);
+        	boolean booleanVec = conf.getBoolean("vec.type.boolean", true);
         	simStrategy.setBooleanVec(booleanVec);
         	if (!booleanVec) {
-            	boolean countIncluded = context.getConfiguration().getBoolean("vec.count.included", true);
+            	boolean countIncluded = conf.getBoolean("vec.count.included", true);
         		simStrategy.setCountIncluded(countIncluded);
         	}
         	
-           	scale = context.getConfiguration().getInt("distance.scale", 1000);
-           	outputCorrelation = context.getConfiguration().getBoolean("output.correlation", false);
-           	partitonFieldOrdinal = context.getConfiguration().getInt("paritioning.field.ordinal", -1);
-           	minIntLength =  context.getConfiguration().getInt("min.intersection.length", 2);
+           	scale = conf.getInt("distance.scale", 1000);
+           	outputCorrelation = conf.getBoolean("output.correlation", false);
+           	partitonFieldOrdinal = conf.getInt("paritioning.field.ordinal", -1);
+           	minIntLength =  conf.getInt("min.intersection.length", 2);
           }    
+        
+        /**
+         * @param conf
+         * @param params
+         */
+        private void loadSemanticMatcherParams(Configuration conf, Map<String, Object> params ) {
+        	String[] semanticParams = conf.get("sematic.matcher.params").split(",");
+        	for (String semanticParam :  semanticParams) {
+        		params.put(semanticParam, conf.get(semanticParam));
+        	}
+        	
+        }
 
         /* (non-Javadoc)
          * @see org.apache.hadoop.mapreduce.Reducer#reduce(KEYIN, java.lang.Iterable, org.apache.hadoop.mapreduce.Reducer.Context)
