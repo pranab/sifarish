@@ -21,6 +21,7 @@ package org.sifarish.common;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FSDataInputStream;
@@ -50,7 +51,6 @@ public class ResourceDescribedEntity extends TaggedEntity {
 		String thatTag = other.getTag();
 		
 		//find intersections in RDF graph
-		loadModel();
 		List<ResourceTraversed> intersections = match(thisTag, thatTag);
 		
 		//find the intersection with min distance
@@ -143,6 +143,12 @@ public class ResourceDescribedEntity extends TaggedEntity {
 		}		
 	}
 	
+	@Override
+	public void initialize(Map<String, Object> params) throws IOException {
+		this.params = params;
+		loadModel() ;		
+	}	
+
 	
 	private static class ResourceTraversed {
 		private Resource resource;
@@ -164,5 +170,7 @@ public class ResourceDescribedEntity extends TaggedEntity {
 		public String toString() {
 			return "resource:" + resource.toString() + " distance: " + distance;
 		}
-	}	
+	}
+
+
 }

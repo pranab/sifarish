@@ -83,17 +83,8 @@ public abstract class TaggedEntity extends Pair<String, String> {
 
 
 	/**
-	 * @return
+	 * 
 	 */
-	public Map<String, Object> getParams() {
-		return params;
-	}
-
-	/**
-	 * @param params
-	 */
-	public void setParams(Map<String, Object> params) {
-		this.params = params;
-	}
+	public abstract void initialize(Map<String, Object> params) throws IOException;
 
 }

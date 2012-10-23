@@ -42,6 +42,8 @@ public class SemanticSimilarity extends DynamicAttrSimilarityStrategy {
 			iterCls = Class.forName(matcherClass);
 			thisEntity = (TaggedEntity)iterCls.newInstance();
 			thatEntity = (TaggedEntity)iterCls.newInstance();
+			thisEntity.initialize(params);
+			
 			this.topMatchCount = topMatchCount;
 		} catch (ClassNotFoundException e) {
 			throw new IOException("failed to intialize SemanticSimilarity");
