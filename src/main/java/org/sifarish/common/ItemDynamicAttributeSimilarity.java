@@ -23,6 +23,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.conf.Configured;
 import org.apache.hadoop.fs.Path;
@@ -207,9 +208,12 @@ public class ItemDynamicAttributeSimilarity  extends Configured implements Tool{
          * @param params
          */
         private void loadSemanticMatcherParams(Configuration conf, Map<String, Object> params ) {
-        	String[] semanticParams = conf.get("sematic.matcher.params").split(",");
-        	for (String semanticParam :  semanticParams) {
-        		params.put(semanticParam, conf.get(semanticParam));
+        	String semParams = conf.get("semantic.matcher.params");
+        	if (!StringUtils.isBlank(semParams)) {
+	        	String[] semanticParams = semParams.split(",");
+	        	for (String semanticParam :  semanticParams) {
+	        		params.put(semanticParam, conf.get(semanticParam));
+	        	}
         	}
         	
         }

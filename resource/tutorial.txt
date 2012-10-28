@@ -8,6 +8,12 @@ item2,user2:5,user4:2,...
 Ypu can use ratings.rb as follows to generate ratings data
 ruby ratings.rb <item_count> <user_count>
 
+It rquires util.rb to be in the ../lib directory. You can get util.rb
+from the visitante project at the following location
+
+https://github.com/pranab/visitante/tree/master/script/ruby
+
+
 User count should be an order of magnitude higher than item count
 
 
