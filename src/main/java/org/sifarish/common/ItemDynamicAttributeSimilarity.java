@@ -129,8 +129,8 @@ public class ItemDynamicAttributeSimilarity  extends Configured implements Tool{
     		hash = (hashCode %  bucketCount) / 2 ;
     		String partition = partitonFieldOrdinal >= 0 ? items[partitonFieldOrdinal] :  "none";
     		
-    		keyHolder.initialize();
     		for (int i = 0; i < bucketCount;  ++i) {
+    			keyHolder.initialize();
     			if (i < hash){
        				hashPair = hash * hashPairMult +  i;
        				keyHolder.add(partition, hashPair, zero);
@@ -142,7 +142,6 @@ public class ItemDynamicAttributeSimilarity  extends Configured implements Tool{
     			} 
     			//System.out.println("mapper hashPair: " + hashPair);
    	   			context.write(keyHolder, valueHolder);
-   	   			keyHolder.initialize();
     		}
         }
              
@@ -165,7 +164,8 @@ public class ItemDynamicAttributeSimilarity  extends Configured implements Tool{
         private int partitonFieldOrdinal;
         private int intLength;
         private int minIntLength;
-        
+       	private StringBuilder stBld = new StringBuilder();
+               
         
         /* (non-Javadoc)
          * @see org.apache.hadoop.mapreduce.Reducer#setup(org.apache.hadoop.mapreduce.Reducer.Context)
@@ -227,7 +227,6 @@ public class ItemDynamicAttributeSimilarity  extends Configured implements Tool{
         	intLength = -1;
         	
         	valueList.clear();
-        	StringBuilder stBld = new StringBuilder();
         	int firstPart = key.getInt(1);
         	//System.out.println("hashPair: " + firstPart);
         	if (firstPart / hashPairMult == firstPart % hashPairMult){
@@ -268,6 +267,7 @@ public class ItemDynamicAttributeSimilarity  extends Configured implements Tool{
 	        				valueHolder.set(stBld.toString());
 		   	    			context.getCounter("Reducer", "Emit").increment(1);
 		   					context.write(NullWritable.get(), valueHolder);
+		        			stBld.delete(0, stBld.length()-1);
 	    				} else {
 		   	    			context.getCounter("Correlation Intersection", "Below threshold").increment(1);
 	    				} //if int length
@@ -310,6 +310,7 @@ public class ItemDynamicAttributeSimilarity  extends Configured implements Tool{
 		        				valueHolder.set(stBld.toString());
 			   	    			context.getCounter("Reducer", "Emit").increment(1);
 			   					context.write(NullWritable.get(), valueHolder);
+			        			stBld.delete(0, stBld.length()-1);
 		        			} else {
 			   	    			context.getCounter("Correlation Intersection", "Below threshold").increment(1);
 		        			}//if int length
