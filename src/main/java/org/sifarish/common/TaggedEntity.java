@@ -29,6 +29,7 @@ import org.chombo.util.Pair;
 public abstract class TaggedEntity extends Pair<String, String> {
 	private String groupID;
 	protected Map<String,Object> params;
+	protected String matchingContext;
 	
 	public TaggedEntity() {
 	}
@@ -82,7 +83,9 @@ public abstract class TaggedEntity extends Pair<String, String> {
 	 * Context data related to the last match
 	 * @return
 	 */
-	public abstract String matchingContext();
+	public String getMatchingContext() {
+		return matchingContext;
+	}
 
 
 	/**

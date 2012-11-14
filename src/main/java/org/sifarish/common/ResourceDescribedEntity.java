@@ -58,6 +58,7 @@ public class ResourceDescribedEntity extends TaggedEntity {
 		String thisTag = getTag();
 		String thatTag = other.getTag();
 		int dist = 0;
+		Resource matchingResource = null;
 		
 		if (!thisTag.equals(thatTag)) {
 			//find intersections in RDF graph
@@ -68,12 +69,36 @@ public class ResourceDescribedEntity extends TaggedEntity {
 			for (ResourceTraversed resTrav :  intersections) {
 				if (resTrav.getDistance() < dist) {
 					dist = resTrav.getDistance();
+					matchingResource = resTrav.getResource();
 				}
 			}
+		} else {
+			matchingResource = ResourceFactory.createResource(thisTag);
 		}
+		
+		matchingContext = matchingResource != null ? resourceToString(matchingResource) : "";
 		
 		LOG.debug("dist:" + dist);
 		return dist;
+	}
+	
+	/**
+	 * @param resource
+	 * @return
+	 */
+	private String resourceToString(Resource resource) {
+		StringBuilder stBld = new StringBuilder();
+		StmtIterator iter = model.listStatements(resource, (Property)null, (RDFNode)null);
+		while (iter.hasNext()) {
+		    Statement stmt      = iter.nextStatement();  
+		    Resource  subject   = stmt.getSubject();     
+		    Property  predicate = stmt.getPredicate();   
+		    RDFNode   object    = stmt.getObject();
+		    stBld.append("[").append(subject.toString()).append("  ").append(predicate.toString()).append("  ").
+		    	append(object.toString()).append("]");
+		}		
+		
+		return stBld.toString();
 	}
 	
 	/**
@@ -90,11 +115,6 @@ public class ResourceDescribedEntity extends TaggedEntity {
 		}
 	}
 
-	@Override
-	public String matchingContext() {
-		// TODO Auto-generated method stub
-		return null;
-	}
 	
 	/**
 	 * @param modelFilePath

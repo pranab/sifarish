@@ -87,7 +87,8 @@ public class SemanticSimilarity extends DynamicAttrSimilarityStrategy {
 					matchScore = SCORE_MAX - matchScore;
 					LOG.debug("matchScore:" + matchScore);
 				}
-				matchingContext = thisEntity.matchingContext();
+				matchingContext = thisEntity.getMatchingContext();
+				LOG.debug("matchScore:" + matchScore + " matchingContext:" + matchingContext);
 				matchedItems.add(new MatchedItem(matchScore, matchingContext));
 			}
 		}
