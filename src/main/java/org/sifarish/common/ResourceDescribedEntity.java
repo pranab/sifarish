@@ -27,6 +27,8 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FSDataInputStream;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
+import org.apache.log4j.Level;
+import org.apache.log4j.Logger;
 
 import com.hp.hpl.jena.rdf.model.Model;
 import com.hp.hpl.jena.rdf.model.ModelFactory;
@@ -44,23 +46,33 @@ import com.hp.hpl.jena.rdf.model.StmtIterator;
  */
 public class ResourceDescribedEntity extends TaggedEntity {
 	private Model model;
-	
+    private static final Logger LOG = Logger.getLogger(ResourceDescribedEntity.class);
+
+	@Override
+	public boolean isResultCorrelation() {
+		return false;
+	}
+
 	@Override
 	public int match(TaggedEntity other) throws IOException {
 		String thisTag = getTag();
 		String thatTag = other.getTag();
+		int dist = 0;
 		
-		//find intersections in RDF graph
-		List<ResourceTraversed> intersections = match(thisTag, thatTag);
-		
-		//find the intersection with min distance
-		int dist = Integer.MAX_VALUE;
-		for (ResourceTraversed resTrav :  intersections) {
-			if (resTrav.getDistance() < dist) {
-				dist = resTrav.getDistance();
+		if (!thisTag.equals(thatTag)) {
+			//find intersections in RDF graph
+			List<ResourceTraversed> intersections = match(thisTag, thatTag);
+			
+			//find the intersection with min distance
+			dist = Integer.MAX_VALUE;
+			for (ResourceTraversed resTrav :  intersections) {
+				if (resTrav.getDistance() < dist) {
+					dist = resTrav.getDistance();
+				}
 			}
 		}
 		
+		LOG.debug("dist:" + dist);
 		return dist;
 	}
 	
@@ -90,6 +102,8 @@ public class ResourceDescribedEntity extends TaggedEntity {
 	 * @param secondResource
 	 */
 	public List<ResourceTraversed>  match( String firstResource, String secondResource) {
+		LOG.debug("firstResource:" + firstResource + " secondResource:" + secondResource );
+		
 		List<ResourceTraversed> firstSearchRes = search( firstResource);
 		List<ResourceTraversed> secondSearchRes = search( secondResource);
 		
@@ -105,6 +119,7 @@ public class ResourceDescribedEntity extends TaggedEntity {
 			}
 		}
 		
+		LOG.debug("num of intersections:" + intersections.size());
 		return intersections;
 	}
 	
@@ -113,10 +128,11 @@ public class ResourceDescribedEntity extends TaggedEntity {
 	 * @param modelFilePath
 	 * @param uriResource
 	 */
-	public List<ResourceTraversed> search( String uriResource) {
+	public List<ResourceTraversed> search(String uriResource) {
 		Resource resource = ResourceFactory.createResource(uriResource);
 		List<ResourceTraversed> resourcesTraversed = new ArrayList<ResourceTraversed>();
 		searchOntology(resource, resourcesTraversed, 0);
+		LOG.debug("next search - uriResource:" + uriResource + " num of paths:" + resourcesTraversed.size());
 	    return resourcesTraversed;
 	}
 		
@@ -126,7 +142,6 @@ public class ResourceDescribedEntity extends TaggedEntity {
 	 * @param resourcesTraversed
 	 */
 	private void searchOntology(Resource resource, List<ResourceTraversed> resourcesTraversed, int distance) {
-		System.out.println("next round of search");
 		resourcesTraversed.add(new ResourceTraversed(resource, distance));
 		StmtIterator iter = model.listStatements(resource, (Property)null, (RDFNode)null);
 		while (iter.hasNext()) {
@@ -135,7 +150,7 @@ public class ResourceDescribedEntity extends TaggedEntity {
 		    Property  predicate = stmt.getPredicate();   
 		    RDFNode   object    = stmt.getObject();   
 		       
-		    System.out.println("next resource:" + object.toString());		    
+		    //LOG.debug("next resource:" + object.toString());		    
 		    if (object instanceof Resource) {
 		    	//if another RDF node, recurse
 		    	searchOntology((Resource)object, resourcesTraversed, distance+1);
@@ -147,9 +162,18 @@ public class ResourceDescribedEntity extends TaggedEntity {
 	public void initialize(Map<String, Object> params) throws IOException {
 		this.params = params;
 		loadModel() ;		
+		Configuration conf = (Configuration)params.get("config");
+        if (conf.getBoolean("debug.on", false)) {
+         	LOG.setLevel(Level.DEBUG);
+        }
+		
 	}	
 
 	
+	/**
+	 * @author pranab
+	 *
+	 */
 	private static class ResourceTraversed {
 		private Resource resource;
 		private int distance;

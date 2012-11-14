@@ -113,15 +113,9 @@ xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/ma
    		<dependency>
   			<groupId>org.apache.jena</groupId>
   			<artifactId>jena-arq</artifactId>
-  			<version>2.9.3</version>
+  			<version>2.9.4</version>
 		</dependency>    
-		    
-		<dependency>
-  			<groupId>org.apache.jena</groupId>
-  			<artifactId>jena-tdb</artifactId>
-  			<version>0.9.3</version>
-		</dependency>    
-        
+		 
     </dependencies>
 
     <repositories>

@@ -23,6 +23,9 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.hadoop.conf.Configuration;
+import org.apache.log4j.Level;
+import org.apache.log4j.Logger;
 import org.sifarish.common.TaggedEntity;
 
 /**
@@ -35,6 +38,7 @@ public class SemanticSimilarity extends DynamicAttrSimilarityStrategy {
 	private int topMatchCount;
 	private List<MatchedItem> matchedItems = new ArrayList<MatchedItem>();
 	private static final int SCORE_MAX = 10;
+    private static final Logger LOG = Logger.getLogger(SemanticSimilarity.class);
 	
 	public SemanticSimilarity(String matcherClass, int topMatchCount, Map<String,Object> params) throws IOException   {
         Class<?> iterCls;
@@ -43,8 +47,12 @@ public class SemanticSimilarity extends DynamicAttrSimilarityStrategy {
 			thisEntity = (TaggedEntity)iterCls.newInstance();
 			thatEntity = (TaggedEntity)iterCls.newInstance();
 			thisEntity.initialize(params);
-			
 			this.topMatchCount = topMatchCount;
+			
+			Configuration conf = (Configuration)params.get("config");
+	        if (conf.getBoolean("debug.on", false)) {
+	         	LOG.setLevel(Level.DEBUG);
+	        }
 		} catch (ClassNotFoundException e) {
 			throw new IOException("failed to intialize SemanticSimilarity");
 		}catch (InstantiationException e) {
@@ -61,35 +69,44 @@ public class SemanticSimilarity extends DynamicAttrSimilarityStrategy {
 	 * @throws IOException 
 	 */
 	public  double findDistance(String src, String target) throws IOException {
-		int matchScoreMax = 0;
 		int matchScore;
 		String matchingContext;
-		int avScore = 0;
+		double avScore = 0;
+		matchedItems.clear();
+		
 		String[] thisTagItems = src.split(fieldDelimRegex);
 		String[] thatTagItems = target.split(fieldDelimRegex);
 		for (String thisTagItem : thisTagItems) {
 			thisEntity.setTag(thisTagItem);
 			for (String thatTagItem :thatTagItems) {
+				LOG.debug("thisTagItem:" + thisTagItem + " thatTagItem:" + thatTagItem);
 				thatEntity.setTag(thatTagItem);
 				matchScore = thisEntity.match(thatEntity);
-				if (matchScore > matchScoreMax) {
-					matchScoreMax = matchScore;
-					matchingContext = thisEntity.matchingContext();
-					matchedItems.add(new MatchedItem(matchScore, matchingContext));
+				matchScore = matchScore <= SCORE_MAX ? matchScore : SCORE_MAX;
+				if (!thatEntity.isResultCorrelation()) {
+					matchScore = SCORE_MAX - matchScore;
+					LOG.debug("matchScore:" + matchScore);
 				}
+				matchingContext = thisEntity.matchingContext();
+				matchedItems.add(new MatchedItem(matchScore, matchingContext));
 			}
 		}
+		LOG.debug("matched items size:" + matchedItems.size());
 		
-		//sort them
+		//sort them descending
 		Collections.sort(matchedItems);
-		matchingContexts = new String[topMatchCount];
-		for (int i = 0; i < topMatchCount; ++i) {
+		int numMatches = matchedItems.size() < topMatchCount ? matchedItems.size() : topMatchCount;
+		matchingContexts = new String[numMatches];
+		for (int i = 0; i < numMatches; ++i) {
 			matchingContexts[i] = matchedItems.get(i).getContext();
 			avScore += matchedItems.get(i).getScore();
+			LOG.debug("after sorting score:" + matchedItems.get(i).getScore());
 		}
-		avScore /= topMatchCount;
-		
-		return ((double)avScore) / SCORE_MAX;
+		avScore /= numMatches;
+		avScore /=  SCORE_MAX;
+		avScore = avScore > 1.0 ? 1.0 : avScore;
+		LOG.debug("avScore:" + avScore);
+		return avScore;
 	}
 	
 	@Override

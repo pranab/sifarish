@@ -43,6 +43,9 @@ public abstract class TaggedEntity extends Pair<String, String> {
 		this.groupID = groupID;
 	}
 	
+	public boolean isResultCorrelation() {
+		return true;
+	}
 	
 	
 	public String getEntityID() {

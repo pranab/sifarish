@@ -28,6 +28,7 @@ import java.util.Map;
 public abstract class DynamicAttrSimilarityStrategy {
 	protected String fieldDelimRegex = "\\s+";
 	protected boolean isBooleanVec;
+	protected boolean isSemanticVec;
 	protected boolean isCountIncluded;
 	protected  int intersectionLength;
 	protected String[] matchingContexts;
@@ -74,6 +75,20 @@ public abstract class DynamicAttrSimilarityStrategy {
 		this.isBooleanVec = isBooleanVec;
 	}
 	
+	/**
+	 * @return
+	 */
+	public boolean isSemanticVec() {
+		return isSemanticVec;
+	}
+
+	/**
+	 * @param isSemanticVec
+	 */
+	public void setSemanticVec(boolean isSemanticVec) {
+		this.isSemanticVec = isSemanticVec;
+	}
+
 	/**
 	 * @return
 	 */

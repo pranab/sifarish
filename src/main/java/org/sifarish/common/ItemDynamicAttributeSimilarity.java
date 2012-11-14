@@ -40,6 +40,8 @@ import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 import org.apache.hadoop.util.Tool;
 import org.apache.hadoop.util.ToolRunner;
+import org.apache.log4j.Level;
+import org.apache.log4j.Logger;
 import org.chombo.util.IntPair;
 import org.chombo.util.Tuple;
 import org.chombo.util.Utility;
@@ -102,15 +104,21 @@ public class ItemDynamicAttributeSimilarity  extends Configured implements Tool{
         private int hashPairMult;
         private int hashCode;
         private int partitonFieldOrdinal;
+        private static final Logger LOG = Logger.getLogger(ItemDynamicAttributeSimilarity.SimilarityMapper.class);
     	
         /* (non-Javadoc)
          * @see org.apache.hadoop.mapreduce.Mapper#setup(org.apache.hadoop.mapreduce.Mapper.Context)
          */
         protected void setup(Context context) throws IOException, InterruptedException {
-        	bucketCount = context.getConfiguration().getInt("bucket.count", 10);
-        	fieldDelimRegex = context.getConfiguration().get("field.delim.regex", "\\[\\]");
-        	hashPairMult = context.getConfiguration().getInt("hash.pair.multiplier", 1000);
-        	partitonFieldOrdinal = context.getConfiguration().getInt("paritioning.field.ordinal", -1);
+			Configuration conf = context.getConfiguration();
+            if (conf.getBoolean("debug.on", false)) {
+             	LOG.setLevel(Level.DEBUG);
+             	System.out.println("in debug mode");
+            }
+        	bucketCount = conf.getInt("bucket.count", 10);
+        	fieldDelimRegex = conf.get("field.delim.regex", "\\[\\]");
+        	hashPairMult = conf.getInt("hash.pair.multiplier", 1000);
+        	partitonFieldOrdinal = conf.getInt("paritioning.field.ordinal", -1);
         }    
         
         /* (non-Javadoc)
@@ -164,7 +172,9 @@ public class ItemDynamicAttributeSimilarity  extends Configured implements Tool{
         private int partitonFieldOrdinal;
         private int intLength;
         private int minIntLength;
+        private boolean addMatchingContext;
        	private StringBuilder stBld = new StringBuilder();
+        private static final Logger LOG = Logger.getLogger(ItemDynamicAttributeSimilarity.SimilarityReducer.class);
                
         
         /* (non-Javadoc)
@@ -172,6 +182,10 @@ public class ItemDynamicAttributeSimilarity  extends Configured implements Tool{
          */
         protected void setup(Context context) throws IOException, InterruptedException {
         	Configuration conf = context.getConfiguration();
+            if (conf.getBoolean("debug.on", false)) {
+             	LOG.setLevel(Level.DEBUG);
+             	System.out.println("in debug mode");
+            }
         	
         	fieldDelim = conf.get("field.delim", "[]");
         	fieldDelimRegex = conf.get("field.delim.regex", "\\[\\]");
@@ -185,14 +199,25 @@ public class ItemDynamicAttributeSimilarity  extends Configured implements Tool{
         	params.put("config", conf);
         	loadSemanticMatcherParams( conf,  params); 
         	
+        	LOG.debug("simAlgorithm:" + simAlgorithm + " matcherClass: "  + conf.get("semantic.matcher.class"));
+        	
         	params.put("srcNonMatchingTermWeight", conf.get("jaccard.srcNonMatchingTermWeight"));
         	params.put("trgNonMatchingTermWeight", conf.get("jaccard.trgNonMatchingTermWeight"));
         	simStrategy = DynamicAttrSimilarityStrategy.createSimilarityStrategy(simAlgorithm, params);
         	
         	simStrategy.setFieldDelimRegex(fieldDelimRegex);
         	boolean booleanVec = conf.getBoolean("vec.type.boolean", true);
-        	simStrategy.setBooleanVec(booleanVec);
-        	if (!booleanVec) {
+        	boolean semanticVec = conf.getBoolean("vec.type.semantic", false);
+        	LOG.debug("booleanVec:" + booleanVec + " semanticVec:" + semanticVec);
+        	addMatchingContext = conf.getBoolean("add.semantic.matching.context", false);
+        	
+        	if (booleanVec){
+        		simStrategy.setBooleanVec(booleanVec);
+        	}
+        	if (semanticVec){
+        		simStrategy.setSemanticVec(semanticVec);
+        	}
+        	if (!booleanVec && !semanticVec) {
             	boolean countIncluded = conf.getBoolean("vec.count.included", true);
         		simStrategy.setCountIncluded(countIncluded);
         	}
@@ -201,6 +226,8 @@ public class ItemDynamicAttributeSimilarity  extends Configured implements Tool{
            	outputCorrelation = conf.getBoolean("output.correlation", false);
            	partitonFieldOrdinal = conf.getInt("paritioning.field.ordinal", -1);
            	minIntLength =  conf.getInt("min.intersection.length", 2);
+           	LOG.debug("outputCorrelation:" + outputCorrelation + " partitonFieldOrdinal:" + partitonFieldOrdinal +
+           			" minIntLength:" + minIntLength);
           }    
         
         /**
@@ -245,11 +272,11 @@ public class ItemDynamicAttributeSimilarity  extends Configured implements Tool{
 	        		for (int j = i+1;  j < valueList.size();  ++j) {
 		        		String[] secondParts = valueList.get(j);
 		        		//process 2 user vectors
-        				dist = ( 1.0 - simStrategy.findDistance(firstParts[1], secondParts[1]))  * scale;
-        				dist = dist < 0.0 ? 0.0 : dist;
-        				
+	        			dist = ( 1.0 - simStrategy.findDistance(firstParts[1], secondParts[1]))  * scale;
+	        			dist = dist < 0.0 ? 0.0 : dist;
+		        		
     					intLength = simStrategy.getIntersectionLength();
-    					if( intLength >= minIntLength) {
+    					if( intLength >= minIntLength || simStrategy.isSemanticVec()) {
 	        				if (outputCorrelation) {
 	        					dist = scale - dist;
 	            				//2 items IDs followed by distance and intersection length
@@ -262,7 +289,9 @@ public class ItemDynamicAttributeSimilarity  extends Configured implements Tool{
 	        				}
 	        				
 	        				//if there any matching context data
-	        				appendMatchingContexts(stBld);
+	        				if(addMatchingContext) {
+	        					appendMatchingContexts(stBld);
+	        				}
 	
 	        				valueHolder.set(stBld.toString());
 		   	    			context.getCounter("Reducer", "Emit").increment(1);
@@ -290,9 +319,10 @@ public class ItemDynamicAttributeSimilarity  extends Configured implements Tool{
 	        				//process 2 entity vectors
 	        				dist = (1.0 - simStrategy.findDistance(firstParts[1], parts[1])) * scale;
 	        				dist = dist < 0.0 ? 0.0 : dist;
+	        				LOG.debug("dist:" + dist);
 	        				
         					intLength = simStrategy.getIntersectionLength();
-        					if( intLength >= minIntLength) {
+        					if( intLength >= minIntLength || simStrategy.isSemanticVec()) {
 		        				if (outputCorrelation) {
 		        					dist = scale - dist;
 		            				//2 items IDs followed by distance and intersection l;ength
@@ -305,7 +335,9 @@ public class ItemDynamicAttributeSimilarity  extends Configured implements Tool{
 		        				}
 	
 		        				//if there any matching context data
-		        				appendMatchingContexts(stBld);
+		        				if(addMatchingContext) {
+		        					appendMatchingContexts(stBld);
+		        				}
 	
 		        				valueHolder.set(stBld.toString());
 			   	    			context.getCounter("Reducer", "Emit").increment(1);
