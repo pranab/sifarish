@@ -36,8 +36,8 @@ public class SemanticSimilarity extends DynamicAttrSimilarityStrategy {
 	private TaggedEntity  thisEntity;
 	private TaggedEntity  thatEntity;
 	private int topMatchCount;
+	private int scale;
 	private List<MatchedItem> matchedItems = new ArrayList<MatchedItem>();
-	private static final int SCORE_MAX = 10;
     private static final Logger LOG = Logger.getLogger(SemanticSimilarity.class);
 	
 	public SemanticSimilarity(String matcherClass, int topMatchCount, Map<String,Object> params) throws IOException   {
@@ -48,7 +48,8 @@ public class SemanticSimilarity extends DynamicAttrSimilarityStrategy {
 			thatEntity = (TaggedEntity)iterCls.newInstance();
 			thisEntity.initialize(params);
 			this.topMatchCount = topMatchCount;
-			
+			scale = (Integer)params.get("semanticScale");
+					
 			Configuration conf = (Configuration)params.get("config");
 	        if (conf.getBoolean("debug.on", false)) {
 	         	LOG.setLevel(Level.DEBUG);
@@ -82,9 +83,9 @@ public class SemanticSimilarity extends DynamicAttrSimilarityStrategy {
 				LOG.debug("thisTagItem:" + thisTagItem + " thatTagItem:" + thatTagItem);
 				thatEntity.setTag(thatTagItem);
 				matchScore = thisEntity.match(thatEntity);
-				matchScore = matchScore <= SCORE_MAX ? matchScore : SCORE_MAX;
+				matchScore = matchScore <= scale ? matchScore : scale;
 				if (!thatEntity.isResultCorrelation()) {
-					matchScore = SCORE_MAX - matchScore;
+					matchScore = scale - matchScore;
 					LOG.debug("matchScore:" + matchScore);
 				}
 				matchingContext = thisEntity.getMatchingContext();
@@ -104,7 +105,7 @@ public class SemanticSimilarity extends DynamicAttrSimilarityStrategy {
 			LOG.debug("after sorting score:" + matchedItems.get(i).getScore());
 		}
 		avScore /= numMatches;
-		avScore /=  SCORE_MAX;
+		avScore /=  scale;
 		avScore = avScore > 1.0 ? 1.0 : avScore;
 		LOG.debug("avScore:" + avScore);
 		return avScore;

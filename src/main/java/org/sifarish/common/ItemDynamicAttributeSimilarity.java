@@ -173,6 +173,7 @@ public class ItemDynamicAttributeSimilarity  extends Configured implements Tool{
         private int intLength;
         private int minIntLength;
         private boolean addMatchingContext;
+        private int semanticScale;
        	private StringBuilder stBld = new StringBuilder();
         private static final Logger LOG = Logger.getLogger(ItemDynamicAttributeSimilarity.SimilarityReducer.class);
                
@@ -196,6 +197,7 @@ public class ItemDynamicAttributeSimilarity  extends Configured implements Tool{
         	Map<String, Object> params = new HashMap<String, Object>();
         	params.put("matcherClass", conf.get("semantic.matcher.class"));
         	params.put("topMatchCount", conf.getInt("semantic.top.match.count", 5));
+        	params.put("semanticScale", conf.getInt("semantic.match.scale", 10));
         	params.put("config", conf);
         	loadSemanticMatcherParams( conf,  params); 
         	
@@ -296,7 +298,7 @@ public class ItemDynamicAttributeSimilarity  extends Configured implements Tool{
 	        				valueHolder.set(stBld.toString());
 		   	    			context.getCounter("Reducer", "Emit").increment(1);
 		   					context.write(NullWritable.get(), valueHolder);
-		        			stBld.delete(0, stBld.length()-1);
+		        			stBld.delete(0, stBld.length());
 	    				} else {
 		   	    			context.getCounter("Correlation Intersection", "Below threshold").increment(1);
 	    				} //if int length
@@ -342,7 +344,7 @@ public class ItemDynamicAttributeSimilarity  extends Configured implements Tool{
 		        				valueHolder.set(stBld.toString());
 			   	    			context.getCounter("Reducer", "Emit").increment(1);
 			   					context.write(NullWritable.get(), valueHolder);
-			        			stBld.delete(0, stBld.length()-1);
+			        			stBld.delete(0, stBld.length());
 		        			} else {
 			   	    			context.getCounter("Correlation Intersection", "Below threshold").increment(1);
 		        			}//if int length
