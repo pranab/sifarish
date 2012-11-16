@@ -1,0 +1,95 @@
+<rdf:RDF
+  xmlns:rdf='http://www.w3.org/1999/02/22-rdf-syntax-ns#'
+  xmlns:matcher='http://www.w3.org/2001/likes/1.0#'>
+  
+  <rdf:Description rdf:about='http://restaurant/chinese/Kim Lin'>
+    <matcher:name>Kim Lin</matcher:name>
+    <matcher:city>Santa Clara</matcher:city>
+    <matcher:rating>4</matcher:rating>
+    <matcher:instanceOf rdf:nodeID="B01"/>
+  </rdf:Description>
+  
+  <rdf:Description rdf:about='http://restaurant/chinese/Hong Fu'>
+    <matcher:name>Hong Fu</matcher:name>
+    <matcher:city>Cupertino</matcher:city>
+    <matcher:rating>5</matcher:rating>
+    <matcher:instanceOf rdf:nodeID="B01"/>
+  </rdf:Description>
+
+  <rdf:Description rdf:about='http://restaurant/thai/Siam Thai'>
+    <matcher:name>Siam Thai</matcher:name>
+    <matcher:city>Cupertino</matcher:city>
+    <matcher:rating>4</matcher:rating>
+    <matcher:instanceOf rdf:nodeID="B10"/>
+  </rdf:Description>
+
+  <rdf:Description rdf:about='http://restaurant/thai/Red Pepper'>
+    <matcher:name>Siam Thai</matcher:name>
+    <matcher:city>Cupertino</matcher:city>
+    <matcher:rating>4</matcher:rating>
+    <matcher:instanceOf rdf:nodeID="B10"/>
+  </rdf:Description>
+
+  <rdf:Description rdf:nodeID="B01">
+    <matcher:cuisine>Chinese</matcher:cuisine>
+    <matcher:cuisineCategory rdf:nodeID="B03"/>
+    <matcher:isa rdf:nodeID="B02"/>
+  </rdf:Description>
+
+  <rdf:Description rdf:nodeID="B10">
+    <matcher:cuisine>Thai</matcher:cuisine>
+    <matcher:cuisineCategory rdf:nodeID="B03"/>
+    <matcher:isa rdf:nodeID="B02"/>
+  </rdf:Description>
+  
+  <rdf:Description rdf:nodeID="B02">
+    <matcher:business>Restaurant</matcher:business>
+    <matcher:isa rdf:nodeID="B04"/>
+  </rdf:Description>
+
+  <rdf:Description rdf:nodeID="B03">
+    <matcher:region>Asia</matcher:region>
+    <matcher:isa rdf:nodeID="B05"/>
+  </rdf:Description>
+
+  <rdf:Description rdf:nodeID="B04">
+    <matcher:entity>Organization</matcher:entity>
+  </rdf:Description>
+
+  <rdf:Description rdf:nodeID="B05">
+    <matcher:entity>Location</matcher:entity>
+  </rdf:Description>
+
+  <rdf:Description rdf:about='http://sports/baseball/Giants'>
+    <matcher:name>SF Giants</matcher:name>
+    <matcher:city>San Francisco</matcher:city>
+    <matcher:instanceOf rdf:nodeID="C01"/>
+  </rdf:Description>
+
+  <rdf:Description rdf:about='http://sports/baseball/Mariners'>
+    <matcher:name>SD Mariners</matcher:name>
+    <matcher:city>San Diego</matcher:city>
+    <matcher:instanceOf rdf:nodeID="C01"/>
+  </rdf:Description>
+
+  <rdf:Description rdf:about='http://sports/footbal/49ers'>
+    <matcher:name>SF 49ers</matcher:name>
+    <matcher:city>San Francisco</matcher:city>
+    <matcher:instanceOf rdf:nodeID="C10"/>
+  </rdf:Description>
+
+  <rdf:Description rdf:nodeID="C01">
+    <matcher:sports>Baseball Team</matcher:sports>
+    <matcher:category rdf:nodeID="C02"/>
+  </rdf:Description>
+
+  <rdf:Description rdf:nodeID="C10">
+    <matcher:sports>Football Team</matcher:sports>
+    <matcher:category rdf:nodeID="C02"/>
+  </rdf:Description>
+
+  <rdf:Description rdf:nodeID="C02">
+    <matcher:name>Sports</matcher:name>
+  </rdf:Description>
+
+</rdf:RDF>
