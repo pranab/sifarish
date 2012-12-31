@@ -71,7 +71,7 @@ public class ItemRatingStat extends Configured implements Tool{
          */
         protected void setup(Context context) throws IOException, InterruptedException {
         	fieldDelim = context.getConfiguration().get("field.delim", ",");
-        	subFieldDelim = context.getConfiguration().get("field.delim", ":");
+        	subFieldDelim = context.getConfiguration().get("subfield.delim", ":");
         	ratingScale = context.getConfiguration().getInt("rating.scale", 100);
         }    
     	
@@ -91,11 +91,12 @@ public class ItemRatingStat extends Configured implements Tool{
         		ratingSum += rating;
         		ratingSquareSum += (rating * rating);
         	}
-        	ratingMean = ratingSum / (items.length - 1);
-        	int var = ratingSquareSum /  (items.length - 1) -  ratingMean * ratingMean;
+        	int count = items.length - 1;
+        	ratingMean = ratingSum / count;
+        	int var = ratingSquareSum /  count -  ratingMean * ratingMean;
         	ratingStdDev = (int)Math.sqrt(var);
 			
-        	valueOut.set(itemID + fieldDelim + ratingMean + fieldDelim + ratingStdDev);
+        	valueOut.set(itemID + fieldDelim + ratingMean + fieldDelim + ratingStdDev + fieldDelim + count);
    		   	context.write(NullWritable.get(), valueOut);
       	
         }   
