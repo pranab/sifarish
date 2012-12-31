@@ -2,6 +2,10 @@ require '../lib/util.rb'
 
 itemCount = ARGV[0].to_i
 userCount = ARGV[1].to_i
+perUserItemCountMultipier = ARGV[2].to_i
+
+avItemPerUser = (itemCount * perUserItemCountMultipier) / userCount
+
 
 itemCluster = Hash.new { |h,k| h[k] = [] }
 userCluster = Hash.new { |h,k| h[k] = [] }
@@ -25,7 +29,7 @@ for c in 0..9
 	users = userCluster[c]
 	items.each do |i|
 		line = i
-		numRating = 5 + rand(26)
+		numRating = 5 + rand(avItemPerUser)
 		1.upto numRating do
 			if (rand(10) == 1)
 				uc = c < 5 ? c + rand(10 -c) : rand(c)
