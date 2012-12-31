@@ -42,7 +42,11 @@ The next step is to predict rating based on items already rated by user and the 
 calculated in the first MR
 
 The shell scripts is as follows. The input directory is the output directory of the previous
-MR. The rating file should also be copied there
+MR. Hadoop creates some directories and files besides the output. Please remove everything
+except for the putput files 
+
+The rating file should also be copied there. The rating file name should have the prefix as 
+defined by the config param rating.file.prefix
 
 JAR_NAME=/home/pranab/Projects/sifarish/target/sifarish-1.0.jar
 CLASS_NAME=org.sifarish.common.UtilityPredictor

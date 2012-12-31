@@ -34,12 +34,12 @@ import org.apache.hadoop.mapreduce.Reducer;
 import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 import org.apache.hadoop.util.Tool;
+import org.apache.hadoop.util.ToolRunner;
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 import org.chombo.util.SecondarySort;
 import org.chombo.util.Tuple;
 import org.chombo.util.Utility;
-import org.sifarish.common.ItemDynamicAttributeSimilarity;
 
 public class PearsonCorrelator extends Configured implements Tool{
     @Override
@@ -83,7 +83,7 @@ public class PearsonCorrelator extends Configured implements Tool{
         private int hashCode;
         private int ratingScale;
     	private String subFieldDelim;
-        private static final Logger LOG = Logger.getLogger(ItemDynamicAttributeSimilarity.SimilarityMapper.class);
+        private static final Logger LOG = Logger.getLogger(PearsonCorrelator.PearsonMapper.class);
     	
         /* (non-Javadoc)
          * @see org.apache.hadoop.mapreduce.Mapper#setup(org.apache.hadoop.mapreduce.Mapper.Context)
@@ -205,7 +205,7 @@ public class PearsonCorrelator extends Configured implements Tool{
         		//pair them
         		for (int i = 0; i < userRatings.size(); ++i) {
         			for (int j = i+1; j <  userRatings.size(); ++ j ) {
-        				corr = findCorrelation(userRatings.get(i), userRatings.get(j)); 
+        				corr = findCorrelation(userRatings.get(i), userRatings.get(j), context); 
         				if (corr > 0) {
         					valueHolder.set(userRatings.get(i).getItemID() + fieldDelim + userRatings.get(j).getItemID() + fieldDelim + corr);
 		   					context.write(NullWritable.get(), valueHolder);
@@ -225,7 +225,7 @@ public class PearsonCorrelator extends Configured implements Tool{
         				
         				//pair with each in the first set
         				for (UserRating userRatingFirst : userRatings) {
-            				corr = findCorrelation(userRatingFirst,userRatingSecond); 
+            				corr = findCorrelation(userRatingFirst,userRatingSecond, context); 
             				if (corr > 0) {
             					valueHolder.set(userRatingFirst.getItemID() + fieldDelim + userRatingSecond.getItemID() + fieldDelim + corr);
     		   					context.write(NullWritable.get(), valueHolder);
@@ -246,7 +246,7 @@ public class PearsonCorrelator extends Configured implements Tool{
          * @param ratingTwo
          * @return
          */
-        private int findCorrelation(UserRating ratingOne, UserRating ratingTwo) {
+        private int findCorrelation(UserRating ratingOne, UserRating ratingTwo,  Context context) {
         	int corr = 0;
         	
         	ratingOne.initializeMatch();
@@ -272,18 +272,28 @@ public class PearsonCorrelator extends Configured implements Tool{
 	        	//mean and stad dev
 	        	ratingOne.calculateStat();
 	        	ratingTwo.calculateStat();
+	        	LOG.debug("user match count:" + ratingOne.getMatchCount() );
+	        	LOG.debug("mean: " + ratingOne.getRatingMean() + " std dev:" + ratingOne.getRatingStdDev());
+	        	LOG.debug("mean: " + ratingTwo.getRatingMean() + " std dev:" + ratingTwo.getRatingStdDev());
 	        	
 	        	//co variance 
 	        	int[] coVarItems = ratingOne.findCoVarianceItems(null);
-	        	coVarItems = ratingOne.findCoVarianceItems(coVarItems);
+	        	coVarItems = ratingTwo.findCoVarianceItems(coVarItems);
 	        	int coVar = 0;
 	        	for (int item : coVarItems) {
 	        		coVar += item;
 	        	}
 	        	coVar /= coVarItems.length;
+	        	if (coVar == 0) {
+	        		context.getCounter("Pearson", "Zero covariance").increment(1);
+	        	}
 	        	
 	        	//pearson correlation
-	        	corr = (coVar * corrScale) / (ratingOne.getRatingStdDev() * ratingTwo.getRatingStdDev());
+	        	int stdDevProd = ratingOne.getRatingStdDev() * ratingTwo.getRatingStdDev();
+	        	if (stdDevProd == 0) {
+	        		context.getCounter("Pearson", "Zero std dev").increment(1);
+	        	}
+	        	corr = stdDevProd == 0 ? corrScale : (coVar * corrScale) / stdDevProd;
 	        	corr += corrScale;
 	        	corr /= 2;
         	}
@@ -365,14 +375,17 @@ public class PearsonCorrelator extends Configured implements Tool{
 		}
 		
 		public int[] findCoVarianceItems(int[] coVarItems) {
+			int normRating = 0;
 			if (null == coVarItems) {
 				coVarItems = new int[matchedRatings.size()];
 				for (int i =0; i < matchedRatings.size(); ++i) {
-					coVarItems[i] = getMatchedRating(i) - ratingMean;
+					normRating = getMatchedRating(i) - ratingMean;
+					coVarItems[i] =normRating;
 				}
 			} else {
 				for (int i =0; i < matchedRatings.size(); ++i) {
-					coVarItems[i] *= (getMatchedRating(i) - ratingMean);
+					normRating = getMatchedRating(i) - ratingMean;
+					coVarItems[i] *= normRating;
 				}
 				
 			}
@@ -381,4 +394,14 @@ public class PearsonCorrelator extends Configured implements Tool{
 		}
     	
     }
+    
+    /**
+     * @param args
+     * @throws Exception
+     */
+    public static void main(String[] args) throws Exception {
+        int exitCode = ToolRunner.run(new PearsonCorrelator(), args);
+        System.exit(exitCode);
+    }
+   
 }
