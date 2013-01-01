@@ -71,6 +71,10 @@ public class PearsonCorrelator extends Configured implements Tool{
         return status;
     }
    
+    /**
+     * @author pranab
+     *
+     */
     public static class PearsonMapper extends Mapper<LongWritable, Text, Tuple, Tuple> {
         private int bucketCount;
         private int hash;
@@ -163,11 +167,16 @@ public class PearsonCorrelator extends Configured implements Tool{
         }
     }
     
+    /**
+     * @author pranab
+     *
+     */
     public static class PrearsonReducer extends Reducer<Tuple, Tuple, NullWritable, Text> {
         private Text valueHolder = new Text();
         private String fieldDelim;
         private int hashPairMult;
         private int corrScale;
+        private int minRatingSetIntersection;
         private List<UserRating> userRatings = new ArrayList<UserRating>();
         
         private static final Logger LOG = Logger.getLogger(PearsonCorrelator.PrearsonReducer.class);
@@ -182,6 +191,7 @@ public class PearsonCorrelator extends Configured implements Tool{
         	fieldDelim = conf.get("field.delim", ",");
         	hashPairMult = conf.getInt("hash.pair.multiplier", 1000);
            	corrScale = conf.getInt("correlation.scale", 1000);
+           	minRatingSetIntersection =  conf.getInt("min.rating.intersection.set", 3);
         }       
         
         /* (non-Javadoc)
@@ -268,7 +278,7 @@ public class PearsonCorrelator extends Configured implements Tool{
         		}
         	}
         	
-        	if (ratingOne.getMatchCount() > 2) {
+        	if (ratingOne.getMatchCount() >= minRatingSetIntersection) {
 	        	//mean and stad dev
 	        	ratingOne.calculateStat();
 	        	ratingTwo.calculateStat();
