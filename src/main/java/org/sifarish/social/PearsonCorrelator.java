@@ -177,6 +177,8 @@ public class PearsonCorrelator extends Configured implements Tool{
         private int hashPairMult;
         private int corrScale;
         private int minRatingSetIntersection;
+        private int corr;
+        private int corrWeight;
         private List<UserRating> userRatings = new ArrayList<UserRating>();
         
         private static final Logger LOG = Logger.getLogger(PearsonCorrelator.PrearsonReducer.class);
@@ -203,7 +205,6 @@ public class PearsonCorrelator extends Configured implements Tool{
         	int hashPair = key.getInt(0);
     		UserRating userRating = null;
     		UserRating userRatingSecond = null;
-    		int corr = 0;
         	if (hashPair / hashPairMult == hashPair % hashPairMult){
         		//same bucket
         		userRatings.clear();
@@ -215,9 +216,10 @@ public class PearsonCorrelator extends Configured implements Tool{
         		//pair them
         		for (int i = 0; i < userRatings.size(); ++i) {
         			for (int j = i+1; j <  userRatings.size(); ++ j ) {
-        				corr = findCorrelation(userRatings.get(i), userRatings.get(j), context); 
+        				findCorrelation(userRatings.get(i), userRatings.get(j), context); 
         				if (corr > 0) {
-        					valueHolder.set(userRatings.get(i).getItemID() + fieldDelim + userRatings.get(j).getItemID() + fieldDelim + corr);
+        					valueHolder.set(userRatings.get(i).getItemID() + fieldDelim + userRatings.get(j).getItemID() + fieldDelim + corr + 
+        							fieldDelim + corrWeight);
 		   					context.write(NullWritable.get(), valueHolder);
         				}
         			}
@@ -235,9 +237,10 @@ public class PearsonCorrelator extends Configured implements Tool{
         				
         				//pair with each in the first set
         				for (UserRating userRatingFirst : userRatings) {
-            				corr = findCorrelation(userRatingFirst,userRatingSecond, context); 
+            				findCorrelation(userRatingFirst,userRatingSecond, context); 
             				if (corr > 0) {
-            					valueHolder.set(userRatingFirst.getItemID() + fieldDelim + userRatingSecond.getItemID() + fieldDelim + corr);
+            					valueHolder.set(userRatingFirst.getItemID() + fieldDelim + userRatingSecond.getItemID() + fieldDelim + corr + 
+            							fieldDelim + corrWeight);
     		   					context.write(NullWritable.get(), valueHolder);
             				}
         					
@@ -256,8 +259,9 @@ public class PearsonCorrelator extends Configured implements Tool{
          * @param ratingTwo
          * @return
          */
-        private int findCorrelation(UserRating ratingOne, UserRating ratingTwo,  Context context) {
-        	int corr = 0;
+        private void  findCorrelation(UserRating ratingOne, UserRating ratingTwo,  Context context) {
+        	corr = 0;
+        	corrWeight = 0;
         	
         	ratingOne.initializeMatch();
         	ratingTwo.initializeMatch();
@@ -279,6 +283,8 @@ public class PearsonCorrelator extends Configured implements Tool{
         	}
         	
         	if (ratingOne.getMatchCount() >= minRatingSetIntersection) {
+        		corrWeight = ratingOne.getMatchCount();
+        		
 	        	//mean and stad dev
 	        	ratingOne.calculateStat();
 	        	ratingTwo.calculateStat();
@@ -308,7 +314,6 @@ public class PearsonCorrelator extends Configured implements Tool{
 	        	corr /= 2;
         	}
         	
-        	return corr;
         }
         
         
