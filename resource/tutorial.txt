@@ -6,7 +6,12 @@ item1,user1:3,user2:4,..
 item2,user2:5,user4:2,...
 
 Ypu can use ratings.rb as follows to generate ratings data
-ruby ratings.rb <item_count> <user_count>
+ruby ratings.rb <item_count> <user_count> <user_per_items_multipler>
+
+In the output, average number of users ratin an item will be 
+item_count *  user_per_items_multipler / user_count
+
+So choose the last argument as per your need.
 
 It rquires util.rb to be in the ../lib directory. You can get util.rb
 from the visitante project at the following location
@@ -35,6 +40,13 @@ hadoop fs -rmr $OUT_PATH
 echo "removed output dir"
 
 hadoop jar $JAR_NAME  $CLASS_NAME -Dconf.path=/home/pranab/Projects/bin/sifarish/reco.properties  $IN_PATH  $OUT_PATH
+
+
+
+If you wanted to use some other correlator, for example Pearson Correlator, change the CLASS_NAME 
+in the script as follows
+CLASS_NAME=org.sifarish.social.PearsonCorrelator
+
 
 Rating Predictor
 ================
