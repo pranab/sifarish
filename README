@@ -4,6 +4,19 @@ Sifarish is a suite of recommendation engines implementaed in Hadoop. Various
 algorithms, including  feature similarity based recommendation and collaborative 
 filtering based recommendation using social rating data will be available
 
+Blogs
+=====
+The following blogs of mine are good source of details of sifarish
+
+http://pkghosh.wordpress.com/2011/10/26/similarity-based-recommendation-basics/
+http://pkghosh.wordpress.com/2011/11/28/similarity-based-recommendation-hadoop-way/
+http://pkghosh.wordpress.com/2011/12/15/similarity-based-recommendation-text-analytic/
+http://pkghosh.wordpress.com/2012/04/21/socially-accepted-recommendation/
+http://pkghosh.wordpress.com/2010/10/19/recommendation-engine-powered-by-hadoop-part-1/
+http://pkghosh.wordpress.com/2010/10/31/recommendation-engine-powered-by-hadoop-part-2/
+http://pkghosh.wordpress.com/2012/12/31/get-social-with-pearson-correlation/
+http://pkghosh.wordpress.com/2012/09/03/from-item-correlation-to-rating-prediction/
+
 
 Content Similarity Based Recommendation
 =======================================
