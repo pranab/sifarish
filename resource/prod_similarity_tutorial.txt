@@ -1,0 +1,56 @@
+This tutorial is on content based matching and recommendation for  products. The product 
+has many attributes including category, price, brand and description which is a text field. 
+
+We will be using the MR class SameTypeSimilarity. However, simce we have text fields we will
+have to tokenize the text fields with stemming. This is accomplised with the MR class 
+TextAnalyzer. The output of TextAnalyzer goes to SameTypeSimilarity as input.
+
+Text Tokenization
+=================
+Here is the script to run TextAnalyzer
+
+JAR_NAME=/home/pranab/Projects/sifarish/target/sifarish-1.0.jar
+CLASS_NAME=org.sifarish.common.TextAnalyzer
+
+echo "running mr"
+IN_PATH=/user/pranab/reco/contect/prod
+OUT_PATH=/user/pranab/reco/content/tok
+echo "input $IN_PATH output $OUT_PATH"
+hadoop fs -rmr $OUT_PATH
+echo "removed output dir"
+
+hadoop jar $JAR_NAME  $CLASS_NAME -Dconf.path=/home/pranab/Projects/bin/sifarish/prod.properties  $IN_PATH  $OUT_PATH
+
+Product Simarity
+================
+Herte is the script for SameTypeSimilarity
+
+JAR_NAME=/home/pranab/Projects/sifarish/target/sifarish-1.0.jar
+CLASS_NAME=org.sifarish.feature.SameTypeSimilarity
+
+echo "running mr"
+IN_PATH=/user/pranab/reco/content/tok
+OUT_PATH=/user/pranab/reco/content/simi
+echo "input $IN_PATH output $OUT_PATH"
+hadoop fs -rmr $OUT_PATH
+echo "removed output dir"
+
+hadoop jar $JAR_NAME  $CLASS_NAME -Dconf.path=/home/pranab/Projects/bin/sifarish/prod.properties  $IN_PATH  $OUT_PATH
+
+Configuration
+=============
+Here is a sample prod.properties
+
+field.delim.regex=,
+field.delim=,
+num.reducer=1
+consolidate.field=false
+text.field.ordinals=4
+raw.schema.file.path=/pranab/meta/prod/prod.json
+bucket.count=1000
+same.schema.file.path=/pranab/meta/prod/prod.json
+
+
+
+
+

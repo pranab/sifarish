@@ -1,0 +1,52 @@
+{
+	"distAlgorithm" : "euclidean",
+	"numericDiffThreshold" : 0.20,
+	"textMatchingAlgorithm" : "jaccard",
+	"srcNonMatchingTermWeight" : 0.8,
+	"trgNonMatchingTermWeight" : 0.8,
+	"partitioningColumn" : 1,
+	"entity" : 
+	{
+		"name" : "product",
+		"fields" :
+		[
+			{
+				"name" : "sku",
+				"ordinal" : 0,
+				"id" : true,
+				"dataType" : "string"
+			},
+			{
+				"name" : "category",
+				"ordinal" : 1,
+				"dataType" : "categorical"
+			},
+			{
+				"name" : "brand",
+				"ordinal" : 2,
+				"dataType" : "categorical",
+				"weight" : 0.9
+			},
+			{
+				"name" : "price",
+				"ordinal" : 3,
+				"dataType" : "double"
+			},
+			{
+				"name" : "description",
+				"ordinal" : 4,
+				"dataType" : "text"
+			}
+			{
+				"name" : "weight",
+				"ordinal" : 5,
+				"dataType" : "double"
+			},
+			{
+				"name" : "color",
+				"ordinal" : 6,
+				"dataType" : "categorical"
+			}
+		]
+	}
+}
