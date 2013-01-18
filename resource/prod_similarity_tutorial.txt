@@ -37,6 +37,23 @@ echo "removed output dir"
 
 hadoop jar $JAR_NAME  $CLASS_NAME -Dconf.path=/home/pranab/Projects/bin/sifarish/prod.properties  $IN_PATH  $OUT_PATH
 
+Top n Matches
+=============
+The last phase is finding the top n items matched with a given item. The MR class is TopMatches.
+Here is the script to run it
+
+JAR_NAME=/home/pranab/Projects/sifarish/target/sifarish-1.0.jar
+CLASS_NAME=org.sifarish.feature.TopMatches
+
+echo "running mr"
+IN_PATH=/user/pranab/reco/content/simi
+OUT_PATH=/user/pranab/reco/content/topn
+echo "input $IN_PATH output $OUT_PATH"
+hadoop fs -rmr $OUT_PATH
+echo "removed output dir"
+
+hadoop jar $JAR_NAME  $CLASS_NAME  -Dconf.path=/home/pranab/Projects/bin/sifarish/prod.properties $IN_PATH  $OUT_PATH
+
 Configuration
 =============
 Here is a sample prod.properties
@@ -49,6 +66,9 @@ text.field.ordinals=4
 raw.schema.file.path=/pranab/meta/prod/prod.json
 bucket.count=1000
 same.schema.file.path=/pranab/meta/prod/prod.json
+knn.classify=false
+nearest.by.count=true
+top.match.count=10
 
 
 

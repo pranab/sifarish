@@ -36,7 +36,7 @@
 				"name" : "description",
 				"ordinal" : 4,
 				"dataType" : "text"
-			}
+			},
 			{
 				"name" : "weight",
 				"ordinal" : 5,
