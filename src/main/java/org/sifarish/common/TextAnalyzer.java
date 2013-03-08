@@ -176,6 +176,7 @@ public class TextAnalyzer extends Configured implements Tool{
             	itemList.add(extField);
             }
             
+            //build value string
             boolean first = true;
             for (String item : itemList){
             	if (first){
@@ -185,7 +186,6 @@ public class TextAnalyzer extends Configured implements Tool{
             		stBld.append(fieldDelim).append(item);
             	}
             }
-            stBld.append(fieldDelim);
             
             valueHolder.set(stBld.toString());
 			context.write(NullWritable.get(), valueHolder);
