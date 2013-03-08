@@ -343,14 +343,16 @@ public class SameTypeSimilarity  extends Configured implements Tool {
     			if (field.getOrdinal() < firstItems.length ){
     				firstAttr = firstItems[field.getOrdinal()];
     			} else {
-    				throw new IOException("invalid field ordinal");
+    				throw new IOException("Invalid field ordinal. Looking for field " + field.getOrdinal() + 
+    						" found "  + firstItems.length + " fields in the record:" + first);
     			}
     			
     			String secondAttr = "";
     			if (field.getOrdinal() < secondItems.length ){
     				secondAttr = secondItems[field.getOrdinal()];
     			}else {
-    				throw new IOException("invalid field ordinal");
+    				throw new IOException("Invalid field ordinal. Looking for field " + field.getOrdinal() + 
+    						" found "  + firstItems.length + " fields in the record:" + second);
     			}
     			String unit = field.getUnit();
     			
