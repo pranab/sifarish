@@ -115,7 +115,11 @@ xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/ma
   			<artifactId>jena-arq</artifactId>
   			<version>2.9.4</version>
 		</dependency>    
-		 
+		<dependency>
+			<groupId>com.amazonaws</groupId>
+			<artifactId>aws-java-sdk</artifactId>	
+			<version>1.3.22</version>
+		</dependency>
     </dependencies>
 
     <repositories>
@@ -136,6 +140,11 @@ xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/ma
           <id>cloudera-releases</id>
           <url>https://repository.cloudera.com/artifactory/cloudera-repos/</url>
         </repository>
+        <repository>
+	 	 	<id>in-project</id>
+			<name>In Project Repo</name>
+    		<url>file://${project.basedir}/lib</url>
+  		</repository>
     </repositories>
 
 </project>
