@@ -28,34 +28,35 @@ import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.mapreduce.Mapper;
 import org.apache.hadoop.mapreduce.Reducer;
 import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
+import org.apache.hadoop.mapreduce.lib.input.FileSplit;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 import org.apache.hadoop.util.Tool;
 import org.apache.hadoop.util.ToolRunner;
-import org.chombo.util.IntPair;
 import org.chombo.util.TextPair;
 import org.chombo.util.Tuple;
 import org.chombo.util.Utility;
 
 /**
+ * Injects business goal into rated items and figures out final net rating
  * @author pranab
  *
  */
-public class UtilityAggregator extends Configured implements Tool{
+public class BusinessGoalInjector extends Configured implements Tool{
     @Override
     public int run(String[] args) throws Exception   {
         Job job = new Job(getConf());
-        String jobName = "Rating aggregator MR";
+        String jobName = "Business goal injector MR";
         job.setJobName(jobName);
         
-        job.setJarByClass(UtilityAggregator.class);
+        job.setJarByClass(BusinessGoalInjector.class);
         
         FileInputFormat.addInputPath(job, new Path(args[0]));
         FileOutputFormat.setOutputPath(job, new Path(args[1]));
 
-        job.setMapperClass(UtilityAggregator.AggregateMapper.class);
-        job.setReducerClass(UtilityAggregator.AggregateReducer.class);
+        job.setMapperClass(BusinessGoalInjector.BusinessGoalMapper.class);
+        job.setReducerClass(BusinessGoalInjector.BusinessGoalReducer.class);
         
-        job.setMapOutputKeyClass(TextPair.class);
+        job.setMapOutputKeyClass(Text.class);
         job.setMapOutputValueClass(Tuple.class);
 
         job.setOutputKeyClass(NullWritable.class);
@@ -66,21 +67,24 @@ public class UtilityAggregator extends Configured implements Tool{
         int status =  job.waitForCompletion(true) ? 0 : 1;
         return status;
     }
-    
+
     /**
      * @author pranab
      *
      */
-    public static class AggregateMapper extends Mapper<LongWritable, Text, TextPair, Tuple> {
+    public static class BusinessGoalMapper extends Mapper<LongWritable, Text, Text, Tuple> {
     	private String fieldDelim;
-    	private TextPair keyOut = new TextPair();
+    	private Text keyOut = new Text();
     	private Tuple valOut = new Tuple();
+    	private boolean isBizGoalFileSplit;
     	
         /* (non-Javadoc)
          * @see org.apache.hadoop.mapreduce.Mapper#setup(org.apache.hadoop.mapreduce.Mapper.Context)
          */
         protected void setup(Context context) throws IOException, InterruptedException {
         	fieldDelim = context.getConfiguration().get("field.delim", ",");
+        	String bizGoalFilePrefix = context.getConfiguration().get("bizGoal.file.prefix", "biz");
+        	isBizGoalFileSplit = ((FileSplit)context.getInputSplit()).getPath().getName().startsWith(bizGoalFilePrefix);
         }    
     	
         /* (non-Javadoc)
@@ -90,89 +94,40 @@ public class UtilityAggregator extends Configured implements Tool{
         protected void map(LongWritable key, Text value, Context context)
             throws IOException, InterruptedException {
            	String[] items = value.toString().split(fieldDelim);
-           	
-           	//userID, itemID
-           	keyOut.set(items[0], items[1]);   	
-           	
-           	//rating, weight, correlation
-           	valOut.initialize();
-           	valOut.add(new Integer(items[2]), new Integer(items[3]),  new Integer(items[4]));
-	   		context.write(keyOut, valOut);
-        }   
+        }    
     }
     
     /**
      * @author pranab
      *
      */
-    public static class AggregateReducer extends Reducer<TextPair, Tuple, NullWritable, Text> {
+    public static class BusinessGoalReducer extends Reducer<TextPair, Tuple, NullWritable, Text> {
     	private String fieldDelim;
-    	private int sum ;
-    	private int sumWt;
-    	private int avRating;
-    	private Text valueOut = new Text();
-    	private boolean weightedAverage;
-    	private boolean ratingAggregatorAverage;
-    	private int distSum;
-    	private int corrScale;
-    	private int maxRating;
-    	private int utilityScore;
-    	
-        /* (non-Javadoc)
+        
+    	/* (non-Javadoc)
          * @see org.apache.hadoop.mapreduce.Reducer#setup(org.apache.hadoop.mapreduce.Reducer.Context)
          */
         protected void setup(Context context) throws IOException, InterruptedException {
         	fieldDelim = context.getConfiguration().get("field.delim", ",");
-        	weightedAverage = context.getConfiguration().getBoolean("weighted.average", true);
-        	ratingAggregatorAverage = context.getConfiguration().getBoolean("rating.aggregator.average", true);
-        	corrScale = context.getConfiguration().getInt("correlation.scale", 1000);
-        	maxRating = context.getConfiguration().getInt("max.rating", 5);
-        } 	
+        }
         
         /* (non-Javadoc)
          * @see org.apache.hadoop.mapreduce.Reducer#reduce(KEYIN, java.lang.Iterable, org.apache.hadoop.mapreduce.Reducer.Context)
          */
         protected void reduce(TextPair  key, Iterable<Tuple> values, Context context)
         throws IOException, InterruptedException {
-			sum = sumWt = 0;
-			int count = 0;
-			if (ratingAggregatorAverage) {
-				//average
-				for(Tuple value : values) {
-					if (value.getInt(0) > maxRating) {
-						maxRating = value.getInt(0);
-					}
-					if (weightedAverage) {
-						sum += value.getInt(0) * value.getInt(1);
-						sumWt += value.getInt(1) * value.getInt(2);
-					} else {
-						sum += value.getInt(0);
-						sumWt += value.getInt(2);
-					}
-					distSum += (corrScale - value.getInt(2));
-					++count;
-				}
-				avRating = (sum * corrScale)/ sumWt ;
-			} else {
-				//median
-			}
-			
-			//userID, itemID, score, count
-			utilityScore = avRating;
-        	valueOut.set(key.getFirst() + fieldDelim + key.getSecond() + fieldDelim + utilityScore + fieldDelim + count);
-	   		context.write(NullWritable.get(), valueOut);
-        }
-        
-        
-    }
+
+        }        
+    	
+    }   
     
     /**
      * @param args
      * @throws Exception
      */
     public static void main(String[] args) throws Exception {
-        int exitCode = ToolRunner.run(new UtilityAggregator(), args);
+        int exitCode = ToolRunner.run(new BusinessGoalInjector(), args);
         System.exit(exitCode);
     }
-   
+    
 }

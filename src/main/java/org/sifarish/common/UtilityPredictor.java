@@ -117,17 +117,23 @@ public class UtilityPredictor extends Configured implements Tool{
                	for (int i = 1; i < items.length; ++i) {
                		valOut.initialize();
             		ratings = items[i].split(subFieldDelim);
+            		
+            		//itemID
             		keyOut.set(itemID, 1);
+            		
+            		//userID, rating
             		valOut.add(ratings[0],  new Integer(ratings[1]), one);
        	   			context.write(keyOut, valOut);
                	}
         	} else {
-        		//rating correlation value: item, correlation, weight
+        		//itemsID
         		keyOut.set(items[0], 0);
         		valOut.initialize();
    	   			if (linearCorrelation) {
+   	   				//itemID, correlation, intersection length (weight)
    	   				valOut.add(items[1], new Integer( items[2]), new Integer(items[3]), zero);
    	   			} else {
+   	   				//itemID, correlation, intersection length (weight)
    	   				valOut.add(items[1], new Integer("-" + items[2]), new Integer(items[3]), zero);
    	   			}
    	   			context.write(keyOut, valOut);
