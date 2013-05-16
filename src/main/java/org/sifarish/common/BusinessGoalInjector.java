@@ -19,6 +19,7 @@ package org.sifarish.common;
 
 import java.io.IOException;
 
+import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.conf.Configured;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.LongWritable;
@@ -35,6 +36,7 @@ import org.apache.hadoop.util.ToolRunner;
 import org.chombo.util.TextPair;
 import org.chombo.util.Tuple;
 import org.chombo.util.Utility;
+import org.omg.CORBA.portable.ValueOutputStream;
 
 /**
  * Injects business goal into rated items and figures out final net rating
@@ -56,7 +58,7 @@ public class BusinessGoalInjector extends Configured implements Tool{
         job.setMapperClass(BusinessGoalInjector.BusinessGoalMapper.class);
         job.setReducerClass(BusinessGoalInjector.BusinessGoalReducer.class);
         
-        job.setMapOutputKeyClass(Text.class);
+        job.setMapOutputKeyClass(Tuple.class);
         job.setMapOutputValueClass(Tuple.class);
 
         job.setOutputKeyClass(NullWritable.class);
@@ -72,9 +74,9 @@ public class BusinessGoalInjector extends Configured implements Tool{
      * @author pranab
      *
      */
-    public static class BusinessGoalMapper extends Mapper<LongWritable, Text, Text, Tuple> {
+    public static class BusinessGoalMapper extends Mapper<LongWritable, Text, Tuple, Tuple> {
     	private String fieldDelim;
-    	private Text keyOut = new Text();
+    	private Tuple keyOut = new Tuple();
     	private Tuple valOut = new Tuple();
     	private boolean isBizGoalFileSplit;
     	
@@ -94,6 +96,23 @@ public class BusinessGoalInjector extends Configured implements Tool{
         protected void map(LongWritable key, Text value, Context context)
             throws IOException, InterruptedException {
            	String[] items = value.toString().split(fieldDelim);
+           	keyOut.initialize();
+           	valOut.initialize();
+           	if (isBizGoalFileSplit) {
+           		//item ID
+           		keyOut.add(items[0], 0);
+           		
+           		//business goal scores
+           		for (int i = 1; i < items.length; ++i) {
+           			valOut.add(Integer.parseInt(items[i]));
+           		}
+           	} else {
+           		//item ID
+           		keyOut.add(items[1], 1);
+           		
+           		//userID, score
+           		keyOut.add(items[0], Integer.parseInt(items[2]));
+           	}
         }    
     }
     
@@ -101,22 +120,68 @@ public class BusinessGoalInjector extends Configured implements Tool{
      * @author pranab
      *
      */
-    public static class BusinessGoalReducer extends Reducer<TextPair, Tuple, NullWritable, Text> {
+    public static class BusinessGoalReducer extends Reducer<Tuple, Tuple, NullWritable, Text> {
     	private String fieldDelim;
+    	private Text valOut = new Text();
+    	private int[] bizGoalWeights;
+        private int recWt;
+        private int maxBizGoalWeight;
+        private  final int  MAX_WEIGHT = 100;
         
     	/* (non-Javadoc)
          * @see org.apache.hadoop.mapreduce.Reducer#setup(org.apache.hadoop.mapreduce.Reducer.Context)
          */
         protected void setup(Context context) throws IOException, InterruptedException {
-        	fieldDelim = context.getConfiguration().get("field.delim", ",");
+        	Configuration config = context.getConfiguration();
+        	fieldDelim = config.get("field.delim", ",");
+        	bizGoalWeights = Utility.intArrayFromString(config.get("biz.goal.weights"),fieldDelim );
+        	maxBizGoalWeight = Integer.parseInt("max.biz.goal.weight",  70);
+        	int sumWt = 0;
+        	for (int wt : bizGoalWeights) {
+        		sumWt += wt;
+        	}
+        	if (sumWt > maxBizGoalWeight) {
+        		throw new IllegalArgumentException("Sum of business score weights exceed limit");
+        	}
+        	recWt = MAX_WEIGHT - sumWt;
         }
         
         /* (non-Javadoc)
          * @see org.apache.hadoop.mapreduce.Reducer#reduce(KEYIN, java.lang.Iterable, org.apache.hadoop.mapreduce.Reducer.Context)
          */
-        protected void reduce(TextPair  key, Iterable<Tuple> values, Context context)
+        protected void reduce(Tuple  key, Iterable<Tuple> values, Context context)
         throws IOException, InterruptedException {
-
+        	boolean first = true;
+        	Tuple bizScore = null;
+        	for(Tuple value : values) {
+        		if (first) {
+        			if (value.isInt(0)) {
+        				//business score available for this item
+        				bizScore = value.createClone();
+        			} else {
+        				//just emit rating
+        				valOut.set(value.getString(0) + fieldDelim + key.getString(0) + fieldDelim + value.getInt(1));
+            	   		context.write(NullWritable.get(), valOut);
+        			}
+        			first = false;
+        		} else {
+        			int weightedScore = 0;
+        			if (null != bizScore) {
+        				//weighted average score
+        				int sumWeightedScore = recWt * value.getInt(1);
+        				int numBizGoal = value.getSize();
+        				for (int i = 0; i < numBizGoal; ++i) {
+        					sumWeightedScore += bizGoalWeights[i] * value.getInt(i);
+        				}
+        				weightedScore = sumWeightedScore / MAX_WEIGHT;
+        			} else {
+        				//just  score
+        				weightedScore = value.getInt(1);
+        			}
+    				valOut.set(value.getString(0) + fieldDelim + key.getString(0) + fieldDelim + weightedScore);
+        	   		context.write(NullWritable.get(), valOut);
+        		}
+        	}
         }        
     	
     }   
