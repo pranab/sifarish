@@ -132,6 +132,7 @@ public class BusinessGoalInjector extends Configured implements Tool{
     	private String fieldDelim;
     	private Text valOut = new Text();
     	private int[] bizGoalWeights;
+    	private int[] bizGoalThreshold;
         private int recWt;
         private int maxBizGoalWeight;
         private  final int  MAX_WEIGHT = 100;
@@ -152,6 +153,9 @@ public class BusinessGoalInjector extends Configured implements Tool{
         		throw new IllegalArgumentException("Sum of business score weights exceed limit");
         	}
         	recWt = MAX_WEIGHT - sumWt;
+        	
+        	bizGoalThreshold = Utility.intArrayFromString(config.get("biz.goal.threshold"),fieldDelim );
+
         }
         
         /* (non-Javadoc)
@@ -161,7 +165,9 @@ public class BusinessGoalInjector extends Configured implements Tool{
         throws IOException, InterruptedException {
         	boolean first = true;
         	Tuple bizScore = null;
+        	boolean toSkip = false;
         	for(Tuple value : values) {
+        		toSkip = false;
         		if (first) {
         			if (value.isInt(0)) {
         				//business score available for this item
@@ -179,15 +185,22 @@ public class BusinessGoalInjector extends Configured implements Tool{
         				int sumWeightedScore = recWt * value.getInt(1);
         				int numBizGoal = bizScore.getSize();
         				for (int i = 0; i < numBizGoal; ++i) {
-        					sumWeightedScore += bizGoalWeights[i] * bizScore.getInt(i);
+        					int score = bizScore.getInt(i);
+        					if (bizGoalThreshold[i] >= 0 && score  <= bizGoalThreshold[i] ) {
+        						toSkip = true;
+        						break;
+        					}
+        					sumWeightedScore += bizGoalWeights[i] * score;
         				}
         				weightedScore = sumWeightedScore / MAX_WEIGHT;
         			} else {
         				//just  score
         				weightedScore = value.getInt(1);
         			}
-    				valOut.set(value.getString(0) + fieldDelim + key.getString(0) + fieldDelim + weightedScore);
-        	   		context.write(NullWritable.get(), valOut);
+        			if (!toSkip) {
+        				valOut.set(value.getString(0) + fieldDelim + key.getString(0) + fieldDelim + weightedScore);
+        				context.write(NullWritable.get(), valOut);
+        			}
         		}
         	}
         }        

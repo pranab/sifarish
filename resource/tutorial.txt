@@ -90,6 +90,49 @@ echo "removed output dir"
 
 hadoop jar $JAR_NAME  $CLASS_NAME -Dconf.path=/home/pranab/Projects/bin/sifarish/reco.properties  $IN_PATH  $OUT_PATH
 
+Business Goal Injection (optional)
+=======================
+This is an optional MR, that combines scores of various business goals with recommendation score
+using relative weighting to come up with the final score
+
+Here is the sample shell script. It's input is the output of the previous MR 
+
+ 
+JAR_NAME=/home/pranab/Projects/sifarish/target/sifarish-1.0.jar
+CLASS_NAME=org.sifarish.common.BusinessGoalInjector
+
+echo "running mr"
+IN_PATH=/user/pranab/reco/utag
+OUT_PATH=/user/pranab/reco/bigo
+echo "input $IN_PATH output $OUT_PATH"
+hadoop fs -rmr $OUT_PATH
+echo "removed output dir"
+
+hadoop jar $JAR_NAME  $CLASS_NAME -Dconf.path=/home/pranab/Projects/bin/sifarish/reco.properties  $IN_PATH  $OUT_PATH
+
+Order by User ID (optional)
+================
+It orders the final result by userID, so that you get all recommendation for
+a given user together
+
+Here is the sample shell script. It's input is the output of the previous MR 
+
+JAR_NAME=/home/pranab/Projects/chombo/target/chombo-1.0.jar
+CLASS_NAME=org.chombo.mr.TextSorter
+
+hadoop fs -rmr /user/pranab/reco/bigo/_logs
+hadoop fs -rmr /user/pranab/reco/bigo/_SUCCESS
+
+echo "running mr"
+IN_PATH=/user/pranab/reco/bigo
+OUT_PATH=/user/pranab/reco/usso
+echo "input $IN_PATH output $OUT_PATH"
+hadoop fs -rmr $OUT_PATH
+echo "removed output dir"
+
+hadoop jar $JAR_NAME  $CLASS_NAME -Dconf.path=/home/pranab/Projects/bin/sifarish/reco.properties  $IN_PATH  $OUT_PATH
+
+
 Configuration
 =============
 Here is a sample properties file (reco.properties) containing all the configurations
