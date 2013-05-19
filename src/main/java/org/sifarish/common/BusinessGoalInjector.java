@@ -154,7 +154,7 @@ public class BusinessGoalInjector extends Configured implements Tool{
         	}
         	recWt = MAX_WEIGHT - sumWt;
         	
-        	bizGoalThreshold = Utility.intArrayFromString(config.get("biz.goal.threshold"),fieldDelim );
+        	bizGoalThreshold = Utility.intArrayFromString(config.get("biz.goal.min.threshold"),fieldDelim );
 
         }
         
