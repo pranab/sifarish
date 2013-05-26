@@ -1,0 +1,25 @@
+{
+	"eventScores" : 
+	[
+		{
+			 "eventType" : 0,
+			 "scores" : [100]
+		},
+		{
+			 "eventType" : 1,
+			 "scores" : [70,77,80]
+		},
+		{
+			 "eventType" : 2,
+			 "scores" : [30,40,45,48,50]
+		},
+		{
+			 "eventType" : 3,
+			 "scores" : [20,25,28,30]
+		},
+		{
+			 "eventType" : 4,
+			 "scores" : [10,15,18,20]
+		}
+	]
+}

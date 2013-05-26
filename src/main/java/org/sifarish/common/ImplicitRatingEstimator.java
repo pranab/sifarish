@@ -111,13 +111,15 @@ public class ImplicitRatingEstimator   extends Configured implements Tool{
      * @author pranab
      *
      */
-    public static class RatingEstimatorReducer extends Reducer<Tuple, Tuple, NullWritable, Text> {
+    public static class RatingEstimatorReducer extends Reducer<Tuple, IntWritable, NullWritable, Text> {
     	private String fieldDelim;
     	private Text valOut = new Text();
     	private int rating;
     	private EngagementToPreferenceMapper ratingMapper;
     	private int mostEngagingEventType ;
     	private int count;
+    	private  boolean outputDetail;
+    	private StringBuilder stBld = new StringBuilder();
 
     	/* (non-Javadoc)
          * @see org.apache.hadoop.mapreduce.Reducer#setup(org.apache.hadoop.mapreduce.Reducer.Context)
@@ -125,10 +127,10 @@ public class ImplicitRatingEstimator   extends Configured implements Tool{
         protected void setup(Context context) throws IOException, InterruptedException {
         	Configuration config = context.getConfiguration();
         	fieldDelim = config.get("field.delim", ",");
-        	String confpath = config.get("rating.mapper.config.path");
-        	InputStream fs  = Utility.getFileStream( config, confpath); 
+        	InputStream fs  = Utility.getFileStream( config, "rating.mapper.config.path"); 
             ObjectMapper mapper = new ObjectMapper();
             ratingMapper = mapper.readValue(fs, EngagementToPreferenceMapper.class);
+            outputDetail = config.getBoolean("rating.estimator.output.detail", false);
         }
         
         /* (non-Javadoc)
@@ -136,6 +138,10 @@ public class ImplicitRatingEstimator   extends Configured implements Tool{
          */
         protected void reduce(Tuple  key, Iterable<IntWritable> values, Context context)
         throws IOException, InterruptedException {
+        	if (stBld.length() > 0) {
+        		stBld.delete(0,  stBld.length() -1);
+        	}
+        	
         	boolean first = true;
         	count = 0;
         	for(IntWritable value : values) {
@@ -153,9 +159,15 @@ public class ImplicitRatingEstimator   extends Configured implements Tool{
         		}
         	}     
         	
+        	rating =ratingMapper.scoreForEvent(mostEngagingEventType, count);
+        	stBld.append(key.getString(0)).append(fieldDelim).append(key.getString(1)).
+        		append(fieldDelim).append(rating);
+        	if(outputDetail) {
+        		stBld.append(fieldDelim).append(mostEngagingEventType).append(fieldDelim).append(count);
+        	}
         	
-        	rating =ratingMapper.scoreForEvent(mostEngagingEventType, count);;
-        	valOut.set(key.getString(0) + fieldDelim + key.getString(1) + fieldDelim + rating);
+        	valOut.set(stBld.toString());
+			context.write(NullWritable.get(), valOut);
         }       
         
     }
