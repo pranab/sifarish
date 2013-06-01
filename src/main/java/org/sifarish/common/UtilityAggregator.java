@@ -18,6 +18,9 @@
 package org.sifarish.common;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 
 import org.apache.hadoop.conf.Configured;
 import org.apache.hadoop.fs.Path;
@@ -31,7 +34,6 @@ import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 import org.apache.hadoop.util.Tool;
 import org.apache.hadoop.util.ToolRunner;
-import org.chombo.util.IntPair;
 import org.chombo.util.TextPair;
 import org.chombo.util.Tuple;
 import org.chombo.util.Utility;
@@ -111,19 +113,25 @@ public class UtilityAggregator extends Configured implements Tool{
     	private int sumWt;
     	private int avRating;
     	private Text valueOut = new Text();
-    	private boolean weightedAverage;
+    	private boolean corrLengthWeightedAverage;
+    	private boolean inputRatingStdDevWeightedAverage;
     	private boolean ratingAggregatorAverage;
     	private int distSum;
     	private int corrScale;
     	private int maxRating;
     	private int utilityScore;
+    	private List<Integer> predRatings = new ArrayList<Integer>();
+    	private int predRating;
+    	private int medianRating;
+    	
     	
         /* (non-Javadoc)
          * @see org.apache.hadoop.mapreduce.Reducer#setup(org.apache.hadoop.mapreduce.Reducer.Context)
          */
         protected void setup(Context context) throws IOException, InterruptedException {
         	fieldDelim = context.getConfiguration().get("field.delim", ",");
-        	weightedAverage = context.getConfiguration().getBoolean("weighted.average", true);
+        	corrLengthWeightedAverage = context.getConfiguration().getBoolean("corr.length.weighted.average", true);
+        	inputRatingStdDevWeightedAverage = context.getConfiguration().getBoolean("input.rating.stdDev.weighted.average", true);
         	ratingAggregatorAverage = context.getConfiguration().getBoolean("rating.aggregator.average", true);
         	corrScale = context.getConfiguration().getInt("correlation.scale", 1000);
         	maxRating = context.getConfiguration().getInt("max.rating", 5);
@@ -139,30 +147,75 @@ public class UtilityAggregator extends Configured implements Tool{
 			if (ratingAggregatorAverage) {
 				//average
 				for(Tuple value : values) {
-					if (value.getInt(0) > maxRating) {
-						maxRating = value.getInt(0);
+					predRating = value.getInt(0);
+					if (predRating > maxRating) {
+						maxRating = predRating;
 					}
-					if (weightedAverage) {
-						sum += value.getInt(0) * value.getInt(1);
-						sumWt += value.getInt(1) * value.getInt(2);
-					} else {
-						sum += value.getInt(0);
-						sumWt += value.getInt(2);
+					if (corrLengthWeightedAverage) {
+						//correlation length weighted average
+						sum += predRating * value.getInt(1);
+						sumWt += value.getInt(1);
+					} else if (inputRatingStdDevWeightedAverage) {
+						//input rating std dev weighted average
+						int stdDev =  value.getInt(3);
+						if (stdDev < 0) {
+							throw new IllegalStateException("No rating std dev found");
+						}
+						
+						int normStdDev = invMapeStdDev(stdDev);
+						sum += predRating * normStdDev;
+						sumWt += normStdDev;
+					}	else {
+						//plain naverage
+						sum += predRating;
+						++sumWt;
 					}
 					distSum += (corrScale - value.getInt(2));
 					++count;
 				}
 				avRating = (sum * corrScale)/ sumWt ;
+				utilityScore = avRating;
 			} else {
 				//median
+				predRatings.clear();
+				for(Tuple value : values) {
+					predRating = value.getInt(0);
+					predRatings.add(predRating);
+				}
+				
+				count = predRatings.size();
+				if (count > 1) {
+					Collections.sort(predRatings);
+					if (count % 2 == 1) {
+						//odd
+						medianRating = predRatings.get(count / 2);
+					} else {
+						//even
+						medianRating =  (predRatings.get(count / 2 - 1) + predRatings.get(count / 2) )  / 2 ;
+					}
+				} else {
+					medianRating = predRatings.get(0);
+				}
+				utilityScore = medianRating * corrScale;
 			}
 			
 			//userID, itemID, score, count
-			utilityScore = avRating;
         	valueOut.set(key.getFirst() + fieldDelim + key.getSecond() + fieldDelim + utilityScore + fieldDelim + count);
 	   		context.write(NullWritable.get(), valueOut);
         }
         
+        /**
+         * Inverse scaling of std dev
+         * @param stdDev
+         * @return
+         */
+        private int invMapeStdDev(int stdDev) {
+        	int norm = maxRating / 4 - stdDev;
+        	if (norm < 0) {
+        		norm = 1;
+        	}
+        	return norm;
+        }
         
     }
     

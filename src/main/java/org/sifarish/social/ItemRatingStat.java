@@ -32,6 +32,11 @@ import org.apache.hadoop.util.Tool;
 import org.apache.hadoop.util.ToolRunner;
 import org.chombo.util.Utility;
 
+/**
+ * Calculates per item rating statistics
+ * @author pranab
+ *
+ */
 public class ItemRatingStat extends Configured implements Tool{
     @Override
     public int run(String[] args) throws Exception   {
