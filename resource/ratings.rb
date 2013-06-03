@@ -38,7 +38,7 @@ for c in 0..9
 			numRating = numRating < avUserRatingPerItemCount ? avUserRatingPerItemCount : numRating
 			mult = 140 + rand(60)
 			numRating = (mult * numRating) / 100
-			puts "more exposed numRating: #{numRating}"
+			#puts "more exposed numRating: #{numRating}"
 		end
 		
 		unanimous = rand(10) < 2

@@ -96,9 +96,9 @@ public class UtilityAggregator extends Configured implements Tool{
            	//userID, itemID
            	keyOut.set(items[0], items[1]);   	
            	
-           	//rating, weight, correlation
+           	//rating, weight, correlation, rating std dev
            	valOut.initialize();
-           	valOut.add(new Integer(items[2]), new Integer(items[3]),  new Integer(items[4]));
+           	valOut.add(new Integer(items[2]), new Integer(items[3]),  new Integer(items[4]), new Integer(items[5]));
 	   		context.write(keyOut, valOut);
         }   
     }
@@ -134,7 +134,7 @@ public class UtilityAggregator extends Configured implements Tool{
         	inputRatingStdDevWeightedAverage = context.getConfiguration().getBoolean("input.rating.stdDev.weighted.average", true);
         	ratingAggregatorAverage = context.getConfiguration().getBoolean("rating.aggregator.average", true);
         	corrScale = context.getConfiguration().getInt("correlation.scale", 1000);
-        	maxRating = context.getConfiguration().getInt("max.rating", 5);
+        	maxRating = context.getConfiguration().getInt("max.rating", 100);
         } 	
         
         /* (non-Javadoc)
@@ -166,7 +166,7 @@ public class UtilityAggregator extends Configured implements Tool{
 						sum += predRating * normStdDev;
 						sumWt += normStdDev;
 					}	else {
-						//plain naverage
+						//plain average
 						sum += predRating;
 						++sumWt;
 					}

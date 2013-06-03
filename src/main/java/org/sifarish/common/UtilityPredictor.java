@@ -116,9 +116,9 @@ public class UtilityPredictor extends Configured implements Tool{
         protected void map(LongWritable key, Text value, Context context)
             throws IOException, InterruptedException {
         	String[] items = value.toString().split(fieldDelim);
+    		String itemID = items[0];
         	if (isRatingFileSplit) {
         		//user rating
-        		String itemID = items[0];
                	for (int i = 1; i < items.length; ++i) {
                		valOut.initialize();
             		ratings = items[i].split(subFieldDelim);
@@ -130,9 +130,8 @@ public class UtilityPredictor extends Configured implements Tool{
             		valOut.add(ratings[0],  new Integer(ratings[1]), two);
        	   			context.write(keyOut, valOut);
                	}
-        	} if (isRatingStatFileSplit) {
+        	} else  if (isRatingStatFileSplit) {
         		//rating stat
-        		String itemID = items[0];
         		int ratingStdDev = Integer.parseInt(items[2]);
         		keyOut.set(itemID, one);
            		valOut.initialize();
@@ -184,6 +183,7 @@ public class UtilityPredictor extends Configured implements Tool{
     	private long logCounter = 0;
     	private double correlationModifier;
     	private Tuple ratingStat;
+    	private int ratingStdDev;
     	
         /* (non-Javadoc)
          * @see org.apache.hadoop.mapreduce.Reducer#setup(org.apache.hadoop.mapreduce.Reducer.Context)
@@ -192,7 +192,7 @@ public class UtilityPredictor extends Configured implements Tool{
         	fieldDelim = context.getConfiguration().get("field.delim", ",");
         	linearCorrelation = context.getConfiguration().getBoolean("correlation.linear", true);
         	correlationScale = context.getConfiguration().getInt("correlation.linear.scale", 1000);
-           	maxRating = context.getConfiguration().getInt("max.rating", 5);
+           	maxRating = context.getConfiguration().getInt("max.rating", 100);
            	correlationModifier = context.getConfiguration().getFloat("correlation.modifier", (float)1.0);
         } 	
         
@@ -230,7 +230,7 @@ public class UtilityPredictor extends Configured implements Tool{
 	           					(rating  * correlationScale + ratingCorr) /maxRating ;
 	           				if (predRating > 0) {
 	           					//userID, itemID, predicted rating, correlation length, correlation coeff, input rating std dev
-	           					int ratingStdDev = ratingStat != null ? ratingStat.getInt(0) :  -1;
+	           					ratingStdDev = ratingStat != null ? ratingStat.getInt(0) :  -1;
 	           					valueOut.set(userID + fieldDelim + itemID + fieldDelim + predRating + fieldDelim + weight + 
 	           							fieldDelim +ratingCorr  + fieldDelim + ratingStdDev);
 	           					context.write(NullWritable.get(), valueOut);

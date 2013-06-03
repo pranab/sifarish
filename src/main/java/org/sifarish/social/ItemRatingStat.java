@@ -92,7 +92,7 @@ public class ItemRatingStat extends Configured implements Tool{
         	ratingSum = 0;
         	ratingSquareSum = 0;
         	for (int i = 1; i < items.length; ++ i) {
-        		rating = ( Integer.parseInt(items[i].split(subFieldDelim)[1])) *  ratingScale;
+        		rating = ( Integer.parseInt(items[i].split(subFieldDelim)[1]));
         		ratingSum += rating;
         		ratingSquareSum += (rating * rating);
         	}
