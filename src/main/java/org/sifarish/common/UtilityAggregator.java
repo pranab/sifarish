@@ -173,7 +173,7 @@ public class UtilityAggregator extends Configured implements Tool{
 					distSum += (corrScale - value.getInt(2));
 					++count;
 				}
-				avRating = (sum * corrScale)/ sumWt ;
+				avRating = sum /  sumWt ;
 				utilityScore = avRating;
 			} else {
 				//median
@@ -211,7 +211,7 @@ public class UtilityAggregator extends Configured implements Tool{
          */
         private int invMapeStdDev(int stdDev) {
         	int norm = maxRating / 4 - stdDev;
-        	if (norm < 0) {
+        	if (norm <= 0) {
         		norm = 1;
         	}
         	return norm;
