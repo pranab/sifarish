@@ -21,6 +21,22 @@ https://github.com/pranab/visitante/tree/master/script/ruby
 
 User count should be an order of magnitude higher than item count
 
+Dependency Jars
+===============
+There are lot of third party jar dependencies. You can browse through the pom.xml
+to get an idea. I would recommend doing a maven build, so that all third party jars
+are downloaded to your local maven repo. 
+
+Once you have the jars, there are two options. First you can can combine them all
+into one fat jar. There are many ways to do it, as you can find from google search.
+The second option is to use the libjars option in the hadoop command line.
+
+Here are some helpfull links
+
+http://grepalex.com/2013/02/25/hadoop-libjars/
+http://stackoverflow.com/questions/81260/easiest-way-to-merge-a-release-into-one-jar-file
+
+
 
 Rating correlation
 ==================

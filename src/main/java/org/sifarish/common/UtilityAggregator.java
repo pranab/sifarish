@@ -123,7 +123,7 @@ public class UtilityAggregator extends Configured implements Tool{
     	private List<Integer> predRatings = new ArrayList<Integer>();
     	private int predRating;
     	private int medianRating;
-    	
+    	private int maxStdDev;
     	
         /* (non-Javadoc)
          * @see org.apache.hadoop.mapreduce.Reducer#setup(org.apache.hadoop.mapreduce.Reducer.Context)
@@ -135,6 +135,7 @@ public class UtilityAggregator extends Configured implements Tool{
         	ratingAggregatorAverage = context.getConfiguration().getBoolean("rating.aggregator.average", true);
         	corrScale = context.getConfiguration().getInt("correlation.scale", 1000);
         	maxRating = context.getConfiguration().getInt("max.rating", 100);
+        	maxStdDev = (35 * maxRating)  / 100;
         } 	
         
         /* (non-Javadoc)
@@ -210,7 +211,7 @@ public class UtilityAggregator extends Configured implements Tool{
          * @return
          */
         private int invMapeStdDev(int stdDev) {
-        	int norm = maxRating / 4 - stdDev;
+        	int norm = maxStdDev - stdDev;
         	if (norm <= 0) {
         		norm = 1;
         	}
