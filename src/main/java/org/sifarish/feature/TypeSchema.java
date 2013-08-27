@@ -132,6 +132,8 @@ public class TypeSchema {
 				textSimStrategy = new JaccardSimilarity(srcNonMatchingTermWeight, trgNonMatchingTermWeight);
 			} else if (textMatchingAlgorithm.equals("cosine")){
 				textSimStrategy = new CosineSimilarity();
+			} else if (textMatchingAlgorithm.equals("editDistance")){
+				textSimStrategy = new EditDistanceSimilarity();
 			}
 		}
 		return textSimStrategy;

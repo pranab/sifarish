@@ -26,24 +26,21 @@ import java.util.Set;
  *
  */
 public class EditDistanceSimilarity extends DynamicAttrSimilarityStrategy {
-	private int distSacle;
 	private Set<String> sequences = new HashSet<String>();
 	private int maxSeqLength = 0;
 	private static final int MIN_TOKEN_LENGTH = 2;
 	
 
-	public EditDistanceSimilarity(int distSacle) {
+	public EditDistanceSimilarity() {
 		super();
-		this.distSacle = distSacle;
 	}
-
 
 	/* (non-Javadoc)
 	 * @see org.sifarish.feature.DynamicAttrSimilarityStrategy#findDistance(java.lang.String, java.lang.String)
 	 */
 	@Override
 	public double findDistance(String src, String target) {
-		double distance = 1.0;
+		double distance = 0;
 		int editDistance = 0;
 
 		String[] srcTerms = src.split(fieldDelimRegex);
@@ -52,32 +49,39 @@ public class EditDistanceSimilarity extends DynamicAttrSimilarityStrategy {
 			for (int i = 0;  i  < srcTerms.length;  ++i ) {
 				String srcItem =  srcTerms[i];
 				String trgItem  = trgTerms[i];
+				editDistance = 0;
+			
+				//only if tokens are not equal
 				if (!srcItem.equals(trgItem)) {
 					if (srcItem.length() == 1) {
 						if (trgItem.indexOf(srcItem) >= 0) {
-							editDistance  += trgItem.length() - 1;
+							editDistance  = trgItem.length() - 1;
 						} else {
-							editDistance  += trgItem.length() + 1;
+							editDistance  = trgItem.length() + 1;
 						}
 					} else if (trgItem.length() == 1) {
 						if (srcItem.indexOf(srcItem) >= 0) {
-							editDistance  += srcItem.length() - 1;
+							editDistance  = srcItem.length() - 1;
 						} else {
-							editDistance  +=srcItem.length() + 1;
+							editDistance  =srcItem.length() + 1;
 						}
 					} else {
 						sequences.clear();
 						maxSeqLength = 0;
 						generateSubSequences(srcItem, true);
 						generateSubSequences(trgItem, false);
-						editDistance  +=( srcItem.length() + trgItem.length() - 2 * maxSeqLength);
+						editDistance  =( srcItem.length() + trgItem.length() - 2 * maxSeqLength);
 					}
 				}	
+				distance += ((double)editDistance) / (srcItem.length() + trgItem.length() );
 			}
+			
+			//average over number of tokens
+			distance  /= srcTerms.length;
+		} else {
+			distance = 1.0;
 		}
 		
-		distance = (double)editDistance / distSacle;
-		distance = distance <= 1.0 ? distance : 1.0;
 		return distance;
 	}
 	
@@ -97,6 +101,7 @@ public class EditDistanceSimilarity extends DynamicAttrSimilarityStrategy {
 		
 		String subToken = null;
 		if (len  > MIN_TOKEN_LENGTH ) { 
+			//create sub sequences by taking one char out
 			for (int i = 0; i < len; ++i) {
 				if (i == 0) {
 					subToken = token.substring(1);
