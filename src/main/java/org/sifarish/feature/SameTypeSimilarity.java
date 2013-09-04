@@ -207,6 +207,8 @@ public class SameTypeSimilarity  extends Configured implements Tool {
     	 */
     	protected void setup(Context context) throws IOException, InterruptedException {
 			Configuration conf = context.getConfiguration();
+			
+			//schema
             String filePath = conf.get("same.schema.file.path");
             FileSystem dfs = FileSystem.get(conf);
             Path src = new Path(filePath);
@@ -214,6 +216,7 @@ public class SameTypeSimilarity  extends Configured implements Tool {
             ObjectMapper mapper = new ObjectMapper();
             schema = mapper.readValue(fs, SingleTypeSchema.class);
             schema.processStructuredFields();
+            schema.setConf(conf);
         	
             idOrdinal = schema.getEntity().getIdField().getOrdinal();
         	fieldDelimRegex = conf.get("field.delim.regex", "\\[\\]");

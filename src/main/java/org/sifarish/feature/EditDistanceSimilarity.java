@@ -20,6 +20,8 @@ package org.sifarish.feature;
 import java.util.HashSet;
 import java.util.Set;
 
+import org.apache.hadoop.conf.Configuration;
+
 /**
  * Distance based on edit distance of corresponding tokens in text
  * @author pranab
@@ -29,17 +31,36 @@ public class EditDistanceSimilarity extends DynamicAttrSimilarityStrategy {
 	private Set<String> sequences = new HashSet<String>();
 	private int maxSeqLength = 0;
 	private static final int MIN_TOKEN_LENGTH = 2;
+	private boolean tokenWise;
 	
 
-	public EditDistanceSimilarity() {
+	public EditDistanceSimilarity(boolean tokenWise) {
 		super();
+		this.tokenWise = tokenWise;
 	}
 
+	
 	/* (non-Javadoc)
 	 * @see org.sifarish.feature.DynamicAttrSimilarityStrategy#findDistance(java.lang.String, java.lang.String)
 	 */
 	@Override
 	public double findDistance(String src, String target) {
+		double distance = 0;
+		if (tokenWise) {
+			distance = findDistanceTokenWise( src,  target);
+		} else {
+			distance = findDistanceFieldWise( src,  target);
+		}
+		
+		return distance;
+	}
+	
+	/**
+	 * @param src
+	 * @param target
+	 * @return
+	 */
+	private  double findDistanceTokenWise(String src, String target) {
 		double distance = 0;
 		int editDistance = 0;
 
@@ -70,7 +91,7 @@ public class EditDistanceSimilarity extends DynamicAttrSimilarityStrategy {
 						maxSeqLength = 0;
 						generateSubSequences(srcItem, true);
 						generateSubSequences(trgItem, false);
-						editDistance  =( srcItem.length() + trgItem.length() - 2 * maxSeqLength);
+						editDistance  = srcItem.length() + trgItem.length() - 2 * maxSeqLength;
 					}
 				}	
 				distance += ((double)editDistance) / (srcItem.length() + trgItem.length() );
@@ -79,9 +100,29 @@ public class EditDistanceSimilarity extends DynamicAttrSimilarityStrategy {
 			//average over number of tokens
 			distance  /= srcTerms.length;
 		} else {
+			//unequal number of tokens
 			distance = 1.0;
 		}
 		
+		return distance;
+	}
+	
+	/**
+	 * @param src
+	 * @param target
+	 * @return
+	 */
+	private  double findDistanceFieldWise(String src, String target) {
+		double distance = 0;
+		int editDistance = 0;
+		
+		sequences.clear();
+		maxSeqLength = 0;
+		generateSubSequences(src, true);
+		generateSubSequences(target, false);
+		editDistance  = src.length() + target.length() - 2 * maxSeqLength;
+		distance += ((double)editDistance) / (src.length() + target.length() );
+
 		return distance;
 	}
 	
@@ -101,7 +142,7 @@ public class EditDistanceSimilarity extends DynamicAttrSimilarityStrategy {
 		
 		String subToken = null;
 		if (len  > MIN_TOKEN_LENGTH ) { 
-			//create sub sequences by taking one char out
+			//create sub sequences by taking one char out and make recursive call
 			for (int i = 0; i < len; ++i) {
 				if (i == 0) {
 					subToken = token.substring(1);
