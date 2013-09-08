@@ -167,6 +167,7 @@ public class SameTypeSimilarity  extends Configured implements Tool {
        				keyHolder.set(partition, hashPair,1);
        				valueHolder.set("1" + value.toString());
     			} 
+    			LOG.debug("hashPair:" + hashPair);
    	   			context.write(keyHolder, valueHolder);
     		}
         }
@@ -297,6 +298,7 @@ public class SameTypeSimilarity  extends Configured implements Tool {
 	            		secondId =  second.split(fieldDelimRegex)[idOrdinal];
 	            		for (String first : valueList){
 	                		firstId =  first.split(fieldDelimRegex)[idOrdinal];
+	                		LOG.debug("ID pair:" + firstId + "  " +  secondId);
 		        			dist  = findDistance( first,  second,  context);
 		        			if (dist <= distThreshold) {
 		        				valueHolder.set(createValueField());
@@ -355,7 +357,7 @@ public class SameTypeSimilarity  extends Configured implements Tool {
     				secondAttr = secondItems[field.getOrdinal()];
     			}else {
     				throw new IOException("Invalid field ordinal. Looking for field " + field.getOrdinal() + 
-    						" found "  + firstItems.length + " fields in the record:" + second);
+    						" found "  + secondItems.length + " fields in the record:" + second);
     			}
     			String unit = field.getUnit();
     			
