@@ -200,7 +200,7 @@ public class SameTypeSimilarity  extends Configured implements Tool {
         private String[] secondItems;
         private int  distThreshold;
         private boolean  outputIdFirst ;
-        private static final Logger LOG = Logger.getLogger(SimilarityMapper.class);
+        private static final Logger LOG = Logger.getLogger(SimilarityReducer.class);
         
         
     	/* (non-Javadoc)
@@ -262,6 +262,7 @@ public class SameTypeSimilarity  extends Configured implements Tool {
         throws IOException, InterruptedException {
         	valueList.clear();
         	int secondPart = key.getSecond().get();
+        	LOG.debug("key hash pair:" + secondPart);
         	if (secondPart/1000 == secondPart%1000){
         		//same hash bucket
 	        	for (Text value : values){
@@ -319,6 +320,7 @@ public class SameTypeSimilarity  extends Configured implements Tool {
          * @throws IOException 
          */
         private int findDistance(String first, String second, Context context) throws IOException {
+        	LOG.debug("findDistance:" + first + "  " + second);
         	int netDist = 0;
     		firstItems = first.split(fieldDelimRegex);
     		secondItems = second.split(fieldDelimRegex);

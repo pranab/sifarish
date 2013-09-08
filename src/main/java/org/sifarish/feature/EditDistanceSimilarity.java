@@ -30,7 +30,7 @@ import org.apache.hadoop.conf.Configuration;
 public class EditDistanceSimilarity extends DynamicAttrSimilarityStrategy {
 	private Set<String> sequences = new HashSet<String>();
 	private int maxSeqLength = 0;
-	private static final int MIN_TOKEN_LENGTH = 2;
+	private static final int MIN_TOKEN_LENGTH = 1;
 	private boolean tokenWise;
 	
 
@@ -63,6 +63,7 @@ public class EditDistanceSimilarity extends DynamicAttrSimilarityStrategy {
 	private  double findDistanceTokenWise(String src, String target) {
 		double distance = 0;
 		int editDistance = 0;
+		//System.out.println("findDistanceTokenWise:" + src + ":"  + target);
 
 		String[] srcTerms = src.split(fieldDelimRegex);
 		String[] trgTerms = target.split(fieldDelimRegex);
@@ -93,7 +94,9 @@ public class EditDistanceSimilarity extends DynamicAttrSimilarityStrategy {
 						generateSubSequences(trgItem, false);
 						editDistance  = srcItem.length() + trgItem.length() - 2 * maxSeqLength;
 					}
-				}	
+				}
+				
+				//normalize
 				distance += ((double)editDistance) / (srcItem.length() + trgItem.length() );
 			}
 			
@@ -104,6 +107,7 @@ public class EditDistanceSimilarity extends DynamicAttrSimilarityStrategy {
 			distance = 1.0;
 		}
 		
+		//System.out.println("edit distance:" + distance);
 		return distance;
 	}
 	
@@ -115,7 +119,6 @@ public class EditDistanceSimilarity extends DynamicAttrSimilarityStrategy {
 	private  double findDistanceFieldWise(String src, String target) {
 		double distance = 0;
 		int editDistance = 0;
-		
 		sequences.clear();
 		maxSeqLength = 0;
 		generateSubSequences(src, true);
