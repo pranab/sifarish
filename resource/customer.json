@@ -1,0 +1,37 @@
+{
+	"distAlgorithm" : "manhattan",
+	"textMatchingAlgorithm" : "editDistance",
+	"entity" : 
+	{
+		"name" : "customer",
+		"fields" :
+		[
+			{
+				"name" : "custID",
+				"ordinal" : 0,
+				"id" : true,
+				"dataType" : "string"
+			},
+			{
+				"name" : "name",
+				"ordinal" : 1,
+				"dataType" : "text"
+			},
+			{
+				"name" : "address",
+				"ordinal" : 2,
+				"dataType" : "text"
+			},
+			{
+				"name" : "city and state",
+				"ordinal" : 3,
+				"dataType" : "text"
+			},
+			{
+				"name" : "phone",
+				"ordinal" : 4,
+				"dataType" : "text"
+			}
+		]
+	}
+}

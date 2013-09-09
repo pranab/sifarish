@@ -1,0 +1,45 @@
+This tutorial is for finding duplicate records using fuzzy matching logic. It uses 
+SameTypeSimilarity Map reduce calss from the sifarish project.
+
+Input
+=====
+I have used this web site to generate fake names and addresses
+http://www.fakenamegenerator.com/gen-random-us-us.php
+The data files need to be copied to the HDFS input path
+
+Meta Data
+=========
+You need a customer meta data in JSON as in customer.json. The file needs to 
+be copied to the meta data HDFS directory as defined in the config property file
+
+SameTypeSimilarity Map Reduce
+=============================
+Hers is the script
+
+JAR_NAME=/home/pranab/Projects/sifarish/target/sifarish-1.0.jar
+CLASS_NAME=org.sifarish.feature.SameTypeSimilarity
+
+echo "running mr"
+IN_PATH=/user/pranab/dupl/input
+OUT_PATH=/user/pranab/dupl/output
+echo "input $IN_PATH output $OUT_PATH"
+hadoop fs -rmr $OUT_PATH
+echo "removed output dir"
+
+hadoop jar $JAR_NAME  $CLASS_NAME -Dconf.path=/home/pranab/Projects/bin/sifarish/dupl.properties  $IN_PATH  $OUT_PATH
+
+Configuration
+=============
+Here is some sample configuration
+
+#common
+field.delim.regex=,
+field.delim=,
+num.reducer=2
+debug.on=true
+
+#SameTyeSimilarity
+same.schema.file.path=/user/pranab/dupl/meta/customer.json
+bucket.count=50
+distance.scale=1000
+edit.dist.token=true
