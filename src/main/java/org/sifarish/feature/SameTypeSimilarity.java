@@ -200,6 +200,8 @@ public class SameTypeSimilarity  extends Configured implements Tool {
         private String[] secondItems;
         private int  distThreshold;
         private boolean  outputIdFirst ;
+        private boolean interSetMatching;
+        private int setIdSize;
         private static final Logger LOG = Logger.getLogger(SimilarityReducer.class);
         
         
@@ -250,6 +252,10 @@ public class SameTypeSimilarity  extends Configured implements Tool {
         	//output ID first
         	 outputIdFirst =   conf.getBoolean("output.id.first", true);      	
 
+        	 //inter set matching
+        	 interSetMatching = conf.getBoolean("inter.set.matching",  false);
+        	 setIdSize = conf.getInt("set.ID.size",  0);
+        	 
              if (conf.getBoolean("debug.on", false)) {
              	LOG.setLevel(Level.DEBUG);
              }
@@ -322,6 +328,18 @@ public class SameTypeSimilarity  extends Configured implements Tool {
         private int findDistance(String first, String second, Context context) throws IOException {
         	LOG.debug("findDistance:" + first + "  " + second);
         	int netDist = 0;
+
+       		//if inter set matching, match only same ID from different sets
+        	if (interSetMatching) {
+        		String firstEntityId = firstId.substring(setIdSize);
+        		String secondEntityId = secondId.substring(setIdSize);
+        		if (!firstEntityId.equals(secondEntityId)) {
+        			netDist = 2 * distThreshold;
+					context.getCounter("Distance Data", "Diff ID from separate sets").increment(1);
+        			return netDist;
+        		}
+        	}
+        	
     		firstItems = first.split(fieldDelimRegex);
     		secondItems = second.split(fieldDelimRegex);
     		double dist = 0;
