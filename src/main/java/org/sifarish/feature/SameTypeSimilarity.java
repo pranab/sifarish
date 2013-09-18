@@ -334,7 +334,7 @@ public class SameTypeSimilarity  extends Configured implements Tool {
         		String firstEntityId = firstId.substring(setIdSize);
         		String secondEntityId = secondId.substring(setIdSize);
         		if (!firstEntityId.equals(secondEntityId)) {
-        			netDist = 2 * distThreshold;
+        			netDist =  distThreshold + 1;
 					context.getCounter("Distance Data", "Diff ID from separate sets").increment(1);
         			return netDist;
         		}
@@ -347,6 +347,7 @@ public class SameTypeSimilarity  extends Configured implements Tool {
     		distStrategy.initialize();
     		List<Integer> activeFields = null;
     		
+    		boolean thresholdCrossed = false;
     		for (Field field :  schema.getEntity().getFields()) {
     			if (null != facetedFields) {
     				//if facetted set but field not included, then skip it
@@ -413,6 +414,14 @@ public class SameTypeSimilarity  extends Configured implements Tool {
 	    				dist = eventDistance(field, firstAttr,  secondAttr, context);
 	    			}
     			}
+    			
+    			//if threshold crossed for this attribute, skip the remaining attributes of the entity pair
+    			thresholdCrossed = field.isDistanceThresholdCrossed(dist);
+    			if (thresholdCrossed){
+    				break;
+    			}
+    			
+    			//aggregate attribute  distance for all entity attributes
 				distStrategy.accumulate(dist, field.getWeight());
     		}  
     		
@@ -421,7 +430,7 @@ public class SameTypeSimilarity  extends Configured implements Tool {
 				intializePassiveFieldOrdinal(activeFields, firstItems.length);
 			}
 			
-    		netDist = distStrategy.getSimilarity();
+    		netDist = thresholdCrossed?  distThreshold + 1  : distStrategy.getSimilarity();
     		return netDist;
         }
         

@@ -42,8 +42,9 @@ public class Field {
 	private ConceptHierarchy conceptHierarchy;
 	private String distAlgorithm;
 	private double[] componentWeights;
-
 	private IDistanceStrategy distStrategy;
+	private double distThreshold = -1.0;
+
 	
 	public boolean isType() {
 		return type;
@@ -256,5 +257,14 @@ public class Field {
 	public void setDistStrategy(IDistanceStrategy distStrategy) {
 		this.distStrategy = distStrategy;
 	}
+	public double getDistThreshold() {
+		return distThreshold;
+	}
+	public void setDistThreshold(double distThreshold) {
+		this.distThreshold = distThreshold;
+	}
 	
+	public boolean isDistanceThresholdCrossed(double dist) {
+		return distThreshold > 0.0 && dist > distThreshold;
+	}
 }
