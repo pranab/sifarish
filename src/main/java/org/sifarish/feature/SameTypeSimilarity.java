@@ -418,6 +418,7 @@ public class SameTypeSimilarity  extends Configured implements Tool {
     			//if threshold crossed for this attribute, skip the remaining attributes of the entity pair
     			thresholdCrossed = field.isDistanceThresholdCrossed(dist);
     			if (thresholdCrossed){
+					context.getCounter("Distance Data", "Attribute distance threshold filter").increment(1);
     				break;
     			}
     			
