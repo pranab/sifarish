@@ -26,6 +26,25 @@ Dependency Jars
 Please refer to resource/jar_dpendency.txt
 
 
+Implicit Rating Predictor (optiuonal)
+=========================
+This one is optional. You want to run this MR if you want to generate rating data
+from user engaement click stream data. If you have generated rating data from script
+then skip this.
+
+JAR_NAME=/home/pranab/Projects/sifarish/target/sifarish-1.0.jar
+CLASS_NAME=org.sifarish.common.ImplicitRatingEstimator
+
+echo "running mr"
+IN_PATH=/user/pranab/reco/enga
+OUT_PATH=/user/pranab/reco/rate
+echo "input $IN_PATH output $OUT_PATH"
+hadoop fs -rmr $OUT_PATH
+echo "removed output dir"
+
+hadoop jar $JAR_NAME  $CLASS_NAME -Dconf.path=/home/pranab/Projects/bin/sifarish/reco.properties  $IN_PATH  $OUT_PATH
+
+
 Rating correlation
 ==================
 Correlation can be calculated in various ways. We will be using cosine similarity.
@@ -144,23 +163,51 @@ Here is a sample properties file (reco.properties) containing all the configurat
 field.delim.regex=,
 field.delim=,
 num.reducer=1
+
+#ImplicitRatingEstimator
+rating.mapper.config.path=/user/pranab/meta/imra/engageEvent.json
+rating.estimator.output.detail=true
+
+#ItemDynamicAttributeSimilarity
 bucket.count=10
 hash.pair.multiplier=1000
 similarity.algorithm=cosine
 vec.type.boolean=false
+vec.type.semantic=false
 vec.count.included=true
 distance.scale=1000
 output.correlation=true
+min.intersection.length=2
+
+#UtilityPredictor
 correlation.linear=true
 correlation.linear.scale=1000
-max.rating=5
+max.rating=100
 sub.field.delim=:
 rating.file.prefix=rating
-correlation.modifier=1.5
-weighted.average=false
-rating.aggregator.average=true
+rating.stat.file.prefix=stat
 correlation.scale=1000
+correlation.modifier=1.1
 
+#UtilityAggregator
+corr.length.weighted.average=false
+input.rating.stdDev.weighted.average=false
+rating.aggregator.average=true
+semantic.matcher.class=org.sifarish.common.ResourceDescribedEntity
+semantic.top.match.count=1
+semantic.matcher.params=semantic.rdf.modelFilePath
+semantic.rdf.modelFilePath=/user/pranab/reco/semantic/pref.rdf
+
+#BusinessGoalInjector
+biz.goal.file.prefix=biz
+biz.goal.weights=25,15
+max.biz.goal.weight=70
+biz.goal.min.threshold=5,-1
+
+sort.field=0
+
+rating.scale=100
+debug.on=true
 
 
  

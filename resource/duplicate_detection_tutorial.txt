@@ -1,6 +1,10 @@
 This tutorial is for finding duplicate records using fuzzy matching logic. It uses 
 SameTypeSimilarity Map reduce calss from the sifarish project.
 
+Dependency Jars
+===============
+Please refer to resource/jar_dpendency.txt
+
 Input
 =====
 I have used this web site to generate fake names and addresses

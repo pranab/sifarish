@@ -5,6 +5,11 @@ We will be using the MR class SameTypeSimilarity. However, simce we have text fi
 have to tokenize the text fields with stemming. This is accomplised with the MR class 
 TextAnalyzer. The output of TextAnalyzer goes to SameTypeSimilarity as input.
 
+Dependency Jars
+===============
+Please refer to resource/jar_dpendency.txt
+
+
 Text Tokenization
 =================
 Here is the script to run TextAnalyzer
