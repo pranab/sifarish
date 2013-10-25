@@ -60,13 +60,13 @@ public class ImplicitRatingEstimator   extends Configured implements Tool{
         job.setReducerClass(ImplicitRatingEstimator.RatingEstimatorReducer.class);
         
         job.setMapOutputKeyClass(Tuple.class);
-        job.setMapOutputValueClass(IntWritable.class);
+        job.setMapOutputValueClass(Tuple.class);
 
         job.setOutputKeyClass(NullWritable.class);
         job.setOutputValueClass(Text.class);
  
         job.setGroupingComparatorClass(SecondarySort.TuplePairGroupComprator.class);
-        job.setPartitionerClass(SecondarySort.TupleIntPartitioner.class);
+        job.setPartitionerClass(SecondarySort.TuplePairPartitioner.class);
 
         Utility.setConfiguration(job.getConfiguration());
         job.setNumReduceTasks(job.getConfiguration().getInt("num.reducer", 1));
@@ -78,11 +78,12 @@ public class ImplicitRatingEstimator   extends Configured implements Tool{
      * @author pranab
      *
      */
-    public static class RatingEstimatorMapper extends Mapper<LongWritable, Text, Tuple, IntWritable> {
+    public static class RatingEstimatorMapper extends Mapper<LongWritable, Text, Tuple, Tuple> {
     	private String fieldDelim;
     	private Tuple keyOut = new Tuple();
-    	private IntWritable  valOut = new IntWritable();
+    	private Tuple  valOut = new Tuple();
     	private int  eventType = 0;
+    	private long timeStamp;
     	
         /* (non-Javadoc)
          * @see org.apache.hadoop.mapreduce.Mapper#setup(org.apache.hadoop.mapreduce.Mapper.Context)
@@ -99,10 +100,12 @@ public class ImplicitRatingEstimator   extends Configured implements Tool{
             throws IOException, InterruptedException {
            	String[] items = value.toString().split(fieldDelim);
            	eventType = Integer.parseInt(items[2]);
+           	timeStamp = Long.parseLong(items[3]);
            	
            	keyOut.initialize();
            	keyOut.add(items[0], items[1], eventType);
-           	valOut.set(eventType);
+           	valOut.initialize();
+           	valOut.add(eventType, timeStamp);
            	context.write(keyOut, valOut);
         }       
     }    
@@ -111,13 +114,16 @@ public class ImplicitRatingEstimator   extends Configured implements Tool{
      * @author pranab
      *
      */
-    public static class RatingEstimatorReducer extends Reducer<Tuple, IntWritable, NullWritable, Text> {
+    public static class RatingEstimatorReducer extends Reducer<Tuple, Tuple, NullWritable, Text> {
     	private String fieldDelim;
     	private Text valOut = new Text();
     	private int rating;
     	private EngagementToPreferenceMapper ratingMapper;
     	private int mostEngagingEventType ;
     	private int count;
+    	private int eventType;
+    	private long timeStamp;
+    	private long latestTimeStamp;
     	private  boolean outputDetail;
     	private StringBuilder stBld = new StringBuilder();
 
@@ -136,7 +142,7 @@ public class ImplicitRatingEstimator   extends Configured implements Tool{
         /* (non-Javadoc)
          * @see org.apache.hadoop.mapreduce.Reducer#reduce(KEYIN, java.lang.Iterable, org.apache.hadoop.mapreduce.Reducer.Context)
          */
-        protected void reduce(Tuple  key, Iterable<IntWritable> values, Context context)
+        protected void reduce(Tuple  key, Iterable<Tuple> values, Context context)
         throws IOException, InterruptedException {
         	if (stBld.length() > 0) {
         		stBld.delete(0,  stBld.length() -1);
@@ -144,24 +150,29 @@ public class ImplicitRatingEstimator   extends Configured implements Tool{
         	
         	boolean first = true;
         	count = 0;
-        	for(IntWritable value : values) {
+        	latestTimeStamp = 0;
+        	for(Tuple value : values) {
+        		eventType = value.getInt(0);
+        		timeStamp = value.getLong(1);
         		if (first) {
-        			mostEngagingEventType = value.get();
+        			mostEngagingEventType =eventType;
         			++count;
         			first = false;
         		} else {
         			//all occurences of the first event type
-        			if (value.get() == mostEngagingEventType) {
+        			if (eventType  == mostEngagingEventType) {
         				++count;
-        			} else {
-        				break;
-        			}
+        			} 
         		}
+       			//latest time stamp 
+    			if(timeStamp > latestTimeStamp) {
+    				latestTimeStamp = timeStamp;
+    			}
         	}     
         	
         	rating =ratingMapper.scoreForEvent(mostEngagingEventType, count);
         	stBld.append(key.getString(0)).append(fieldDelim).append(key.getString(1)).
-        		append(fieldDelim).append(rating);
+        		append(fieldDelim).append(rating).append(fieldDelim).append(latestTimeStamp);
         	if(outputDetail) {
         		stBld.append(fieldDelim).append(mostEngagingEventType).append(fieldDelim).append(count);
         	}
