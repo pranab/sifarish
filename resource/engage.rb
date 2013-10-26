@@ -2,10 +2,12 @@
 
 require '../lib/util.rb'      
 
+itemCount = ARGV[0].to_i
+custCount = ARGV[1].to_i
+eventCount = custCount * ARGV[2].to_i
+numItemPart = 20
+itemPartSize = itemCount / numItemPart
 
-custCount = ARGV[0].to_i
-itemCount = ARGV[1].to_i
-eventCount = ARGV[2].to_i
 
 itemIDs = []
 custIDs = []
@@ -22,12 +24,20 @@ end
 
 timeGap = 20
 now = Time.now.to_i
-time = now - eventCount * timeGap
+time = now - eventCount * (timeGap + 1)
 
 
 1.upto eventCount do
 	custID = custIDs[rand(custCount)]
-	itemID = itemIDs[rand(itemCount)]
+	if (rand(10) < 8)
+		#select item from cluster
+		itemPart = custID.hash % numItemPart
+		itemIndx = itemPart * itemPartSize + rand(itemPartSize)
+		itemID = itemIDs[itemIndx]
+	else
+		#select item randomly
+		itemID = itemIDs[rand(itemCount)]
+	end
 	event = eventDist.value
 	time = time + 14 + rand(6)
 	puts "#{custID},#{itemID},#{event},#{time}"
