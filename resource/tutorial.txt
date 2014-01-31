@@ -1,14 +1,17 @@
-Rating data
-===========
+This tutorial is for social recommendation. Processing is done with a 
+pipeline of MR jobs. Some of them are optional.
+
+Generating Rating data
+======================
 The format is as follows
 
 item1,user1:3,user2:4,..
 item2,user2:5,user4:2,...
 
-Ypu can use ratings.rb as follows to generate ratings data
+You can use ratings.rb as follows to generate ratings data
 ruby ratings.rb <item_count> <user_count> <user_per_items_multipler>
 
-In the output, average number of users ratin an item will be 
+In the output, average number of users rating for an item will be 
 item_count *  user_per_items_multipler / user_count
 
 So choose the last argument as per your need.
@@ -27,8 +30,8 @@ Please refer to resource/jar_dpendency.txt
 
 
 Implicit Rating Predictor (optiuonal)
-=========================
-This one is optional. You want to run this MR if you want to generate rating data
+=====================================
+This MR task is optional. You want to run this MR if you want to generate rating data
 from user engaement click stream data. If you have generated rating data from script
 then skip this.
 
@@ -38,6 +41,23 @@ CLASS_NAME=org.sifarish.common.ImplicitRatingEstimator
 echo "running mr"
 IN_PATH=/user/pranab/reco/enga
 OUT_PATH=/user/pranab/reco/rate
+echo "input $IN_PATH output $OUT_PATH"
+hadoop fs -rmr $OUT_PATH
+echo "removed output dir"
+
+hadoop jar $JAR_NAME  $CLASS_NAME -Dconf.path=/home/pranab/Projects/bin/sifarish/reco.properties  $IN_PATH  $OUT_PATH
+
+Rating Statistics (optional)
+============================
+If the parameter input.rating.stdDev.weighted.average is set to true for UtilityAggregator,
+then rating std dev calculation is necessary. Here is the script to calculate rating statistics
+
+JAR_NAME=/home/pranab/Projects/sifarish/target/sifarish-1.0.jar
+CLASS_NAME=org.sifarish.social.ItemRatingStat
+
+echo "running mr"
+IN_PATH=/user/pranab/reco/item
+OUT_PATH=/user/pranab/reco/stat
 echo "input $IN_PATH output $OUT_PATH"
 hadoop fs -rmr $OUT_PATH
 echo "removed output dir"
@@ -65,7 +85,6 @@ echo "removed output dir"
 hadoop jar $JAR_NAME  $CLASS_NAME -Dconf.path=/home/pranab/Projects/bin/sifarish/reco.properties  $IN_PATH  $OUT_PATH
 
 
-
 If you wanted to use some other correlator, for example Pearson Correlator, change the CLASS_NAME 
 in the script as follows
 CLASS_NAME=org.sifarish.social.PearsonCorrelator
@@ -78,7 +97,7 @@ calculated in the first MR
 
 The shell scripts is as follows. The input directory is the output directory of the previous
 MR. Hadoop creates some directories and files besides the output. Please remove everything
-except for the putput files 
+except for the output files 
 
 The rating file should also be copied there. The rating file name should have the prefix as 
 defined by the config param rating.file.prefix
@@ -114,7 +133,7 @@ echo "removed output dir"
 hadoop jar $JAR_NAME  $CLASS_NAME -Dconf.path=/home/pranab/Projects/bin/sifarish/reco.properties  $IN_PATH  $OUT_PATH
 
 Business Goal Injection (optional)
-=======================
+==================================
 This is an optional MR, that combines scores of various business goals with recommendation score
 using relative weighting to come up with the final score
 
@@ -134,7 +153,7 @@ echo "removed output dir"
 hadoop jar $JAR_NAME  $CLASS_NAME -Dconf.path=/home/pranab/Projects/bin/sifarish/reco.properties  $IN_PATH  $OUT_PATH
 
 Order by User ID (optional)
-================
+===========================
 It orders the final result by userID, so that you get all recommendation for
 a given user together
 
@@ -154,6 +173,39 @@ hadoop fs -rmr $OUT_PATH
 echo "removed output dir"
 
 hadoop jar $JAR_NAME  $CLASS_NAME -Dconf.path=/home/pranab/Projects/bin/sifarish/reco.properties  $IN_PATH  $OUT_PATH
+
+Uber script
+===========
+Here is an example script that runs all the MR jobs
+
+base="$1"
+echo "copy rating data"
+hadoop fs -put  ratings.txt "${base}"/reco/item
+
+echo "running rating stat MR"
+./rast.sh
+
+echo "running rating matrix MR"
+./itsi.sh
+hadoop fs -rmr "${base}"/reco/simi/_logs
+hadoop fs -rmr "${base}"/reco/simi/_SUCCESS
+
+echo "copying rating data to rating predictor input dir"
+hadoop fs -put ratings.txt "${base}"/reco/simi
+
+echo "copying rating stat file to predictor input dir"
+hadoop fs -cp "${base}"/reco/stat/part-r-00000 /user/pranab/reco/simi/stat_ratings.txt
+
+
+echo "running rating predictor MR"
+./utpr.sh
+hadoop fs -rmr "${base}"/reco/utpr/_logs
+hadoop fs -rmr "${base}"/reco/utpr/_SUCCESS
+
+echo "running rating aggregate predictor MR"
+./utag.sh
+hadoop fs -rmr "${base}"/reco/utag/_logs
+hadoop fs -rmr "${base}"/reco/utag/_SUCCESS
 
 
 Configuration

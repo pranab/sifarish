@@ -194,6 +194,7 @@ public class ItemDynamicAttributeSimilarity  extends Configured implements Tool{
         	hashPairMult = conf.getInt("hash.pair.multiplier", 1000);
         	String simAlgorithm = conf.get("similarity.algorithm", "cosine");
         	
+        	//semantic matching
         	Map<String, Object> params = new HashMap<String, Object>();
         	params.put("matcherClass", conf.get("semantic.matcher.class"));
         	params.put("topMatchCount", conf.getInt("semantic.top.match.count", 5));
@@ -203,6 +204,7 @@ public class ItemDynamicAttributeSimilarity  extends Configured implements Tool{
         	
         	LOG.debug("simAlgorithm:" + simAlgorithm + " matcherClass: "  + conf.get("semantic.matcher.class"));
         	
+        	//similarity matching algorithm
         	params.put("srcNonMatchingTermWeight", conf.get("jaccard.srcNonMatchingTermWeight"));
         	params.put("trgNonMatchingTermWeight", conf.get("jaccard.trgNonMatchingTermWeight"));
         	simStrategy = DynamicAttrSimilarityStrategy.createSimilarityStrategy(simAlgorithm, params);
@@ -213,6 +215,7 @@ public class ItemDynamicAttributeSimilarity  extends Configured implements Tool{
         	LOG.debug("booleanVec:" + booleanVec + " semanticVec:" + semanticVec);
         	addMatchingContext = conf.getBoolean("add.semantic.matching.context", false);
         	
+        	//vector type
         	if (booleanVec){
         		simStrategy.setBooleanVec(booleanVec);
         	}

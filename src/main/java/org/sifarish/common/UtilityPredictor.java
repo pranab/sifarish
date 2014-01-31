@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.conf.Configured;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.LongWritable;
@@ -37,6 +38,8 @@ import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 import org.apache.hadoop.util.Tool;
 import org.apache.hadoop.util.ToolRunner;
+import org.apache.log4j.Level;
+import org.apache.log4j.Logger;
 import org.chombo.util.TextInt;
 import org.chombo.util.Tuple;
 import org.chombo.util.Utility;
@@ -93,20 +96,33 @@ public class UtilityPredictor extends Configured implements Tool{
     	private Integer zero = 0;
     	private boolean linearCorrelation;
     	private boolean isRatingStatFileSplit;
+    	private long  ratingTimeCutoff;
+    	private  long timeStamp;
     	
+        private static final Logger LOG = Logger.getLogger(UtilityPredictor.PredictionMapper.class);
+
         /* (non-Javadoc)
          * @see org.apache.hadoop.mapreduce.Mapper#setup(org.apache.hadoop.mapreduce.Mapper.Context)
          */
         protected void setup(Context context) throws IOException, InterruptedException {
-        	fieldDelim = context.getConfiguration().get("field.delim", ",");
-        	subFieldDelim = context.getConfiguration().get("sub.field.delim", ":");
-        	String ratingFilePrefix = context.getConfiguration().get("rating.file.prefix", "rating");
+        	Configuration conf = context.getConfiguration();
+            if (conf.getBoolean("debug.on", false)) {
+             	LOG.setLevel(Level.DEBUG);
+             	System.out.println("in debug mode");
+            }
+
+            fieldDelim = conf.get("field.delim", ",");
+        	subFieldDelim = conf.get("sub.field.delim", ":");
+        	String ratingFilePrefix = conf.get("rating.file.prefix", "rating");
         	isRatingFileSplit = ((FileSplit)context.getInputSplit()).getPath().getName().startsWith(ratingFilePrefix);
-        	String ratingStatFilePrefix = context.getConfiguration().get("rating.stat.file.prefix", "stat");
+        	String ratingStatFilePrefix = conf.get("rating.stat.file.prefix", "stat");
         	isRatingStatFileSplit = ((FileSplit)context.getInputSplit()).getPath().getName().startsWith(ratingStatFilePrefix);
         	
-        	linearCorrelation = context.getConfiguration().getBoolean("correlation.linear", true);
-        	System.out.println("isRatingFileSplit:" + isRatingFileSplit);
+        	linearCorrelation = conf.getBoolean("correlation.linear", true);
+        	int ratingTimeWindow = conf.getInt("rating.time.window.hour",  -1);
+        	ratingTimeCutoff = ratingTimeWindow > 0 ?  System.currentTimeMillis() / 1000 - ratingTimeWindow * 60L * 60L : -1;
+        	
+        	LOG.info("isRatingFileSplit:" + isRatingFileSplit);
         }    
     	
         /* (non-Javadoc)
@@ -119,16 +135,26 @@ public class UtilityPredictor extends Configured implements Tool{
     		String itemID = items[0];
         	if (isRatingFileSplit) {
         		//user rating
+        		boolean toInclude = true;
                	for (int i = 1; i < items.length; ++i) {
-               		valOut.initialize();
             		ratings = items[i].split(subFieldDelim);
             		
-            		//itemID
-            		keyOut.set(itemID, two);
+            		//time sensitive recommendation
+            		 toInclude = true; 
+            		 if (ratingTimeCutoff > 0) {
+            			 timeStamp = Long.parseLong(ratings[2]);
+            			 toInclude = timeStamp > ratingTimeCutoff;
+            		 }
             		
-            		//userID, rating
-            		valOut.add(ratings[0],  new Integer(ratings[1]), two);
-       	   			context.write(keyOut, valOut);
+            		 if (toInclude) {
+	            		//itemID
+	            		keyOut.set(itemID, two);
+	            		
+	            		//userID, rating
+	               		valOut.initialize();
+	            		valOut.add(ratings[0],  new Integer(ratings[1]), two);
+	       	   			context.write(keyOut, valOut);
+            		 }
                	}
         	} else  if (isRatingStatFileSplit) {
         		//rating stat
