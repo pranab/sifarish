@@ -3,26 +3,25 @@ pipeline of MR jobs. Some of them are optional.
 
 Generating Rating data
 ======================
-The format is as follows
+The format of rating is as follows. Each line has rating by all users for a given item
 
 item1,user1:3,user2:4,..
 item2,user2:5,user4:2,...
 
-You can use ratings.rb as follows to generate ratings data
-ruby ratings.rb <item_count> <user_count> <user_per_items_multipler>
+You can use ratings.rb as follows to generate ratings data and save it ia file
+It requires util.rb to be in the ../lib directory. You can get util.rb
+from the visitante project at the following location
+https://github.com/pranab/visitante/tree/master/script/ruby
+
+ruby ratings.rb <item_count> <user_count> <user_per_items_multipler>  > rating.txt
 
 In the output, average number of users rating for an item will be 
 item_count *  user_per_items_multipler / user_count
 
 So choose the last argument as per your need.
 
-It rquires util.rb to be in the ../lib directory. You can get util.rb
-from the visitante project at the following location
-
-https://github.com/pranab/visitante/tree/master/script/ruby
-
-
-User count should be an order of magnitude higher than item count
+User count should be an order of magnitude higher than item count. The value of
+user_per_items_multipler should be 5 or more. A reasoable value is 10
 
 Dependency Jars
 ===============
@@ -50,7 +49,9 @@ hadoop jar $JAR_NAME  $CLASS_NAME -Dconf.path=/home/pranab/Projects/bin/sifarish
 Rating Statistics (optional)
 ============================
 If the parameter input.rating.stdDev.weighted.average is set to true for UtilityAggregator,
-then rating std dev calculation is necessary. Here is the script to calculate rating statistics
+then rating std dev calculation is necessary. In our example, we are not using it.
+
+Here is the script to calculate rating statistics
 
 JAR_NAME=/home/pranab/Projects/sifarish/target/sifarish-1.0.jar
 CLASS_NAME=org.sifarish.social.ItemRatingStat
@@ -68,6 +69,9 @@ hadoop jar $JAR_NAME  $CLASS_NAME -Dconf.path=/home/pranab/Projects/bin/sifarish
 Rating correlation
 ==================
 Correlation can be calculated in various ways. We will be using cosine similarity.
+
+Copy the rating data file as below
+hadoop fs -cp rating.txt /user/pranab/reco/item
 
 Here is shell script to calculate correlation. Rating data should be copied to 
 IN_PATH directory
@@ -97,10 +101,13 @@ calculated in the first MR
 
 The shell scripts is as follows. The input directory is the output directory of the previous
 MR. Hadoop creates some directories and files besides the output. Please remove everything
-except for the output files 
+from the Hadoop output directory of Rating Correlation MR,except for the output files as below
 
-The rating file should also be copied there. The rating file name should have the prefix as 
-defined by the config param rating.file.prefix
+hadoop fs -rmr ..../_logs
+hadoop fs -rmr ..../_SUCCESS
+
+The rating file should also be copied hadoop input directory. The rating file name should 
+have the prefix as defined by the config param rating.file.prefix
 
 JAR_NAME=/home/pranab/Projects/sifarish/target/sifarish-1.0.jar
 CLASS_NAME=org.sifarish.common.UtilityPredictor
@@ -117,6 +124,12 @@ hadoop jar $JAR_NAME  $CLASS_NAME -Dconf.path=/home/pranab/Projects/bin/sifarish
 Aggregate Rating Predictor
 ==========================
 This predicts the final rating by aggregating contribution from all items rated by the user
+
+The input directory is the output directory of the Rating Predictor MR. Please remove everything 
+from the Hadoop output directory of Rating Predictor MR,except for the output files as below
+
+hadoop fs -rmr ..../_logs
+hadoop fs -rmr ..../_SUCCESS
 
 Here is the sample shell script. It's input is the output of the previous MR 
 
@@ -135,9 +148,9 @@ hadoop jar $JAR_NAME  $CLASS_NAME -Dconf.path=/home/pranab/Projects/bin/sifarish
 Business Goal Injection (optional)
 ==================================
 This is an optional MR, that combines scores of various business goals with recommendation score
-using relative weighting to come up with the final score
+using relative weighting to come up with the final score. In our example, we are not using it.
 
-Here is the sample shell script. It's input is the output of the previous MR 
+Here is the sample shell script. It's input is the output of Aggregate Rating Predictor MR 
 
  
 JAR_NAME=/home/pranab/Projects/sifarish/target/sifarish-1.0.jar
