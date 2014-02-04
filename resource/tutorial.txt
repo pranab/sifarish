@@ -34,6 +34,12 @@ This MR task is optional. You want to run this MR if you want to generate rating
 from user engaement click stream data. If you have generated rating data from script
 then skip this.
 
+Generate user engagement data as follows
+ruby engage.rb <item_count> <customer_count> <event_count> > engage.txt
+event_count = number of events per customer (a reasonable number is around 10)
+
+Copy the input data file to  HDFS input directory. This is the script to run MR
+
 JAR_NAME=/home/pranab/Projects/sifarish/target/sifarish-1.0.jar
 CLASS_NAME=org.sifarish.common.ImplicitRatingEstimator
 
