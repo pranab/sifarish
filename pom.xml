@@ -121,6 +121,32 @@ xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/ma
 			<artifactId>commons-lang3</artifactId>
 			<version>3.1</version>
 		</dependency>		 
+
+  		<dependency>
+			<groupId>storm</groupId>
+			<artifactId>storm</artifactId>
+			<version>0.8.2</version>
+		</dependency>   
+        
+		<dependency>
+			<groupId>org.clojure</groupId>
+			<artifactId>clojure</artifactId>
+			<version>1.2.0</version>
+		</dependency>
+		
+		<dependency>
+			<groupId>org.clojure</groupId>
+			<artifactId>clojure-contrib</artifactId>
+			<version>1.2.0</version>
+		</dependency>    
+
+	<dependency>
+    	<groupId>redis.clients</groupId>
+    	<artifactId>jedis</artifactId>
+    	<version>2.2.1</version>
+    	<type>jar</type>
+    	<scope>compile</scope>
+	</dependency>
 		
     </dependencies>
 
@@ -142,6 +168,15 @@ xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/ma
           <id>cloudera-releases</id>
           <url>https://repository.cloudera.com/artifactory/cloudera-repos/</url>
         </repository>
+  		<repository>
+			<id>github-releases</id>
+			<url>http://oss.sonatype.org/content/repositories/github-releases/</url>
+		</repository>
+		<repository>
+			<id>clojars.org</id>
+			<url>http://clojars.org/repo</url>
+		</repository>
+        
     </repositories>
 
 </project>
