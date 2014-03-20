@@ -56,6 +56,7 @@ public class UserItemRatings {
 	private Jedis jedis;
 	private String eventExpirePolicy;
 	private long timedExpireWindow;
+	private int countExpireLimit;
 	
 	private static final String EVENT_EXPIRE_SESSION = "session";
 	private static final String EVENT_EXPIRE_TIME = "time";
@@ -81,9 +82,11 @@ public class UserItemRatings {
 		topItemsCount = ConfigUtility.getInt(config,"top.items.count");
 		itemCorrelationKey = ConfigUtility.getString(config, "redis.item.correlation.key");
 		String eventMappingMetadataKey = ConfigUtility.getString(config, "redis.event.mapping.metadata.key");
-		eventExpirePolicy = ConfigUtility.getString(config, "event.expire.policy");
-		timedExpireWindow = ConfigUtility.getLong(config, "timed.expire.window") * 60;
-		
+		eventExpirePolicy = ConfigUtility.getString(config, "event.expire.policy", "session");
+		timedExpireWindow = ConfigUtility.getLong(config, "timed.expire.window", -1) * 60;
+		countExpireLimit = ConfigUtility.getInt(config,"count.expire.limit", -1);
+				
+				
 		//event mapping metadata
 		String eventMappingMetadata = jedis.get(eventMappingMetadataKey);		
 		ObjectMapper mapper = new ObjectMapper();
@@ -118,23 +121,36 @@ public class UserItemRatings {
 		
 		//handle event expiry
 		if (eventExpirePolicy.equals(EVENT_EXPIRE_SESSION))  {
+			//expire by session
 			if (this.sessionID != null && !this.sessionID.equals(sessionID)) {
 				for (String item : engagementEvents.keySet()) {
-					if (engagementEvents.get(item).clearAllEvents()) {
+					if (engagementEvents.get(item).removeAllEvents()) {
 						affectedItems.add(item);
 					}
 				}
 				this.sessionID = sessionID;
 			}
 		} else if (eventExpirePolicy.equals(EVENT_EXPIRE_TIME)) {
+			//expire by time window
+			if (timedExpireWindow < 0) {
+				throw new Exception("For event expiry by time window, timed.expire.window needs to be set");
+			}
 			for (String item : engagementEvents.keySet()) {
-				if (engagementEvents.get(item).clearOldEvents(timedExpireWindow)) {
+				if (engagementEvents.get(item).removeOldEventsByTime(timedExpireWindow)) {
 					affectedItems.add(item);
 				}
 			}
 			
 		} else if (eventExpirePolicy.equals(EVENT_EXPIRE_COUNT)) {
-			
+			//expire by max event list size
+			if (countExpireLimit < 0) {
+				throw new Exception("For event expiry by count, count.expire.limit needs to be set");
+			}
+			for (String item : engagementEvents.keySet()) {
+				if (engagementEvents.get(item).removeOldEventsByCount(10)) {
+					affectedItems.add(item);
+				}
+			}
 		}
 		
 		//process rating for all affected items
@@ -179,6 +195,9 @@ public class UserItemRatings {
 		
 		//sort and collect top n
 		Collections.sort(ratings);
+		if (ratings.size() > topItemsCount) {
+			ratings.subList(topItemsCount, ratings.size()).clear();
+		}
 		return ratings;
 	}
 	
@@ -283,7 +302,7 @@ public class UserItemRatings {
 		/**
 		 * 
 		 */
-		public boolean clearAllEvents() {
+		public boolean removerAllEvents() {
 			events.clear();
 			predictedRatings.clear();
 			currentRating = -1;
@@ -293,7 +312,7 @@ public class UserItemRatings {
 		/**
 		 * @param timedExpireWindow
 		 */
-		public boolean clearOldEvents(long timedExpireWindow) {
+		public boolean removeOldEventsByTime(long timedExpireWindow) {
 			boolean changed = false;
 			long thresholdTime = System.currentTimeMillis() / 1000 - timedExpireWindow;
 			
@@ -312,7 +331,20 @@ public class UserItemRatings {
 			
 			return changed;
 		}
-		
+
+		/**
+		 * @param timedExpireWindow
+		 */
+		public boolean removeOldEventsByCount(int maxCount) {
+			boolean changed = false;
+			if (events.size() > maxCount) {
+				events.remove(0);
+				predictedRatings.clear();
+				currentRating = -1;
+				changed = true;
+			}
+			return changed;
+		}		
 		/**
 		 * @param event
 		 * @param timestamp
