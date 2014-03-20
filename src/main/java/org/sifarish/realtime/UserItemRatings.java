@@ -21,8 +21,10 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 import org.chombo.util.ConfigUtility;
@@ -52,6 +54,12 @@ public class UserItemRatings {
 	private String itemCorrelationKey;
 	private EngagementToPreferenceMapper engaementMapper;
 	private Jedis jedis;
+	private String eventExpirePolicy;
+	private long timedExpireWindow;
+	
+	private static final String EVENT_EXPIRE_SESSION = "session";
+	private static final String EVENT_EXPIRE_TIME = "time";
+	private static final String EVENT_EXPIRE_COUNT = "count";
 	
 	/**
 	 * @param userID
@@ -73,6 +81,8 @@ public class UserItemRatings {
 		topItemsCount = ConfigUtility.getInt(config,"top.items.count");
 		itemCorrelationKey = ConfigUtility.getString(config, "redis.item.correlation.key");
 		String eventMappingMetadataKey = ConfigUtility.getString(config, "redis.event.mapping.metadata.key");
+		eventExpirePolicy = ConfigUtility.getString(config, "event.expire.policy");
+		timedExpireWindow = ConfigUtility.getLong(config, "timed.expire.window") * 60;
 		
 		//event mapping metadata
 		String eventMappingMetadata = jedis.get(eventMappingMetadataKey);		
@@ -95,17 +105,42 @@ public class UserItemRatings {
 	 * @param timestamp
 	 */
 	public void addEvent(String sessionID, String itemID, int event, long timestamp) throws Exception {
-		if (this.sessionID != null && !this.sessionID.equals(sessionID)) {
-			engagementEvents.clear();
-			this.sessionID = sessionID;
-		}
+		Set<String> affectedItems = new HashSet<String>();
+
+		//add event
 		EngagementEvent engageEvents = engagementEvents.get(itemID);
 		if (null == engageEvents) {
 			engageEvents = new EngagementEvent(itemID, itemCorrelationCache, engaementMapper);
 			engagementEvents.put(itemID, engageEvents);
 		}
 		engageEvents.addEvent(event, timestamp);
-		engageEvents.processRating();
+		affectedItems.add(itemID);
+		
+		//handle event expiry
+		if (eventExpirePolicy.equals(EVENT_EXPIRE_SESSION))  {
+			if (this.sessionID != null && !this.sessionID.equals(sessionID)) {
+				for (String item : engagementEvents.keySet()) {
+					if (engagementEvents.get(item).clearAllEvents()) {
+						affectedItems.add(item);
+					}
+				}
+				this.sessionID = sessionID;
+			}
+		} else if (eventExpirePolicy.equals(EVENT_EXPIRE_TIME)) {
+			for (String item : engagementEvents.keySet()) {
+				if (engagementEvents.get(item).clearOldEvents(timedExpireWindow)) {
+					affectedItems.add(item);
+				}
+			}
+			
+		} else if (eventExpirePolicy.equals(EVENT_EXPIRE_COUNT)) {
+			
+		}
+		
+		//process rating for all affected items
+		for (String item : affectedItems) {
+			engagementEvents.get(item).processRating();
+		}
 	}
 	
 	/**
@@ -246,6 +281,39 @@ public class UserItemRatings {
 		}
 		
 		/**
+		 * 
+		 */
+		public boolean clearAllEvents() {
+			events.clear();
+			predictedRatings.clear();
+			currentRating = -1;
+			return true;
+		}
+		
+		/**
+		 * @param timedExpireWindow
+		 */
+		public boolean clearOldEvents(long timedExpireWindow) {
+			boolean changed = false;
+			long thresholdTime = System.currentTimeMillis() / 1000 - timedExpireWindow;
+			
+			List<Pair<Integer, Long>> filteredEvents = new ArrayList<Pair<Integer, Long>>();
+			for (Pair<Integer, Long> event : events) {
+				if (event.getRight() >= thresholdTime) {
+					filteredEvents.add(event);
+				}
+			}
+			if (filteredEvents.size() < events.size()) {
+				events = filteredEvents;
+				predictedRatings.clear();
+				currentRating = -1;
+				changed = true;
+			}
+			
+			return changed;
+		}
+		
+		/**
 		 * @param event
 		 * @param timestamp
 		 */
@@ -258,32 +326,34 @@ public class UserItemRatings {
 		 */
 		public void processRating() throws Exception {
 			//most engaging event and corresponding count
-			int mostEngaingEvent = 1000000;
-			int eventCount = 0;
-			for (Pair<Integer, Long> event : events) {
-				if (event.getLeft() < mostEngaingEvent) {
-					mostEngaingEvent = event.getLeft();
-					eventCount = 1;
-				} else if (event.getLeft() == mostEngaingEvent) {
-					++eventCount;
+			if (!events.isEmpty()) {
+				int mostEngaingEvent = 1000000;
+				int eventCount = 0;
+				for (Pair<Integer, Long> event : events) {
+					if (event.getLeft() < mostEngaingEvent) {
+						mostEngaingEvent = event.getLeft();
+						eventCount = 1;
+					} else if (event.getLeft() == mostEngaingEvent) {
+						++eventCount;
+					}
 				}
-			}
-			
-			//estimate implicit rating 
-			int rating = engaementMapper.scoreForEvent(mostEngaingEvent, eventCount);
-			
-			//predicted ratings only if first time or if rating is better that current
-			if (currentRating < 0 || rating > currentRating) {
-				//get correlated items
-				List<ItemCorrelation> itemCorrs = itemCorrelationCache.get(item);
 				
-				//predict ratings
-				predictedRatings.clear();
-				for (ItemCorrelation itemCorr : itemCorrs) {
-					ItemRating itemRating = new ItemRating(itemCorr.getItem(), itemCorr.getCorrelation() * rating);
-					predictedRatings.add(itemRating);
+				//estimate implicit rating 
+				int rating = engaementMapper.scoreForEvent(mostEngaingEvent, eventCount);
+				
+				//predicted ratings only if first time or if rating is better that current
+				if (currentRating < 0 || rating > currentRating) {
+					//get correlated items
+					List<ItemCorrelation> itemCorrs = itemCorrelationCache.get(item);
+					
+					//predict ratings
+					predictedRatings.clear();
+					for (ItemCorrelation itemCorr : itemCorrs) {
+						ItemRating itemRating = new ItemRating(itemCorr.getItem(), itemCorr.getCorrelation() * rating);
+						predictedRatings.add(itemRating);
+					}
+					currentRating = rating;
 				}
-				currentRating = rating;
 			}
 		}
 

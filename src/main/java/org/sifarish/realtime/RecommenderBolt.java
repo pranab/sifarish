@@ -85,7 +85,7 @@ public class RecommenderBolt extends GenericBolt {
 			}
 			
 			//add event and get predicted ratings
-			itemRatings.addEvent(sessionID, itemID, eventID, System.currentTimeMillis());
+			itemRatings.addEvent(sessionID, itemID, eventID, System.currentTimeMillis() / 1000);
 			List<UserItemRatings.ItemRating> predictedRatings = itemRatings.getPredictedRatings();
 			
 			//write to queue
