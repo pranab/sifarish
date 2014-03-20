@@ -17,13 +17,17 @@
 
 package org.sifarish.realtime;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 import org.apache.log4j.Logger;
 import org.chombo.storm.GenericBolt;
 import org.chombo.storm.MessageHolder;
+import org.chombo.util.ConfigUtility;
+import org.sifarish.realtime.UserItemRatings.ItemRating;
 
+import redis.clients.jedis.Jedis;
 import backtype.storm.task.TopologyContext;
 import backtype.storm.tuple.Tuple;
 
@@ -33,10 +37,18 @@ import backtype.storm.tuple.Tuple;
  *
  */
 public class RecommenderBolt extends GenericBolt {
+	private Jedis jedis;
+	private Map<String, UserItemRatings> userItemRatings = new HashMap<String, UserItemRatings>();
+	private Map stormConf;
+	private String recommendationQueue;
+	
 	public static final String USER_ID = "userID";
 	public static final String SESSION_ID = "sessionID";
 	public static final String ITEM_ID = "itemID";
 	public static final String EVENT_ID = "eventID";
+	private static final String FIELD_DELIM = ",";
+	private static final String SUB_FIELD_DELIM = ":";
+	
 
 	private static final Logger LOG = Logger.getLogger(RecommenderBolt.class);
 	private static final long serialVersionUID = -8339901835031581335L;
@@ -49,18 +61,46 @@ public class RecommenderBolt extends GenericBolt {
 
 	@Override
 	public void intialize(Map stormConf, TopologyContext context) {
-		// TODO Auto-generated method stub
-		
+		String redisHost = ConfigUtility.getString(stormConf, "redis.server.host");
+		int redisPort = ConfigUtility.getInt(stormConf,"redis.server.port");
+		jedis = new Jedis(redisHost, redisPort);
+		this.stormConf = stormConf;
+		recommendationQueue = ConfigUtility.getString(stormConf, "redis.recommendation.queue");
+	
 	}
 
 	@Override
 	public boolean process(Tuple input) {
+		boolean status = true;
 		String userID = input.getStringByField(USER_ID);
 		String sessionID = input.getStringByField(SESSION_ID);
 		String itemID = input.getStringByField(ITEM_ID);
 		int eventID = input.getIntegerByField(EVENT_ID);
 		
-		return false;
+		try {
+			UserItemRatings itemRatings = userItemRatings.get(userID);
+			if (null == itemRatings) {
+				itemRatings = new UserItemRatings(userID, sessionID, jedis, stormConf);
+				userItemRatings.put(userID, itemRatings);
+			}
+			
+			//add event and get predicted ratings
+			itemRatings.addEvent(sessionID, itemID, eventID, System.currentTimeMillis());
+			List<UserItemRatings.ItemRating> predictedRatings = itemRatings.getPredictedRatings();
+			
+			//write to queue
+			StringBuilder stBld = new StringBuilder(userID);
+			for (UserItemRatings.ItemRating itemRating : predictedRatings) {
+				stBld.append(FIELD_DELIM).append(itemRating.getItem()).append(SUB_FIELD_DELIM).
+					append(itemRating.getRating());
+			}
+			jedis.lpush(recommendationQueue, stBld.toString());
+			
+		} catch (Exception e) {
+			//TODO
+			status = false;
+		}
+		return status;
 	}
 
 	@Override

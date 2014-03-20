@@ -17,6 +17,7 @@
 
 package org.sifarish.realtime;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -26,6 +27,10 @@ import java.util.concurrent.TimeUnit;
 
 import org.chombo.util.ConfigUtility;
 import org.chombo.util.Pair;
+import org.codehaus.jackson.JsonParseException;
+import org.codehaus.jackson.map.JsonMappingException;
+import org.codehaus.jackson.map.ObjectMapper;
+import org.sifarish.common.EngagementToPreferenceMapper;
 
 import redis.clients.jedis.Jedis;
 
@@ -45,13 +50,18 @@ public class UserItemRatings {
 	private LoadingCache<String, List<ItemCorrelation>> itemCorrelationCache = null;
 	private int topItemsCount;
 	private String itemCorrelationKey;
+	private EngagementToPreferenceMapper engaementMapper;
 	private Jedis jedis;
 	
 	/**
 	 * @param userID
 	 * @param sessionID
+	 * @throws IOException 
+	 * @throws JsonMappingException 
+	 * @throws JsonParseException 
 	 */
-	public UserItemRatings(String userID, String sessionID, Jedis jedis, Map config) {
+	public UserItemRatings(String userID, String sessionID, Jedis jedis, Map config) 
+			throws Exception {
 		super();
 		this.userID = userID;
 		this.sessionID = sessionID;
@@ -61,7 +71,13 @@ public class UserItemRatings {
 		int correlationCacheSize = ConfigUtility.getInt(config,"correlation.cache.size");
 		int correlationCacheExpiryTime = ConfigUtility.getInt(config,"correlation.cache.expiry.time");
 		topItemsCount = ConfigUtility.getInt(config,"top.items.count");
-		itemCorrelationKey = ConfigUtility.getString(config, "item.correlation.key");
+		itemCorrelationKey = ConfigUtility.getString(config, "redis.item.correlation.key");
+		String eventMappingMetadataKey = ConfigUtility.getString(config, "redis.event.mapping.metadata.key");
+		
+		//event mapping metadata
+		String eventMappingMetadata = jedis.get(eventMappingMetadataKey);		
+		ObjectMapper mapper = new ObjectMapper();
+		engaementMapper = mapper.readValue(eventMappingMetadata, EngagementToPreferenceMapper.class);
 		
 		//initialize correlation cache
 		if (null == itemCorrelationCache) {
@@ -85,7 +101,7 @@ public class UserItemRatings {
 		}
 		EngagementEvent engageEvents = engagementEvents.get(itemID);
 		if (null == engageEvents) {
-			engageEvents = new EngagementEvent(itemID, itemCorrelationCache);
+			engageEvents = new EngagementEvent(itemID, itemCorrelationCache, engaementMapper);
 			engagementEvents.put(itemID, engageEvents);
 		}
 		engageEvents.addEvent(event, timestamp);
@@ -126,6 +142,7 @@ public class UserItemRatings {
 			ratings.add(new ItemRating(item, avRating));
 		}
 		
+		//sort and collect top n
 		Collections.sort(ratings);
 		return ratings;
 	}
@@ -211,35 +228,68 @@ public class UserItemRatings {
 	private static class EngagementEvent {
 		private String item;
 		private List<Pair<Integer, Long>> events = new ArrayList<Pair<Integer, Long>>();
-		private int rating;
+		private int currentRating = -1;
 		private List<ItemRating> predictedRatings = new ArrayList<ItemRating>();
 		private LoadingCache<String, List<ItemCorrelation>> itemCorrelationCache;
+		private EngagementToPreferenceMapper engaementMapper;
 		
-		public EngagementEvent(String item, LoadingCache<String, List<ItemCorrelation>> itemCorrelationCache) {
+		/**
+		 * @param item
+		 * @param itemCorrelationCache
+		 */
+		public EngagementEvent(String item, LoadingCache<String, List<ItemCorrelation>> itemCorrelationCache, 
+				EngagementToPreferenceMapper engaementMapper) {
 			super();
 			this.item = item;
 			this.itemCorrelationCache = itemCorrelationCache;
+			this.engaementMapper = engaementMapper;
 		}
 		
+		/**
+		 * @param event
+		 * @param timestamp
+		 */
 		public void addEvent(int event, long timestamp) {
 			events.add(new Pair<Integer, Long>(event, timestamp));
 		}	
 		
+		/**
+		 * @throws Exception
+		 */
 		public void processRating() throws Exception {
-			//estimate imlpicit rating
-			int rating = 0;
+			//most engaging event and corresponding count
+			int mostEngaingEvent = 1000000;
+			int eventCount = 0;
+			for (Pair<Integer, Long> event : events) {
+				if (event.getLeft() < mostEngaingEvent) {
+					mostEngaingEvent = event.getLeft();
+					eventCount = 1;
+				} else if (event.getLeft() == mostEngaingEvent) {
+					++eventCount;
+				}
+			}
 			
-			//get correlated items
-			List<ItemCorrelation> itemCorrs = itemCorrelationCache.get(item);
+			//estimate implicit rating 
+			int rating = engaementMapper.scoreForEvent(mostEngaingEvent, eventCount);
 			
-			//predict ratings
-			predictedRatings.clear();
-			for (ItemCorrelation itemCorr : itemCorrs) {
-				ItemRating itemRating = new ItemRating(itemCorr.getItem(), itemCorr.getCorrelation() * rating);
-				predictedRatings.add(itemRating);
+			//predicted ratings only if first time or if rating is better that current
+			if (currentRating < 0 || rating > currentRating) {
+				//get correlated items
+				List<ItemCorrelation> itemCorrs = itemCorrelationCache.get(item);
+				
+				//predict ratings
+				predictedRatings.clear();
+				for (ItemCorrelation itemCorr : itemCorrs) {
+					ItemRating itemRating = new ItemRating(itemCorr.getItem(), itemCorr.getCorrelation() * rating);
+					predictedRatings.add(itemRating);
+				}
+				currentRating = rating;
 			}
 		}
 
+		/**
+		 * @return
+		 */
 		public List<ItemRating> getPredictedRatings() {
 			return predictedRatings;
 		}
