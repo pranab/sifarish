@@ -302,7 +302,7 @@ public class UserItemRatings {
 		/**
 		 * 
 		 */
-		public boolean removerAllEvents() {
+		public boolean removeAllEvents() {
 			events.clear();
 			predictedRatings.clear();
 			currentRating = -1;
