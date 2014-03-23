@@ -41,6 +41,13 @@ import org.chombo.util.SecondarySort;
 import org.chombo.util.Tuple;
 import org.chombo.util.Utility;
 
+
+/**
+* Computes item pair correlation by Pearson correlation. This is an alternative to
+* ItemDynamicAttributeSimilarity when Pearsonn correlation is used. Input is rating matrix.
+ * @author pranab
+ *
+ */
 public class PearsonCorrelator extends Configured implements Tool{
     @Override
     public int run(String[] args) throws Exception   {
@@ -72,6 +79,7 @@ public class PearsonCorrelator extends Configured implements Tool{
     }
    
     /**
+     * Self join by hashing
      * @author pranab
      *
      */
@@ -168,6 +176,7 @@ public class PearsonCorrelator extends Configured implements Tool{
     }
     
     /**
+     * Correlation between memebers of 2 hash buckets
      * @author pranab
      *
      */
@@ -266,7 +275,7 @@ public class PearsonCorrelator extends Configured implements Tool{
         	ratingOne.initializeMatch();
         	ratingTwo.initializeMatch();
         	
-        	//finf matching user rating
+        	//find matching user rating
         	for (int i = 0; i < ratingOne.getRatings().size(); ++i) {
         		Pair<String, Integer> userRatingOne = ratingOne.getRatings().get(i);
         		String userIDOne = userRatingOne.getLeft();
@@ -282,6 +291,7 @@ public class PearsonCorrelator extends Configured implements Tool{
         		}
         	}
         	
+        	//only if rating set intersection length is greater than min
         	if (ratingOne.getMatchCount() >= minRatingSetIntersection) {
         		corrWeight = ratingOne.getMatchCount();
         		
@@ -320,6 +330,7 @@ public class PearsonCorrelator extends Configured implements Tool{
     }    
     
     /**
+     * List of users and associated ratings
      * @author pranab
      *
      */
@@ -331,6 +342,9 @@ public class PearsonCorrelator extends Configured implements Tool{
     	private int ratingStdDev;
    	
     	
+		/**
+		 * @param tuple
+		 */
 		public UserRating(Tuple tuple) {
 			super();
 			itemID = tuple.getString(1);
@@ -342,30 +356,52 @@ public class PearsonCorrelator extends Configured implements Tool{
         	}
 		}
 
+		/**
+		 * @return
+		 */
 		public String getItemID() {
 			return itemID;
 		}
 
+		/**
+		 * @return
+		 */
 		public List<Pair<String, Integer>> getRatings() {
 			return ratings;
 		}
 
+		/**
+		 * 
+		 */
 		public void initializeMatch() {
 			matchedRatings.clear();
 		}
 		
+		/**
+		 * @param index
+		 */
 		public void markMatched(Integer index) {
 			matchedRatings.add(index);
 		}
 		
+		/**
+		 * @return
+		 */
 		public int getMatchCount() {
 			return matchedRatings.size();
 		}
 		
+		/**
+		 * @param index
+		 * @return
+		 */
 		public int getMatchedRating(int index) {
 			return ratings.get(matchedRatings.get(index)).getRight();
 		}
 		
+		/**
+		 * 
+		 */
 		public void calculateStat() {
 	    	int ratingSum = 0;
 	    	int ratingSquareSum = 0;
@@ -381,14 +417,24 @@ public class PearsonCorrelator extends Configured implements Tool{
         	ratingStdDev = (int)Math.sqrt(var);
 		}
 
+		/**
+		 * @return
+		 */
 		public int getRatingMean() {
 			return ratingMean;
 		}
 
+		/**
+		 * @return
+		 */
 		public int getRatingStdDev() {
 			return ratingStdDev;
 		}
 		
+		/**
+		 * @param coVarItems
+		 * @return
+		 */
 		public int[] findCoVarianceItems(int[] coVarItems) {
 			int normRating = 0;
 			if (null == coVarItems) {
