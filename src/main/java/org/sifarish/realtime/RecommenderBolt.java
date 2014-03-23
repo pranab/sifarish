@@ -40,7 +40,9 @@ public class RecommenderBolt extends GenericBolt {
 	private Jedis jedis;
 	private Map<String, UserItemRatings> userItemRatings = new HashMap<String, UserItemRatings>();
 	private Map stormConf;
+	private boolean wtiteRecommendationToQueue;
 	private String recommendationQueue;
+	private String recommendationCache;
 	
 	public static final String USER_ID = "userID";
 	public static final String SESSION_ID = "sessionID";
@@ -65,7 +67,12 @@ public class RecommenderBolt extends GenericBolt {
 		int redisPort = ConfigUtility.getInt(stormConf,"redis.server.port");
 		jedis = new Jedis(redisHost, redisPort);
 		this.stormConf = stormConf;
-		recommendationQueue = ConfigUtility.getString(stormConf, "redis.recommendation.queue");
+		wtiteRecommendationToQueue = ConfigUtility.getBoolean(stormConf,"wtite.recommendation.to.queue");
+		if (wtiteRecommendationToQueue) {
+			recommendationQueue = ConfigUtility.getString(stormConf, "redis.recommendation.queue");
+		}else {
+			recommendationCache = ConfigUtility.getString(stormConf, "redis.recommendation.cache");
+		}
 	
 	}
 
@@ -88,13 +95,18 @@ public class RecommenderBolt extends GenericBolt {
 			itemRatings.addEvent(sessionID, itemID, eventID, System.currentTimeMillis() / 1000);
 			List<UserItemRatings.ItemRating> predictedRatings = itemRatings.getPredictedRatings();
 			
-			//write to queue
+			//write to queue or cache
 			StringBuilder stBld = new StringBuilder(userID);
 			for (UserItemRatings.ItemRating itemRating : predictedRatings) {
 				stBld.append(FIELD_DELIM).append(itemRating.getItem()).append(SUB_FIELD_DELIM).
 					append(itemRating.getRating());
 			}
-			jedis.lpush(recommendationQueue, stBld.toString());
+			String itemRatingList  = stBld.substring(1);
+			if (wtiteRecommendationToQueue) {
+				jedis.lpush(recommendationQueue, userID + FIELD_DELIM + itemRatingList);
+			} else {
+				jedis.hset(recommendationCache, userID, itemRatingList);
+			}
 			
 		} catch (Exception e) {
 			//TODO
