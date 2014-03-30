@@ -38,8 +38,15 @@ public class EngagementToPreferenceMapper {
 		this.eventScores = eventScores;
 	}
 
+	/**
+	 * @param eventType
+	 * @param count
+	 * @return
+	 */
 	public int scoreForEvent(int eventType, int count) {
 		int score = 0;
+		
+		//match event type
 		EngagementScore thisScore = null;
 		for (EngagementScore engScore : eventScores) {
 			if (engScore.getEventType() == eventType) {
@@ -48,6 +55,7 @@ public class EngagementToPreferenceMapper {
 			}
 		}
 		
+		//get score
 		if (null != thisScore) {
 			score = thisScore.eventScore(count);
 		} else {

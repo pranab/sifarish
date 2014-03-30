@@ -24,6 +24,7 @@ package org.sifarish.common;
  */
 public class EngagementScore {
 	private int eventType;
+	private String description;
 	private int[] scores;
 	
 	public EngagementScore() {
@@ -35,6 +36,14 @@ public class EngagementScore {
 	public void setEventType(int eventType) {
 		this.eventType = eventType;
 	}
+	public String getDescription() {
+		return description;
+	}
+
+	public void setDescription(String description) {
+		this.description = description;
+	}
+
 	public int[] getScores() {
 		return scores;
 	}

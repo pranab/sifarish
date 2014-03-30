@@ -102,8 +102,10 @@ public class ImplicitRatingEstimator   extends Configured implements Tool{
            	eventType = Integer.parseInt(items[2]);
            	timeStamp = Long.parseLong(items[3]);
            	
+           	//user ID, item ID, event
            	keyOut.initialize();
            	keyOut.add(items[0], items[1], eventType);
+           	
            	valOut.initialize();
            	valOut.add(eventType, timeStamp);
            	context.write(keyOut, valOut);

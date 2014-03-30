@@ -32,54 +32,53 @@ import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 import org.apache.hadoop.util.Tool;
 import org.apache.hadoop.util.ToolRunner;
-import org.chombo.util.TextTuple;
 import org.chombo.util.Utility;
 
 /**
- * Converts a correlation in exploded form to a sparse matrix form which is item ID followed by 
- * a list of ( itemID, correlation) tuples
+ * Converts rating data from an exploded format to compact format. 
+ * Compact format : item1,user1:rating1, user2:rating2
+ * exploded format : user1, itemm1, rating1
+ * 
  * @author pranab
  *
  */
-public class CorrelationMatrixBuilder extends Configured implements Tool {
+public class CompactRatingFormatter  extends Configured implements Tool {
 
 	@Override
 	public int run(String[] args) throws Exception {
         Job job = new Job(getConf());
-        String jobName = "Correlation natrix builder  MR";
+        String jobName = "Rating compact format converter  MR";
         job.setJobName(jobName);
         
-        job.setJarByClass(CorrelationMatrixBuilder.class);
+        job.setJarByClass(CompactRatingFormatter.class);
 
         FileInputFormat.addInputPath(job, new Path(args[0]));
         FileOutputFormat.setOutputPath(job, new Path(args[1]));
 
         Utility.setConfiguration(job.getConfiguration());
-        job.setMapperClass(CorrelationMatrixBuilder.MatrixBuilderMapper.class);
-        job.setReducerClass(CorrelationMatrixBuilder.MatrixBuilderReducer.class);
+        job.setMapperClass(CompactRatingFormatter.FormatterMapper.class);
+        job.setReducerClass(CompactRatingFormatter.FormatterReducer.class);
 
         job.setMapOutputKeyClass(Text.class);
-        job.setMapOutputValueClass(TextTuple.class);
+        job.setMapOutputValueClass(Text.class);
+        job.setOutputKeyClass(NullWritable.class);
+        job.setOutputValueClass(Text.class);
 
         job.setNumReduceTasks(job.getConfiguration().getInt("num.reducer", 1));
 		
-        job.setOutputKeyClass(NullWritable.class);
-        job.setOutputValueClass(Text.class);
-        
         int status =  job.waitForCompletion(true) ? 0 : 1;
         return status;
-		
 	}
 
     /**
      * @author pranab
      *
      */
-    public static class MatrixBuilderMapper extends Mapper<LongWritable, Text, Text, TextTuple> {
+    public static class FormatterMapper extends Mapper<LongWritable, Text, Text, Text> {
         private String fieldDelimRegex;
         private String subFieldDelim;
         private Text outKey = new Text();
-        private TextTuple outVal = new TextTuple();
+        private Text outVal = new Text();
   
 	    /* (non-Javadoc)
 	     * @see org.apache.hadoop.mapreduce.Mapper#setup(org.apache.hadoop.mapreduce.Mapper.Context)
@@ -88,9 +87,7 @@ public class CorrelationMatrixBuilder extends Configured implements Tool {
         	Configuration config = context.getConfiguration();
         	fieldDelimRegex = config.get("field.delim.regex", ",");
 	    	subFieldDelim = config.get("sub.field.delim", ":");
-	    	outVal.setFieldDelim(subFieldDelim);
-	    }    
-	    
+	    }
 	    /* (non-Javadoc)
 	     * @see org.apache.hadoop.mapreduce.Mapper#map(KEYIN, VALUEIN, org.apache.hadoop.mapreduce.Mapper.Context)
 	     */
@@ -98,55 +95,57 @@ public class CorrelationMatrixBuilder extends Configured implements Tool {
 	        throws IOException, InterruptedException {
         	String[] items  =  value.toString().split(fieldDelimRegex);
         	
-        	//emit for both items
-        	outKey.set(items[0]);
-        	outVal.add(items[1], items[2]);
-	   		context.write(outKey, outVal);
-       	
+        	//emit itemsID as key and user: rating as value
         	outKey.set(items[1]);
-        	outVal.add(items[0], items[2]);
+        	outVal.set(items[0] + subFieldDelim + items[2]);
 	   		context.write(outKey, outVal);
 	    }    
-
     }
-
+    
     /**
      * @author pranab
      *
      */
-    public static class MatrixBuilderReducer extends Reducer<Text, TextTuple, NullWritable, Text> {
-    	private String fieldDelimOut;
-		private StringBuilder stBld =  new StringBuilder();;
-		private Text outVal = new Text();
-   	
-        /* (non-Javadoc)
+    public static class FormatterReducer extends Reducer<Text, Text, NullWritable, Text> {
+    	private String fieldDelim;
+    	private Text valOut = new Text();
+    	private StringBuilder stBld = new StringBuilder();
+    	
+    	
+    	/* (non-Javadoc)
          * @see org.apache.hadoop.mapreduce.Reducer#setup(org.apache.hadoop.mapreduce.Reducer.Context)
          */
         protected void setup(Context context) throws IOException, InterruptedException {
         	Configuration config = context.getConfiguration();
-        	fieldDelimOut = config.get("field.delim.out", ",");
-        }   	
+        	fieldDelim = config.get("field.delim", ",");
+        }
         
         /* (non-Javadoc)
          * @see org.apache.hadoop.mapreduce.Reducer#reduce(KEYIN, java.lang.Iterable, org.apache.hadoop.mapreduce.Reducer.Context)
          */
-        protected void reduce(Text  key, Iterable<TextTuple> values, Context context)
+        protected void reduce(Text  key, Iterable<Text> values, Context context)
         throws IOException, InterruptedException {
-    		stBld.delete(0, stBld.length());
-    		stBld.append(key.toString());
-        	for (TextTuple value : values){
-    	   		stBld.append(fieldDelimOut).append(value);
-        	}    		
-        	outVal.set(stBld.toString());
-			context.write(NullWritable.get(), outVal);
-        }        
-    }    
-	/**
-	 * @param args
-	 */
-	public static void main(String[] args) throws Exception {
-        int exitCode = ToolRunner.run(new CorrelationMatrixBuilder(), args);
+        	if (stBld.length() > 0) {
+        		stBld.delete(0,  stBld.length());
+        	}
+        	
+       		stBld.append(key.toString());
+           	for(Text value : values) {
+           		stBld.append(fieldDelim).append(value);
+           	}
+           	valOut.set(stBld.toString());
+    		context.write(NullWritable.get(), valOut);
+        }
+        
+    }
+
+    /**
+     * @param args
+     * @throws Exception
+     */
+    public static void main(String[] args) throws Exception {
+        int exitCode = ToolRunner.run(new CompactRatingFormatter(), args);
         System.exit(exitCode);
-	}
-    
+    }
+
 }
