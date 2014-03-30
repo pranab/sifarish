@@ -49,7 +49,7 @@ def loadUsersAndItems(eventFile):
 	print "loaded event history with %d users and %d items" %(len(userItems.keys()), len(allItems))
 	
 # generates (userID, itemID, sessionID, event, time) tuples	
-def sessionSimulate(threadName, maxEvent):
+def genEngageEvents(threadName, maxEvent):
 	engagedItems = {}
 	
 	#choose user
@@ -100,12 +100,24 @@ def sessionSimulate(threadName, maxEvent):
 
 		events.add(event)				
 		evCount += 1	
-		print "%s,%s,%s,%d" %(user, item, session, event)
-		time.sleep(randint(2,4))
+		#print "%s,%s,%s,%d" %(user, item, session, event)
+		event = "%s,%s,%s,%d" %(user, item, session, event)
+		rc.lpush("engageEventQueue", event)
+		print "thread %s generated event" %(threadName)
+		time.sleep(randint(2,6))
 	
 def selectRandomFromList(list):
 	return list[randint(0, len(list)-1)]
 
+#browse engagement event queue
+def showEventQueue():
+	while True:
+		line = rc.rpop("engageEventQueue")
+		if line is not None:
+			print line
+		else:
+			break
+	
 #loads items correlation data into redis
 def loadCorrelation(corrFile):
 	#read file
@@ -118,7 +130,7 @@ def loadCorrelation(corrFile):
 		rc.hset("itemCorrelation", key, val)		
 
 #load event mapping to redis
-loadEventMapping(eventMappingFile):
+def loadEventMapping(eventMappingFile):
 	file = open(eventMappingFile, 'r')
 	mappingData = file.read()
 	rc.set('eventMappingMetadata', mappingData)
@@ -135,15 +147,15 @@ if (op == "genEvents"):
 		for i in range(numSession):
 			threadName = "session-%d" %(i)
 			maxEvent = randint(eventCountMin, eventCountMax)
-   			t = threading.Thread(target=sessionSimulate, args=(threadName,maxEvent, ))
+   			t = threading.Thread(target=genEngageEvents, args=(threadName,maxEvent, ))
    			t.start()
 	except:
    		print "Error: unable to start thread"
-
+elif (op == "showEvents"):
+	showEventQueue()
 elif (op == "loadCorrelation"):
 	corrFile = sys.argv[2]
 	loadCorrelation(corrFile)
-
 elif (op == "loadEventMapping"):
 	corrFile = sys.argv[2]
 	loadEventMapping(eventMappingFile)	

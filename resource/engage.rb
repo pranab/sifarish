@@ -4,14 +4,16 @@ require '../lib/util.rb'
 
 itemCount = ARGV[0].to_i
 custCount = ARGV[1].to_i
-eventCount = custCount * ARGV[2].to_i
+avEventCountPerCust = ARGV[2].to_i
+eventCount = custCount * avEventCountPerCust
+
 numItemPart = 20
 itemPartSize = itemCount / numItemPart
 
 
 itemIDs = []
 custIDs = []
-eventDist = NumericalFieldRange.new(0..0,2,1..1,3,2..2,6,3..3,9,4..4,10)
+eventDist = NumericalFieldRange.new(0..0,2,1..1,3,2..2,6,3..3,9,4..4,10,5..5,12)
 
 idGen = IdGenerator.new
 1.upto itemCount do

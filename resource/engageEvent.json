@@ -3,23 +3,33 @@
 	[
 		{
 			 "eventType" : 0,
+			 "description" : "purchased",
 			 "scores" : [100]
 		},
 		{
 			 "eventType" : 1,
-			 "scores" : [70,77,80]
+			 "description" : "in checkout",
+			 "scores" : [80,87,92]
 		},
 		{
 			 "eventType" : 2,
-			 "scores" : [30,40,45,48,50]
+			 "description" : "placed in shopping cart",
+			 "scores" : [60,70,75,78]
 		},
 		{
 			 "eventType" : 3,
-			 "scores" : [20,25,28,30]
+			 "description" : "placed in wishlist",
+			 "scores" : [40,46,51,55]
 		},
 		{
 			 "eventType" : 4,
-			 "scores" : [10,15,18,20]
+			 "description" : "browsed from search result",
+			 "scores" : [20,26,31,35]
+		},
+		{
+			 "eventType" : 5,
+			 "description" : "browsed",
+			 "scores" : [8,14,18]
 		}
 	]
 }
