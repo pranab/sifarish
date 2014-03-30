@@ -43,14 +43,33 @@ Copy the input data file to  HDFS input directory. This is the script to run MR
 JAR_NAME=/home/pranab/Projects/sifarish/target/sifarish-1.0.jar
 CLASS_NAME=org.sifarish.common.ImplicitRatingEstimator
 
-echo "running mr"
+echo "running ImplicitRatingEstimator mr"
 IN_PATH=/user/pranab/reco/enga
 OUT_PATH=/user/pranab/reco/rate
 echo "input $IN_PATH output $OUT_PATH"
 hadoop fs -rmr $OUT_PATH
-echo "removed output dir"
+echo "removed output dir $OUT_PATH"
 
 hadoop jar $JAR_NAME  $CLASS_NAME -Dconf.path=/home/pranab/Projects/bin/sifarish/reco.properties  $IN_PATH  $OUT_PATH
+
+Rating data formatter (optional)
+================================
+If you ran ImplicitRatingPredictor, it generated rating data in an exploded format as below
+userID, itemID, rating
+However, Rating Correlation MR below expects data in a compact format as below
+itemID, userID1:rating1, userId2:rating2
+
+This map reduce is necessary to do the format conversion to the compact form and it can be run as follows
+
+CLASS_NAME=org.sifarish.common.CompactRatingFormatter
+echo "running CompactRatingFormatter mr"
+IN_PATH=/user/pranab/reco/rate
+OUT_PATH=/user/pranab/reco/crat
+echo "input $IN_PATH output $OUT_PATH"
+hadoop fs -rmr $OUT_PATH
+echo "removed output dir $OUT_PATH"
+hadoop jar $JAR_NAME  $CLASS_NAME -Dconf.path=/home/pranab/Projects/bin/sifarish/reco.properties  $IN_PATH  $OUT_PATH
+
 
 Rating Statistics (optional)
 ============================
@@ -61,14 +80,12 @@ Here is the script to calculate rating statistics
 
 JAR_NAME=/home/pranab/Projects/sifarish/target/sifarish-1.0.jar
 CLASS_NAME=org.sifarish.social.ItemRatingStat
-
-echo "running mr"
+echo "running ItemRatingStat mr"
 IN_PATH=/user/pranab/reco/item
 OUT_PATH=/user/pranab/reco/stat
 echo "input $IN_PATH output $OUT_PATH"
 hadoop fs -rmr $OUT_PATH
-echo "removed output dir"
-
+echo "removed output dir $OUT_PATH"
 hadoop jar $JAR_NAME  $CLASS_NAME -Dconf.path=/home/pranab/Projects/bin/sifarish/reco.properties  $IN_PATH  $OUT_PATH
 
 
@@ -76,22 +93,23 @@ Rating correlation
 ==================
 Correlation can be calculated in various ways. We will be using cosine similarity.
 
-Copy the rating data file as below
-hadoop fs -cp rating.txt /user/pranab/reco/item
+Copy the script generated rating data file as below
+hadoop fs -put rating.txt /user/pranab/reco/item
 
-Here is shell script to calculate correlation. Rating data should be copied to 
-IN_PATH directory
+If you used ImplicitRatingEstimator MR  to generate rating data, then copy the Haddop
+generated rating data as follows
+hadoop fs -cp  /user/pranab/reco/crat/part-r-00000 /user/pranab/reco/item
+
+Here is shell script to calculate correlation. 
 
 JAR_NAME=/home/pranab/Projects/sifarish/target/sifarish-1.0.jar
 CLASS_NAME=org.sifarish.common.ItemDynamicAttributeSimilarity
-
-echo "running mr"
+echo "running ItemDynamicAttributeSimilarity mr"
 IN_PATH=/user/pranab/reco/item
 OUT_PATH=/user/pranab/reco/simi
 echo "input $IN_PATH output $OUT_PATH"
 hadoop fs -rmr $OUT_PATH
-echo "removed output dir"
-
+echo "removed output dir $OUT_PATH"
 hadoop jar $JAR_NAME  $CLASS_NAME -Dconf.path=/home/pranab/Projects/bin/sifarish/reco.properties  $IN_PATH  $OUT_PATH
 
 
@@ -117,14 +135,12 @@ have the prefix as defined by the config param rating.file.prefix
 
 JAR_NAME=/home/pranab/Projects/sifarish/target/sifarish-1.0.jar
 CLASS_NAME=org.sifarish.common.UtilityPredictor
-
 echo "running mr"
 IN_PATH=/user/pranab/reco/simi
 OUT_PATH=/user/pranab/reco/utpr
 echo "input $IN_PATH output $OUT_PATH"
 hadoop fs -rmr $OUT_PATH
-echo "removed output dir"
-
+echo "removed output dir $OUT_PATH"
 hadoop jar $JAR_NAME  $CLASS_NAME -Dconf.path=/home/pranab/Projects/bin/sifarish/reco.properties  $IN_PATH  $OUT_PATH
 
 Aggregate Rating Predictor
@@ -141,14 +157,12 @@ Here is the sample shell script. It's input is the output of the previous MR
 
 JAR_NAME=/home/pranab/Projects/sifarish/target/sifarish-1.0.jar
 CLASS_NAME=org.sifarish.common.UtilityAggregator
-
-echo "running mr"
+echo "running UtilityAggregator mr"
 IN_PATH=/user/pranab/reco/utpr
 OUT_PATH=/user/pranab/reco/utag
 echo "input $IN_PATH output $OUT_PATH"
 hadoop fs -rmr $OUT_PATH
-echo "removed output dir"
-
+echo "removed output dir $OUT_PATH"
 hadoop jar $JAR_NAME  $CLASS_NAME -Dconf.path=/home/pranab/Projects/bin/sifarish/reco.properties  $IN_PATH  $OUT_PATH
 
 Business Goal Injection (optional)
@@ -161,14 +175,12 @@ Here is the sample shell script. It's input is the output of Aggregate Rating Pr
  
 JAR_NAME=/home/pranab/Projects/sifarish/target/sifarish-1.0.jar
 CLASS_NAME=org.sifarish.common.BusinessGoalInjector
-
 echo "running mr"
 IN_PATH=/user/pranab/reco/utag
 OUT_PATH=/user/pranab/reco/bigo
 echo "input $IN_PATH output $OUT_PATH"
 hadoop fs -rmr $OUT_PATH
-echo "removed output dir"
-
+echo "removed output dir $OUT_PATH"
 hadoop jar $JAR_NAME  $CLASS_NAME -Dconf.path=/home/pranab/Projects/bin/sifarish/reco.properties  $IN_PATH  $OUT_PATH
 
 Order by User ID (optional)
@@ -184,13 +196,12 @@ CLASS_NAME=org.chombo.mr.TextSorter
 hadoop fs -rmr /user/pranab/reco/bigo/_logs
 hadoop fs -rmr /user/pranab/reco/bigo/_SUCCESS
 
-echo "running mr"
+echo "running TextSorter mr"
 IN_PATH=/user/pranab/reco/bigo
 OUT_PATH=/user/pranab/reco/usso
 echo "input $IN_PATH output $OUT_PATH"
 hadoop fs -rmr $OUT_PATH
-echo "removed output dir"
-
+echo "removed output dir $OUT_PATH"
 hadoop jar $JAR_NAME  $CLASS_NAME -Dconf.path=/home/pranab/Projects/bin/sifarish/reco.properties  $IN_PATH  $OUT_PATH
 
 Uber script

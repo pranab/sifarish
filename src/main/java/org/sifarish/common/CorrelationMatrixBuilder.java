@@ -135,7 +135,7 @@ public class CorrelationMatrixBuilder extends Configured implements Tool {
     		stBld.delete(0, stBld.length());
     		stBld.append(key.toString());
         	for (TextTuple value : values){
-    	   		stBld.append(fieldDelimOut).append(value);
+    	   		stBld.append(fieldDelimOut).append(value.toString());
         	}    		
         	outVal.set(stBld.toString());
 			context.write(NullWritable.get(), outVal);
