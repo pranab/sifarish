@@ -7,6 +7,7 @@ then
 fi
 	
 JAR_NAME=/home/pranab/Projects/sifarish/target/sifarish-1.0.jar
+STORM_HOME=/home/pranab/Tools/storm-0.8.2
 
 case "$1" in
 "expSchema")  
@@ -80,11 +81,7 @@ case "$1" in
 "impMatrix")  
 	echo  "importing correlation matrix to loal FS"
 	hadoop fs -get /user/pranab/real/matr/part-r-00000 ~/Projects/bin/sifarish/corrMatrix.txt
-    ;;
-
-"genEvents")  
-	echo  "generating events and pushing to redis queue"
-	./engage_event.py genEvents $2
+	ls -l ~/Projects/bin/sifarish/*.txt
     ;;
 
 "loadCorrelation")  
@@ -96,9 +93,31 @@ case "$1" in
 	echo  "loading event mapping meta data to redis cache"
 	./engage_event.py loadEventMapping $2
     ;;
+
+"genEvents")  
+	echo  "generating events and pushing to redis queue"
+	./engage_event.py genEvents $2 $3
+    ;;
     
+"showRecoQueue")  
+	echo  "reading recommendations from redis queue"
+	./engage_event.py showRecoQueue
+    ;;
+
+"startTtorm")
+	echo  "starting storm"
+	$STORM_HOME/bin/storm nimbus &
+	$STORM_HOME/bin/storm supervisor & 
+	$STORM_HOME/bin/storm ui &
+	;;
+
+"deployTopology")
+	echo  "deploying sifarish storm topology"
+	$STORM_HOME/bin/storm  jar uber-sifarish-1.0.jar  org.sifarish.realtime.RecommenderTopology  rtReco rt_reco.properties
+	;;
+	
 *) 
-	echo "unknown argument $1"
+	echo "unknown operation $1"
 	;;
 
 esac

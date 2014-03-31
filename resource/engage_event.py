@@ -7,7 +7,7 @@ import redis
 import uuid
 import threading
 
-numSession = 2
+numSession = 3
 eventCountMin = 20
 eventCountMax = 40
 
@@ -15,7 +15,7 @@ eventCountMax = 40
 userItems = {}
 
 allItems = []
-lowEngaeEvents = [2,3,4]
+lowEngaeEvents = [2,3,4,5]
 midEngageEvents = [1]
 terminalEvent = 0
 
@@ -110,9 +110,18 @@ def selectRandomFromList(list):
 	return list[randint(0, len(list)-1)]
 
 #browse engagement event queue
-def showEventQueue():
+def readEventQueue():
 	while True:
 		line = rc.rpop("engageEventQueue")
+		if line is not None:
+			print line
+		else:
+			break
+			
+#browse engagement event queue
+def showRecoQueue():
+	while True:
+		line = rc.rpop("recoItemQueue")
 		if line is not None:
 			print line
 		else:
@@ -127,13 +136,24 @@ def loadCorrelation(corrFile):
 		index = line.find(",")
 		key = line[0:index]
 		val = line[index+1:]
-		rc.hset("itemCorrelation", key, val)		
-
+		print "key %s" %(key)
+		rc.hset("itemCorrelation", key, val)	
+			
+#shows items correlation data
+def showCorrelation(key):
+	val = rc.hget("itemCorrelation", key)	
+	print "correlation %s" %(val)
+	
 #load event mapping to redis
 def loadEventMapping(eventMappingFile):
 	file = open(eventMappingFile, 'r')
 	mappingData = file.read()
 	rc.set('eventMappingMetadata', mappingData)
+
+#shows event mapping	
+def showEventMapping():
+	mappingData = rc.get('eventMappingMetadata')
+	print "eventMappingMetaData: \n%s" %(mappingData)
 	
 #command processing
 op = sys.argv[1]
@@ -144,6 +164,8 @@ if (op == "genEvents"):
 
 	#start multiple session threads
 	try:
+		if (len(sys.argv) == 4):
+			numSession = int(sys.argv[3])
 		for i in range(numSession):
 			threadName = "session-%d" %(i)
 			maxEvent = randint(eventCountMin, eventCountMax)
@@ -151,12 +173,19 @@ if (op == "genEvents"):
    			t.start()
 	except:
    		print "Error: unable to start thread"
-elif (op == "showEvents"):
-	showEventQueue()
+elif (op == "readEvents"):
+	readEventQueue()
 elif (op == "loadCorrelation"):
 	corrFile = sys.argv[2]
 	loadCorrelation(corrFile)
+elif (op == "showCorrelation"):
+	key = sys.argv[2]
+	showCorrelation(key)
 elif (op == "loadEventMapping"):
-	corrFile = sys.argv[2]
+	eventMappingFile = sys.argv[2]
 	loadEventMapping(eventMappingFile)	
+elif (op == "showEventMapping"):
+	showEventMapping()	
+elif (op == "showRecoQueue"):
+	showRecoQueue()
 	

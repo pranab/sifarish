@@ -55,7 +55,7 @@ public class UserItemRatings {
 	private EngagementToPreferenceMapper engaementMapper;
 	private Jedis jedis;
 	private String eventExpirePolicy;
-	private long timedExpireWindow;
+	private long timedExpireWindowSec;
 	private int countExpireLimit;
 	
 	private static final String EVENT_EXPIRE_SESSION = "session";
@@ -78,12 +78,12 @@ public class UserItemRatings {
 		
 		//config
 		int correlationCacheSize = ConfigUtility.getInt(config,"correlation.cache.size");
-		int correlationCacheExpiryTime = ConfigUtility.getInt(config,"correlation.cache.expiry.time");
+		int correlationCacheExpiryTimeSec = ConfigUtility.getInt(config,"correlation.cache.expiry.time.sec");
 		topItemsCount = ConfigUtility.getInt(config,"top.items.count");
 		itemCorrelationKey = ConfigUtility.getString(config, "redis.item.correlation.key");
 		String eventMappingMetadataKey = ConfigUtility.getString(config, "redis.event.mapping.metadata.key");
-		eventExpirePolicy = ConfigUtility.getString(config, "event.expire.policy", "session");
-		timedExpireWindow = ConfigUtility.getLong(config, "timed.expire.window", -1) * 60;
+		eventExpirePolicy = ConfigUtility.getString(config, "event.expire.policy", EVENT_EXPIRE_SESSION);
+		timedExpireWindowSec = ConfigUtility.getLong(config, "timed.expire.window.sec", -1);
 		countExpireLimit = ConfigUtility.getInt(config,"count.expire.limit", -1);
 				
 				
@@ -96,7 +96,7 @@ public class UserItemRatings {
 		if (null == itemCorrelationCache) {
 			itemCorrelationCache = CacheBuilder.newBuilder()
 					.maximumSize(correlationCacheSize)
-				    .expireAfterAccess(correlationCacheExpiryTime, TimeUnit.MINUTES)
+				    .expireAfterAccess(correlationCacheExpiryTimeSec, TimeUnit.SECONDS)
 				    .build(new ItemCorrelationLoader(jedis, itemCorrelationKey));
 		}
 	}
@@ -132,11 +132,11 @@ public class UserItemRatings {
 			}
 		} else if (eventExpirePolicy.equals(EVENT_EXPIRE_TIME)) {
 			//expire by time window
-			if (timedExpireWindow < 0) {
+			if (timedExpireWindowSec < 0) {
 				throw new Exception("For event expiry by time window, timed.expire.window needs to be set");
 			}
 			for (String item : engagementEvents.keySet()) {
-				if (engagementEvents.get(item).removeOldEventsByTime(timedExpireWindow)) {
+				if (engagementEvents.get(item).removeOldEventsByTime(timedExpireWindowSec)) {
 					affectedItems.add(item);
 				}
 			}

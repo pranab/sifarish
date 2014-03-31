@@ -40,7 +40,7 @@ public class RecommenderBolt extends GenericBolt {
 	private Jedis jedis;
 	private Map<String, UserItemRatings> userItemRatings = new HashMap<String, UserItemRatings>();
 	private Map stormConf;
-	private boolean wtiteRecommendationToQueue;
+	private boolean writeRecommendationToQueue;
 	private String recommendationQueue;
 	private String recommendationCache;
 	
@@ -67,8 +67,8 @@ public class RecommenderBolt extends GenericBolt {
 		int redisPort = ConfigUtility.getInt(stormConf,"redis.server.port");
 		jedis = new Jedis(redisHost, redisPort);
 		this.stormConf = stormConf;
-		wtiteRecommendationToQueue = ConfigUtility.getBoolean(stormConf,"wtite.recommendation.to.queue");
-		if (wtiteRecommendationToQueue) {
+		writeRecommendationToQueue = ConfigUtility.getBoolean(stormConf,"write.recommendation.to.queue");
+		if (writeRecommendationToQueue) {
 			recommendationQueue = ConfigUtility.getString(stormConf, "redis.recommendation.queue");
 		}else {
 			recommendationCache = ConfigUtility.getString(stormConf, "redis.recommendation.cache");
@@ -102,7 +102,7 @@ public class RecommenderBolt extends GenericBolt {
 					append(itemRating.getRating());
 			}
 			String itemRatingList  = stBld.substring(1);
-			if (wtiteRecommendationToQueue) {
+			if (writeRecommendationToQueue) {
 				jedis.lpush(recommendationQueue, userID + FIELD_DELIM + itemRatingList);
 			} else {
 				jedis.hset(recommendationCache, userID, itemRatingList);
