@@ -21,6 +21,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 import org.chombo.storm.GenericBolt;
 import org.chombo.storm.MessageHolder;
@@ -73,6 +74,10 @@ public class RecommenderBolt extends GenericBolt {
 		}else {
 			recommendationCache = ConfigUtility.getString(stormConf, "redis.recommendation.cache");
 		}
+		debugOn = ConfigUtility.getBoolean(stormConf,"debug.on", false);
+		if (debugOn) {
+			LOG.setLevel(Level.INFO);;
+		}
 	
 	}
 
@@ -83,6 +88,8 @@ public class RecommenderBolt extends GenericBolt {
 		String sessionID = input.getStringByField(SESSION_ID);
 		String itemID = input.getStringByField(ITEM_ID);
 		int eventID = input.getIntegerByField(EVENT_ID);
+		if (debugOn) 
+			LOG.info("got tuple:" + userID + " " + sessionID + " " + itemID + " " + eventID );
 		
 		try {
 			UserItemRatings itemRatings = userItemRatings.get(userID);

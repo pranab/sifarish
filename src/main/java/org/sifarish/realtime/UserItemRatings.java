@@ -27,6 +27,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
+import org.apache.log4j.Level;
+import org.apache.log4j.Logger;
 import org.chombo.util.ConfigUtility;
 import org.chombo.util.Pair;
 import org.codehaus.jackson.JsonParseException;
@@ -57,11 +59,14 @@ public class UserItemRatings {
 	private String eventExpirePolicy;
 	private long timedExpireWindowSec;
 	private int countExpireLimit;
+	private boolean debugOn;
 	
 	private static final String EVENT_EXPIRE_SESSION = "session";
 	private static final String EVENT_EXPIRE_TIME = "time";
 	private static final String EVENT_EXPIRE_COUNT = "count";
-	
+
+	private static final Logger LOG = Logger.getLogger(UserItemRatings.class);
+
 	/**
 	 * @param userID
 	 * @param sessionID
@@ -99,6 +104,14 @@ public class UserItemRatings {
 				    .expireAfterAccess(correlationCacheExpiryTimeSec, TimeUnit.SECONDS)
 				    .build(new ItemCorrelationLoader(jedis, itemCorrelationKey));
 		}
+		
+		//log
+		debugOn = ConfigUtility.getBoolean(config,"debug.on", false);
+		if (debugOn) {
+			LOG.setLevel(Level.INFO);
+			LOG.info("UserItemRatings intialized");
+		}
+		
 	}
 	
 	/**
@@ -118,6 +131,9 @@ public class UserItemRatings {
 		}
 		engageEvents.addEvent(event, timestamp);
 		affectedItems.add(itemID);
+		if (debugOn) {
+			LOG.info("event added to EngagementEvent");
+		}
 		
 		//handle event expiry
 		if (eventExpirePolicy.equals(EVENT_EXPIRE_SESSION))  {
@@ -152,29 +168,45 @@ public class UserItemRatings {
 				}
 			}
 		}
+		if (debugOn) {
+			LOG.info("Handled event expiry, num of affcted items:" + affectedItems.size());
+		}
 		
 		//process rating for all affected items
+		/*
 		for (String item : affectedItems) {
 			engagementEvents.get(item).processRating();
+			if (debugOn) {
+				LOG.info("Processed implicit rating for:" + item);
+			}
 		}
+		*/
 	}
 	
 	/**
 	 * gets predicted ratings
 	 * @return
+	 * @throws Exception 
 	 */
-	public List<ItemRating> getPredictedRatings() {
+	public List<ItemRating> getPredictedRatings() throws Exception {
 		List<ItemRating> ratings = new ArrayList<ItemRating>();
 		Map<String, Integer> itemPredictedRatings = new HashMap<String, Integer>();
 		Map<String, Integer> itemPredictedRatingCounts = new HashMap<String, Integer>();
 		
 		//all rated items
 		for (String itemID : engagementEvents.keySet()) {
+			//predicted ratings for items correlated to this item 
 			EngagementEvent engageEvents = engagementEvents.get(itemID);
 			List<ItemRating> thisPredictedRatings = engageEvents.getPredictedRatings();
+			engageEvents.processRating();
+			
+			if (debugOn) {
+				LOG.info("for item "  + itemID + " there are  " + thisPredictedRatings.size() + " correlated items with predicted ratings");
+			}
 			
 			//all correlated items
 			for (ItemRating itemRating : thisPredictedRatings) {
+				//aggregate predicted ratings
 				String item = itemRating.getItem();
 				Integer rating = itemPredictedRatings.get(item);
 				if (null == rating) {
@@ -192,6 +224,9 @@ public class UserItemRatings {
 			int avRating = itemPredictedRatings.get(item) / itemPredictedRatingCounts.get(item);
 			ratings.add(new ItemRating(item, avRating));
 		}
+		if (debugOn) {
+			LOG.info("found net " + ratings.size() + " items with predicted rating");
+		}		
 		
 		//sort and collect top n
 		Collections.sort(ratings);
@@ -357,8 +392,9 @@ public class UserItemRatings {
 		 * @throws Exception
 		 */
 		public void processRating() throws Exception {
-			//most engaging event and corresponding count
-			if (!events.isEmpty()) {
+			//if predicted rating list is empty and there are events
+			if (predictedRatings.isEmpty() && !events.isEmpty()) {
+				//most engaging event and corresponding count
 				int mostEngaingEvent = 1000000;
 				int eventCount = 0;
 				for (Pair<Integer, Long> event : events) {
