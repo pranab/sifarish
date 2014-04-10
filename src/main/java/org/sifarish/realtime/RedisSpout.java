@@ -77,6 +77,7 @@ public class RedisSpout  extends GenericSpout {
 		if (debugOn) {
 			LOG.setLevel(Level.INFO);;
 		}
+		messageCountInterval = ConfigUtility.getInt(stormConf,"log.message.count.interval", 100);
 	}
 
 	@Override

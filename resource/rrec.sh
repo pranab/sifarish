@@ -104,11 +104,21 @@ case "$1" in
 	./engage_event.py showRecoQueue
     ;;
 
-"startTtorm")
+"startStorm")
 	echo  "starting storm"
+	echo  "starting nimbus"
 	$STORM_HOME/bin/storm nimbus &
+	sleep 5
+	echo  "starting supervisor"
 	$STORM_HOME/bin/storm supervisor & 
+	sleep 5
+	echo  "starting ui"
 	$STORM_HOME/bin/storm ui &
+	;;
+
+"buildJar")
+	echo  "building uber jar"
+	ant -f build_storm.xml
 	;;
 
 "deployTopology")
