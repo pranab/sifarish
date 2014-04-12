@@ -1,0 +1,95 @@
+This tutorial is for real time recommendation using sifarish. It uses Hadoop batch processing
+for computing items correlation matrix using hisorical user enagagement click stream data. Storm consumes
+real time user enagagement click stream data and item correlation matrix stored in an Redis cache.
+
+Dependency Jars
+===============
+Please refer to resource/jar_dpendency.txt
+
+Processing steps
+================
+All the processing commands are the shell script rrec.sh. Please chage path etc in the shell
+script according to your needs. The shell script executes python and ruby scrips, runs Hadoop
+jobs, deploys storm topology etc. It always takes a command string followed by any additional
+arguments if needed by the particular command
+
+All the configuration properties for Hadoop, Strom and Redis
+are in rt_reco.properties. Make changes in it as necessary.
+
+Historical user engagaement data
+================================
+1. Generate historical engagement data data as follows
+./rrec.sh genHistEvent <item_count> <user_count> <user_per_items_multipler>  > <historical_user_engaement_file>
+
+In the output, average number of users rating for an item will be 
+item_count *  user_per_items_multipler / user_count
+
+So choose the last argument as per your need. User count should be an order of magnitude higher 
+than item count. The value of user_per_items_multipler should be 10 or more. 
+
+2. Export engagement data to HDFS as follows
+./rrec.sh expEvent
+
+Hadoop Batch Processing to Generate  Item Correlation Matrix
+============================================================
+This step involves running multiple MR jobs and storing the output of the final MR job
+in a Redis cache
+
+3. Generate implicit rating data
+./rrec.sh genRating
+
+4. Transform rating data to a per item compact form
+./rrec.sh compactRating
+
+5. Generate item correlation
+./rrec.sh correlation
+
+6. Transform correlation data to a sparse matrix form
+./rrec.sh corrMatrix
+
+Storm Real Time Processing
+==========================
+Steps involve setting up some Redis cache, deploying storm topology and pumping data into
+a Redis queue from a  event generating script
+
+7. Import correlation matrix to local file system
+./rrec.sh impCorrMatrix <corr_matrix_local_file_path>
+
+8. Store correlation matrix in Redis cache
+./rrec.sh loadCorrMatrix <corr_matrix_local_file_path>
+
+9. Store event rating mapping JSON meta data in Redis cache
+./rrec.sh loadEventMapping <event_mapping_local_file_path>
+
+10. Build uber jar file with all dependencies
+./rrec.sh buildJar
+
+11. Start storm daemons
+./rrec.sh startStorm
+
+12. Deploy Storm topology
+./rrec.sh deployTopology
+
+13. Generate real time user engaement event data
+./rrec.sh genEvents <historical_user_engaement_file> <num_sessions>
+
+The second argument is the engagement data file generated in  step 1. The third argument
+is the number of sessions to be used. For each session it will randomly chhose an user from
+the historcal engaement data file
+
+You can go the storm web console to check the status of processing. 
+
+14. View recommendations from Redis output queue
+./rrec.sh showRecoQueue
+
+
+
+
+
+
+
+
+
+
+
+ 
