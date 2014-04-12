@@ -96,17 +96,18 @@ public class UserItemRatings {
 		String eventMappingMetadata = jedis.get(eventMappingMetadataKey);		
 		ObjectMapper mapper = new ObjectMapper();
 		engaementMapper = mapper.readValue(eventMappingMetadata, EngagementToPreferenceMapper.class);
+
+		//log
+		debugOn = ConfigUtility.getBoolean(config,"debug.on", false);
 		
 		//initialize correlation cache
 		if (null == itemCorrelationCache) {
 			itemCorrelationCache = CacheBuilder.newBuilder()
 					.maximumSize(correlationCacheSize)
 				    .expireAfterAccess(correlationCacheExpiryTimeSec, TimeUnit.SECONDS)
-				    .build(new ItemCorrelationLoader(jedis, itemCorrelationKey));
+				    .build(new ItemCorrelationLoader(jedis, itemCorrelationKey, debugOn));
 		}
 		
-		//log
-		debugOn = ConfigUtility.getBoolean(config,"debug.on", false);
 		if (debugOn) {
 			LOG.setLevel(Level.INFO);
 			LOG.info("UserItemRatings intialized");
@@ -126,7 +127,7 @@ public class UserItemRatings {
 		//add event
 		EngagementEvent engageEvents = engagementEvents.get(itemID);
 		if (null == engageEvents) {
-			engageEvents = new EngagementEvent(itemID, itemCorrelationCache, engaementMapper);
+			engageEvents = new EngagementEvent(itemID, itemCorrelationCache, engaementMapper, debugOn);
 			engagementEvents.put(itemID, engageEvents);
 		}
 		engageEvents.addEvent(event, timestamp);
@@ -172,15 +173,6 @@ public class UserItemRatings {
 			LOG.info("Handled event expiry, num of affcted items:" + affectedItems.size());
 		}
 		
-		//process rating for all affected items
-		/*
-		for (String item : affectedItems) {
-			engagementEvents.get(item).processRating();
-			if (debugOn) {
-				LOG.info("Processed implicit rating for:" + item);
-			}
-		}
-		*/
 	}
 	
 	/**
@@ -192,17 +184,23 @@ public class UserItemRatings {
 		List<ItemRating> ratings = new ArrayList<ItemRating>();
 		Map<String, Integer> itemPredictedRatings = new HashMap<String, Integer>();
 		Map<String, Integer> itemPredictedRatingCounts = new HashMap<String, Integer>();
+
+		if (debugOn) {
+			LOG.info("num of items user " + userID +  "  engaged with:"  + engagementEvents.size());
+		}
 		
 		//all rated items
 		for (String itemID : engagementEvents.keySet()) {
 			//predicted ratings for items correlated to this item 
-			EngagementEvent engageEvents = engagementEvents.get(itemID);
-			List<ItemRating> thisPredictedRatings = engageEvents.getPredictedRatings();
-			engageEvents.processRating();
+			if (debugOn)
+				LOG.info("processing item" +itemID);
 			
-			if (debugOn) {
+			EngagementEvent engageEvents = engagementEvents.get(itemID);
+			engageEvents.processRating();
+			List<ItemRating> thisPredictedRatings = engageEvents.getPredictedRatings();
+			
+			if (debugOn) 
 				LOG.info("for item "  + itemID + " there are  " + thisPredictedRatings.size() + " correlated items with predicted ratings");
-			}
 			
 			//all correlated items
 			for (ItemRating itemRating : thisPredictedRatings) {
@@ -232,6 +230,9 @@ public class UserItemRatings {
 		Collections.sort(ratings);
 		if (ratings.size() > topItemsCount) {
 			ratings.subList(topItemsCount, ratings.size()).clear();
+			if (debugOn) {
+				LOG.info("picked top k items");
+			}		
 		}
 		return ratings;
 	}
@@ -244,19 +245,27 @@ public class UserItemRatings {
 	private static class ItemCorrelationLoader extends CacheLoader<String, List<ItemCorrelation>> {
 		private String itemCorrelationKey;
 		private Jedis jedis;
+		private boolean debugOn;
+		private static final Logger LOG = Logger.getLogger(ItemCorrelationLoader.class);
 		
-		public ItemCorrelationLoader(Jedis jedis, String itemCorrelationKey) {
+		public ItemCorrelationLoader(Jedis jedis, String itemCorrelationKey, boolean debugOn) {
 			this.jedis = jedis;
 			this.itemCorrelationKey = itemCorrelationKey;
+			this.debugOn = debugOn;
+			if (debugOn) 
+				LOG.setLevel(Level.INFO);
+
 		}
 		
 		@Override
 		public List<ItemCorrelation> load(String item) throws Exception {
 			List<ItemCorrelation> itemCorrList = new ArrayList<ItemCorrelation>();
 			String correlation = jedis.hget(itemCorrelationKey, item);
+			if (debugOn)
+				LOG.info("item:" + item + " correlation:" +correlation);
 			String[] parts = correlation.split(",");
 			for (String part : parts) {
-				String[] subParts = part.split(";");
+				String[] subParts = part.split(":"); 
 				ItemCorrelation itemCorr = new ItemCorrelation(subParts[0], Integer.parseInt(subParts[1]));
 				itemCorrList.add(itemCorr);
 			}
@@ -321,17 +330,24 @@ public class UserItemRatings {
 		private List<ItemRating> predictedRatings = new ArrayList<ItemRating>();
 		private LoadingCache<String, List<ItemCorrelation>> itemCorrelationCache;
 		private EngagementToPreferenceMapper engaementMapper;
+		private boolean debugOn;
+		private static final Logger LOG = Logger.getLogger(EngagementEvent.class);
 		
+
 		/**
 		 * @param item
 		 * @param itemCorrelationCache
 		 */
 		public EngagementEvent(String item, LoadingCache<String, List<ItemCorrelation>> itemCorrelationCache, 
-				EngagementToPreferenceMapper engaementMapper) {
+				EngagementToPreferenceMapper engaementMapper,  boolean debugOn) {
 			super();
 			this.item = item;
 			this.itemCorrelationCache = itemCorrelationCache;
 			this.engaementMapper = engaementMapper;
+			this.debugOn = debugOn;
+			if (debugOn) {
+				LOG.setLevel(Level.INFO);
+			}			
 		}
 		
 		/**
@@ -357,13 +373,16 @@ public class UserItemRatings {
 					filteredEvents.add(event);
 				}
 			}
+			
+			if (debugOn) {
+				LOG.info("event count:" + events.size() + " event count after filtering : " + filteredEvents.size());
+			}
 			if (filteredEvents.size() < events.size()) {
 				events = filteredEvents;
 				predictedRatings.clear();
 				currentRating = -1;
 				changed = true;
 			}
-			
 			return changed;
 		}
 
@@ -394,6 +413,9 @@ public class UserItemRatings {
 		public void processRating() throws Exception {
 			//if predicted rating list is empty and there are events
 			if (predictedRatings.isEmpty() && !events.isEmpty()) {
+				if (debugOn) {
+					LOG.info("going to find predicted ratings");
+				}
 				//most engaging event and corresponding count
 				int mostEngaingEvent = 1000000;
 				int eventCount = 0;
@@ -408,14 +430,17 @@ public class UserItemRatings {
 				
 				//estimate implicit rating 
 				int rating = engaementMapper.scoreForEvent(mostEngaingEvent, eventCount);
+				if (debugOn) 
+					LOG.info("mostEngaingEvent:" + mostEngaingEvent + " eventCount:" + eventCount + " rating:" + rating );
 				
 				//predicted ratings only if first time or if rating is better that current
 				if (currentRating < 0 || rating > currentRating) {
 					//get correlated items
 					List<ItemCorrelation> itemCorrs = itemCorrelationCache.get(item);
-					
+					if (debugOn) 
+						LOG.info("number of correlated items:" + itemCorrs.size());
+								
 					//predict ratings
-					predictedRatings.clear();
 					for (ItemCorrelation itemCorr : itemCorrs) {
 						ItemRating itemRating = new ItemRating(itemCorr.getItem(), itemCorr.getCorrelation() * rating);
 						predictedRatings.add(itemRating);

@@ -77,6 +77,7 @@ public class RecommenderBolt extends GenericBolt {
 		debugOn = ConfigUtility.getBoolean(stormConf,"debug.on", false);
 		if (debugOn) {
 			LOG.setLevel(Level.INFO);;
+			LOG.info("bolt intialized " );
 		}
 	
 	}
@@ -101,6 +102,9 @@ public class RecommenderBolt extends GenericBolt {
 			//add event and get predicted ratings
 			itemRatings.addEvent(sessionID, itemID, eventID, System.currentTimeMillis() / 1000);
 			List<UserItemRatings.ItemRating> predictedRatings = itemRatings.getPredictedRatings();
+			if (debugOn) {
+				LOG.info("num of recommended items:" + predictedRatings.size());
+			}
 			
 			//write to queue or cache
 			StringBuilder stBld = new StringBuilder(userID);
@@ -111,12 +115,16 @@ public class RecommenderBolt extends GenericBolt {
 			String itemRatingList  = stBld.substring(1);
 			if (writeRecommendationToQueue) {
 				jedis.lpush(recommendationQueue, userID + FIELD_DELIM + itemRatingList);
+				if (debugOn) {
+					LOG.info("wrote to recommendation queue");
+				}
 			} else {
 				jedis.hset(recommendationCache, userID, itemRatingList);
 			}
 			
 		} catch (Exception e) {
 			//TODO
+			LOG.info("got error  " + e);
 			status = false;
 		}
 		return status;
