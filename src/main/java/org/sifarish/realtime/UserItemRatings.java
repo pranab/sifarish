@@ -193,7 +193,7 @@ public class UserItemRatings {
 		for (String itemID : engagementEvents.keySet()) {
 			//predicted ratings for items correlated to this item 
 			if (debugOn)
-				LOG.info("processing item" +itemID);
+				LOG.info("processing item:" +itemID);
 			
 			EngagementEvent engageEvents = engagementEvents.get(itemID);
 			engageEvents.processRating();
@@ -261,6 +261,7 @@ public class UserItemRatings {
 		public List<ItemCorrelation> load(String item) throws Exception {
 			List<ItemCorrelation> itemCorrList = new ArrayList<ItemCorrelation>();
 			String correlation = jedis.hget(itemCorrelationKey, item);
+			correlation = correlation.trim();
 			if (debugOn)
 				LOG.info("item:" + item + " correlation:" +correlation);
 			String[] parts = correlation.split(",");

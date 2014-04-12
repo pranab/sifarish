@@ -112,9 +112,9 @@ public class RecommenderBolt extends GenericBolt {
 				stBld.append(FIELD_DELIM).append(itemRating.getItem()).append(SUB_FIELD_DELIM).
 					append(itemRating.getRating());
 			}
-			String itemRatingList  = stBld.substring(1);
+			String itemRatingList  = stBld.toString();
 			if (writeRecommendationToQueue) {
-				jedis.lpush(recommendationQueue, userID + FIELD_DELIM + itemRatingList);
+				jedis.lpush(recommendationQueue, itemRatingList);
 				if (debugOn) {
 					LOG.info("wrote to recommendation queue");
 				}
