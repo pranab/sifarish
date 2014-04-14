@@ -17,10 +17,15 @@ case "$1" in
 	hadoop fs -ls /user/pranab/meta/real
     ;;
  
+"genHistEvent")  
+	echo "generating historical event data"
+	ruby ratings.rb $2 $3 $4
+    ;;
+ 
 "expEvent")  
 	echo "exporting event data to HDFS"
 	hadoop fs -rmr /user/pranab/real/enga/*
-	hadoop fs -put engage.txt /user/pranab/real/enga
+	hadoop fs -put $2 /user/pranab/real/enga
 	hadoop fs -ls /user/pranab/real/enga
     ;;
 
@@ -78,13 +83,13 @@ case "$1" in
 	hadoop fs -ls /user/pranab/real/matr
     ;;
 
-"impMatrix")  
+"impCorrMatrix")  
 	echo  "importing correlation matrix to loal FS"
-	hadoop fs -get /user/pranab/real/matr/part-r-00000 ~/Projects/bin/sifarish/corrMatrix.txt
+	hadoop fs -get /user/pranab/real/matr/part-r-00000 $2
 	ls -l ~/Projects/bin/sifarish/*.txt
     ;;
 
-"loadCorrelation")  
+"loadCorrMatrix")  
 	echo  "loading correlation to redis cache"
 	./engage_event.py loadCorrelation $2
     ;;
@@ -106,13 +111,10 @@ case "$1" in
 
 "startStorm")
 	echo  "starting storm"
-	echo  "starting nimbus"
 	$STORM_HOME/bin/storm nimbus &
 	sleep 5
-	echo  "starting supervisor"
 	$STORM_HOME/bin/storm supervisor & 
 	sleep 5
-	echo  "starting ui"
 	$STORM_HOME/bin/storm ui &
 	;;
 
