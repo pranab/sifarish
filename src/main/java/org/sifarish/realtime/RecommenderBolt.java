@@ -26,7 +26,6 @@ import org.apache.log4j.Logger;
 import org.chombo.storm.GenericBolt;
 import org.chombo.storm.MessageHolder;
 import org.chombo.util.ConfigUtility;
-import org.sifarish.realtime.UserItemRatings.ItemRating;
 
 import redis.clients.jedis.Jedis;
 import backtype.storm.task.TopologyContext;
@@ -49,6 +48,7 @@ public class RecommenderBolt extends GenericBolt {
 	public static final String SESSION_ID = "sessionID";
 	public static final String ITEM_ID = "itemID";
 	public static final String EVENT_ID = "eventID";
+	public static final String TS_ID = "timeStamp";
 	private static final String FIELD_DELIM = ",";
 	private static final String SUB_FIELD_DELIM = ":";
 	
@@ -89,8 +89,9 @@ public class RecommenderBolt extends GenericBolt {
 		String sessionID = input.getStringByField(SESSION_ID);
 		String itemID = input.getStringByField(ITEM_ID);
 		int eventID = input.getIntegerByField(EVENT_ID);
+		long timeStamp = input.getLongByField(TS_ID);
 		if (debugOn) 
-			LOG.info("got tuple:" + userID + " " + sessionID + " " + itemID + " " + eventID );
+			LOG.info("got tuple:" + userID + " " + sessionID + " " + itemID + " " + eventID + " " + timeStamp);
 		
 		try {
 			UserItemRatings itemRatings = userItemRatings.get(userID);
@@ -100,7 +101,7 @@ public class RecommenderBolt extends GenericBolt {
 			}
 			
 			//add event and get predicted ratings
-			itemRatings.addEvent(sessionID, itemID, eventID, System.currentTimeMillis() / 1000);
+			itemRatings.addEvent(sessionID, itemID, eventID, timeStamp / 1000);
 			List<UserItemRatings.ItemRating> predictedRatings = itemRatings.getPredictedRatings();
 			if (debugOn) {
 				LOG.info("num of recommended items:" + predictedRatings.size());

@@ -100,8 +100,9 @@ def genEngageEvents(threadName, maxEvent):
 
 		events.add(event)				
 		evCount += 1	
-		#print "%s,%s,%s,%d" %(user, item, session, event)
-		event = "%s,%s,%s,%d" %(user,session,item,event)
+		epochTime = int(time.time())
+		#print "%s,%s,%s,%d,%d" %(user, session, item, event,,epochTime)
+		event = "%s,%s,%s,%d,%d" %(user,session,item,event,epochTime)
 		rc.lpush("engageEventQueue", event)
 		print "thread %s generated event" %(threadName)
 		time.sleep(randint(2,6))

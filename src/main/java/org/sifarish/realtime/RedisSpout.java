@@ -88,8 +88,8 @@ public class RedisSpout  extends GenericSpout {
 			//message in event queue
 			String[] items = message.split(",");
 			
-			//userID, sessionID, itemID, event
-			Values values = new Values(items[0], items[1], items[2], Integer.parseInt(items[3]));
+			//userID, sessionID, itemID, event, timestamp
+			Values values = new Values(items[0], items[1], items[2], Integer.parseInt(items[3]), Long.parseLong(items[4]));
 			msgHolder = new  MessageHolder(values);
 			if (debugOn) {
 				if (messageCounter % messageCountInterval == 0)

@@ -61,7 +61,7 @@ public class RecommenderTopology {
         int spoutThreads = ConfigUtility.getInt(configProps, "spout.threads", 1);
         RedisSpout spout  = new RedisSpout();
         spout.withTupleFields(RecommenderBolt.USER_ID, RecommenderBolt.SESSION_ID, 
-        		RecommenderBolt.ITEM_ID, RecommenderBolt.EVENT_ID);
+        		RecommenderBolt.ITEM_ID, RecommenderBolt.EVENT_ID, RecommenderBolt.TS_ID);
         builder.setSpout("recommenderRedisSpout", spout, spoutThreads);    
         
         //bolt
