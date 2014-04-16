@@ -24,12 +24,17 @@
 		{
 			 "eventType" : 4,
 			 "description" : "browsed from search result",
-			 "scores" : [20,26,31,35]
+			 "scores" : [25,32,36,39]
 		},
 		{
 			 "eventType" : 5,
+			 "description" : "browsed for recommendation list",
+			 "scores" : [15,20,23]
+		},
+		{
+			 "eventType" : 6,
 			 "description" : "browsed",
-			 "scores" : [8,14,18]
+			 "scores" : [6,13]
 		}
 	]
 }

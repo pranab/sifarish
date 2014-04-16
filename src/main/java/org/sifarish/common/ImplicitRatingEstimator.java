@@ -84,6 +84,10 @@ public class ImplicitRatingEstimator   extends Configured implements Tool{
     	private Tuple  valOut = new Tuple();
     	private int  eventType = 0;
     	private long timeStamp;
+    	private static final int USER_ID_ORD = 0;
+    	private static final int ITEM_ID_ORD = 2;
+    	private static final int EVT_ORD = 3;
+    	private static final int TS_ORD = 4;
     	
         /* (non-Javadoc)
          * @see org.apache.hadoop.mapreduce.Mapper#setup(org.apache.hadoop.mapreduce.Mapper.Context)
@@ -99,12 +103,12 @@ public class ImplicitRatingEstimator   extends Configured implements Tool{
         protected void map(LongWritable key, Text value, Context context)
             throws IOException, InterruptedException {
            	String[] items = value.toString().split(fieldDelim);
-           	eventType = Integer.parseInt(items[2]);
-           	timeStamp = Long.parseLong(items[3]);
+           	eventType = Integer.parseInt(items[EVT_ORD]);
+           	timeStamp = Long.parseLong(items[TS_ORD]);
            	
            	//user ID, item ID, event
            	keyOut.initialize();
-           	keyOut.add(items[0], items[1], eventType);
+           	keyOut.add(items[USER_ID_ORD], items[ITEM_ID_ORD], eventType);
            	
            	valOut.initialize();
            	valOut.add(eventType, timeStamp);
