@@ -2,39 +2,55 @@
 	"eventScores" : 
 	[
 		{
-			 "eventType" : 0,
+			 "eventType" : 1,
 			 "description" : "purchased",
 			 "scores" : [100]
 		},
 		{
-			 "eventType" : 1,
-			 "description" : "in checkout",
-			 "scores" : [80,87,92]
-		},
-		{
 			 "eventType" : 2,
-			 "description" : "placed in shopping cart",
-			 "scores" : [60,70,75,78]
+			 "description" : "joined checkout",
+			 "scores" : [80]
 		},
 		{
 			 "eventType" : 3,
-			 "description" : "placed in wishlist",
-			 "scores" : [40,46,51,55]
+			 "description" : "placed in shopping cart",
+			 "scores" : [60]
 		},
 		{
 			 "eventType" : 4,
+			 "description" : "placed in wishlist",
+			 "scores" : [40]
+		},
+		{
+			 "eventType" : 5,
 			 "description" : "browsed from search result",
 			 "scores" : [25,32,36,39]
 		},
 		{
-			 "eventType" : 5,
+			 "eventType" : 6,
 			 "description" : "browsed for recommendation list",
 			 "scores" : [15,20,23]
 		},
 		{
-			 "eventType" : 6,
+			 "eventType" : 7,
 			 "description" : "browsed",
-			 "scores" : [6,13]
+			 "scores" : [6,11,14]
+		},
+		{
+			 "eventType" : -1,
+			 "description" : "returned"
+		},
+		{
+			 "eventType" : -2,
+			 "description" : "left checkout"
+		},
+		{
+			 "eventType" : -3,
+			 "description" : "removed from shopping cart"
+		},
+		{
+			 "eventType" : -4,
+			 "description" : "removed from wish list"
 		}
 	]
 }

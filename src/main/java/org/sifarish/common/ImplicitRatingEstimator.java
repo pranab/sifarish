@@ -19,6 +19,10 @@ package org.sifarish.common;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.conf.Configured;
@@ -34,6 +38,7 @@ import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 import org.apache.hadoop.util.Tool;
 import org.apache.hadoop.util.ToolRunner;
+import org.chombo.util.Pair;
 import org.chombo.util.SecondarySort;
 import org.chombo.util.Tuple;
 import org.chombo.util.Utility;
@@ -82,6 +87,7 @@ public class ImplicitRatingEstimator   extends Configured implements Tool{
     	private String fieldDelim;
     	private Tuple keyOut = new Tuple();
     	private Tuple  valOut = new Tuple();
+    	private String userID;
     	private int  eventType = 0;
     	private long timeStamp;
     	private static final int USER_ID_ORD = 0;
@@ -103,16 +109,20 @@ public class ImplicitRatingEstimator   extends Configured implements Tool{
         protected void map(LongWritable key, Text value, Context context)
             throws IOException, InterruptedException {
            	String[] items = value.toString().split(fieldDelim);
-           	eventType = Integer.parseInt(items[EVT_ORD]);
-           	timeStamp = Long.parseLong(items[TS_ORD]);
-           	
-           	//user ID, item ID, event
-           	keyOut.initialize();
-           	keyOut.add(items[USER_ID_ORD], items[ITEM_ID_ORD], eventType);
-           	
-           	valOut.initialize();
-           	valOut.add(eventType, timeStamp);
-           	context.write(keyOut, valOut);
+           	userID = items[USER_ID_ORD];
+           	if (!userID.isEmpty()) {
+           		//process only logged in sessions
+	           	eventType = Integer.parseInt(items[EVT_ORD]);
+	           	timeStamp = Long.parseLong(items[TS_ORD]);
+	           	
+	           	//user ID, item ID, event
+	           	keyOut.initialize();
+	           	keyOut.add(items[USER_ID_ORD], items[ITEM_ID_ORD], eventType);
+	           	
+	           	valOut.initialize();
+	           	valOut.add(eventType, timeStamp);
+	           	context.write(keyOut, valOut);
+           	}
         }       
     }    
     
@@ -132,7 +142,10 @@ public class ImplicitRatingEstimator   extends Configured implements Tool{
     	private long latestTimeStamp;
     	private  boolean outputDetail;
     	private StringBuilder stBld = new StringBuilder();
-
+    	private List<Pair<Integer,Long>> events = new ArrayList<Pair<Integer,Long>>();
+    	private List<Pair<Integer,Long>> filteredEvents = new ArrayList<Pair<Integer,Long>>();
+    	private Map<Integer,Integer> negativeEventConts = new HashMap<Integer,Integer>();
+    	
     	/* (non-Javadoc)
          * @see org.apache.hadoop.mapreduce.Reducer#setup(org.apache.hadoop.mapreduce.Reducer.Context)
          */
@@ -154,14 +167,41 @@ public class ImplicitRatingEstimator   extends Configured implements Tool{
         		stBld.delete(0,  stBld.length() -1);
         	}
         	
-        	boolean first = true;
-        	count = 0;
-        	latestTimeStamp = 0;
+        	//separate negative and positive events
+        	events.clear();
+        	filteredEvents.clear();
+        	negativeEventConts.clear();
         	for(Tuple value : values) {
         		eventType = value.getInt(0);
         		timeStamp = value.getLong(1);
+        		if (eventType < 0) {
+        			Integer negCount = negativeEventConts.get(eventType);
+        			negCount = null == negCount?  1 : negCount + 1;
+        			negativeEventConts.put(eventType, negCount);
+        		} else {
+        			events.add(new Pair<Integer,Long>(eventType, timeStamp));
+        		}
+        	}
+        	
+        	//nullify those positive events that have negatives
+        	for(Pair<Integer,Long> event : events) {
+        		Integer negCount =  negativeEventConts.get(-event.getLeft());
+        		if (null != negCount && negCount > 0) {
+        			negativeEventConts.put(-event.getLeft(), negCount - 1);
+        		} else {
+        			filteredEvents.add(event);
+        		}
+        	}
+        	
+        	//find most engaging along with count
+        	boolean first = true;
+        	count = 0;
+        	latestTimeStamp = 0;
+        	for(Pair<Integer,Long> event : filteredEvents) {
+        		eventType = event.getLeft();
+        		timeStamp = event.getRight();
         		if (first) {
-        			mostEngagingEventType =eventType;
+        			mostEngagingEventType = eventType;
         			++count;
         			first = false;
         		} else {
@@ -170,11 +210,11 @@ public class ImplicitRatingEstimator   extends Configured implements Tool{
         				++count;
         			} 
         		}
-       			//latest time stamp 
+       			//latest time stamp in the vent sequence 
     			if(timeStamp > latestTimeStamp) {
     				latestTimeStamp = timeStamp;
     			}
-        	}     
+        	}
         	
         	rating =ratingMapper.scoreForEvent(mostEngagingEventType, count);
         	stBld.append(key.getString(0)).append(fieldDelim).append(key.getString(1)).
