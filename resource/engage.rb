@@ -134,7 +134,7 @@ time = now - eventCount * (timeGap + 1)
 					# add to shopping cart
 					event = 3
 				end
-			when 4..9
+			when 4..10
 				#stay in browse			
 				event = selectBrowseEvent(eventList, eventDist)
 			end
@@ -149,13 +149,16 @@ time = now - eventCount * (timeGap + 1)
 			when 0..4 
 				#purchased
 				event = 1	
-			when 5..9
+			when 5..10
 				#left checkout
 				event = -2
 			end		
 		end
 	end
 	
+	if (event.nil?) 
+		event = selectBrowseEvent(eventList, eventDist)
+	end
 	eventList << event
 	time = time + 14 + rand(6)
 	puts "#{custID},#{sessionID},#{itemID},#{event},#{time}"

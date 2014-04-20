@@ -8,6 +8,8 @@ fi
 	
 JAR_NAME=/home/pranab/Projects/sifarish/target/sifarish-1.0.jar
 STORM_HOME=/home/pranab/Tools/storm-0.8.2
+HDFS_BASE_DIR=/user/pranab/real
+PROP_FILE=/home/pranab/Projects/bin/sifarish/rt_reco.properties
 
 case "$1" in
 "expSchema")  
@@ -19,73 +21,73 @@ case "$1" in
  
 "genHistEvent")  
 	echo "generating historical event data"
-	ruby ratings.rb $2 $3 $4
+	./engage.rb $2 $3 $4
     ;;
  
 "expEvent")  
 	echo "exporting event data to HDFS"
-	hadoop fs -rmr /user/pranab/real/enga/*
-	hadoop fs -put $2 /user/pranab/real/enga
-	hadoop fs -ls /user/pranab/real/enga
+	hadoop fs -rmr $HDFS_BASE_DIR/enga/*
+	hadoop fs -put $2 $HDFS_BASE_DIR/enga
+	hadoop fs -ls $HDFS_BASE_DIR/enga
     ;;
 
 "genRating")  
 	echo "running MR to generate implicit rating from event data"
 	CLASS_NAME=org.sifarish.common.ImplicitRatingEstimator
-	IN_PATH=/user/pranab/real/enga
-	OUT_PATH=/user/pranab/real/rate
+	IN_PATH=$HDFS_BASE_DIR/enga
+	OUT_PATH=$HDFS_BASE_DIR/rate
 	echo "input $IN_PATH output $OUT_PATH"
 	hadoop fs -rmr $OUT_PATH
 	echo "removed output dir"
-	hadoop jar $JAR_NAME  $CLASS_NAME -Dconf.path=/home/pranab/Projects/bin/sifarish/rt_reco.properties  $IN_PATH  $OUT_PATH
-	hadoop fs -rmr "/user/pranab/real/rate/_logs"
-	hadoop fs -rmr "/user/pranab/real/rate/_SUCCESS"
-	hadoop fs -ls /user/pranab/real/rate
+	hadoop jar $JAR_NAME  $CLASS_NAME -Dconf.path=$PROP_FILE  $IN_PATH  $OUT_PATH
+	hadoop fs -rmr "$HDFS_BASE_DIR/rate/_logs"
+	hadoop fs -rmr "$HDFS_BASE_DIR/rate/_SUCCESS"
+	hadoop fs -ls $HDFS_BASE_DIR/rate
     ;;
 
 "compactRating")  
 	echo "running MR to format rating to compact form"
 	CLASS_NAME=org.sifarish.common.CompactRatingFormatter
-	IN_PATH=/user/pranab/real/rate
-	OUT_PATH=/user/pranab/real/crat
+	IN_PATH=$HDFS_BASE_DIR/rate
+	OUT_PATH=$HDFS_BASE_DIR/crat
 	echo "input $IN_PATH output $OUT_PATH"
 	hadoop fs -rmr $OUT_PATH
 	echo "removed output dir"
-	hadoop jar $JAR_NAME  $CLASS_NAME -Dconf.path=/home/pranab/Projects/bin/sifarish/rt_reco.properties  $IN_PATH  $OUT_PATH
-	hadoop fs -rmr "/user/pranab/real/crat/_logs"
-	hadoop fs -rmr "/user/pranab/real/crat/_SUCCESS"
-	hadoop fs -ls /user/pranab/real/crat
+	hadoop jar $JAR_NAME  $CLASS_NAME -Dconf.path=$PROP_FILE  $IN_PATH  $OUT_PATH
+	hadoop fs -rmr "$HDFS_BASE_DIR/crat/_logs"
+	hadoop fs -rmr "$HDFS_BASE_DIR/crat/_SUCCESS"
+	hadoop fs -ls $HDFS_BASE_DIR/crat
     ;;
 
 "correlation")  
 	echo  "running MR to generate item correlation from rating data"
 	CLASS_NAME=org.sifarish.common.ItemDynamicAttributeSimilarity
-	IN_PATH=/user/pranab/real/crat
-	OUT_PATH=/user/pranab/real/simi
+	IN_PATH=$HDFS_BASE_DIR/crat
+	OUT_PATH=$HDFS_BASE_DIR/simi
 	echo "input $IN_PATH output $OUT_PATH"
 	hadoop fs -rmr $OUT_PATH
 	echo "removed output dir"
-	hadoop jar $JAR_NAME  $CLASS_NAME -Dconf.path=/home/pranab/Projects/bin/sifarish/rt_reco.properties  $IN_PATH  $OUT_PATH
-	hadoop fs -rmr "/user/pranab/real/simi/_logs"
-	hadoop fs -rmr "/user/pranab/real/simi/_SUCCESS"
-	hadoop fs -ls /user/pranab/real/simi
+	hadoop jar $JAR_NAME  $CLASS_NAME -Dconf.path=$PROP_FILE  $IN_PATH  $OUT_PATH
+	hadoop fs -rmr "$HDFS_BASE_DIR/simi/_logs"
+	hadoop fs -rmr "$HDFS_BASE_DIR/simi/_SUCCESS"
+	hadoop fs -ls $HDFS_BASE_DIR/simi
     ;;
 
 "corrMatrix")  
 	echo  "running MR to transform item correlation to matrix form"
 	CLASS_NAME=org.sifarish.common.CorrelationMatrixBuilder
-	IN_PATH=/user/pranab/real/simi
-	OUT_PATH=/user/pranab/real/matr
+	IN_PATH=$HDFS_BASE_DIR/simi
+	OUT_PATH=$HDFS_BASE_DIR/matr
 	echo "input $IN_PATH output $OUT_PATH"
 	hadoop fs -rmr $OUT_PATH
 	echo "removed output dir"
-	hadoop jar $JAR_NAME  $CLASS_NAME -Dconf.path=/home/pranab/Projects/bin/sifarish/rt_reco.properties  $IN_PATH  $OUT_PATH
-	hadoop fs -ls /user/pranab/real/matr
+	hadoop jar $JAR_NAME  $CLASS_NAME -Dconf.path=$PROP_FILE  $IN_PATH  $OUT_PATH
+	hadoop fs -ls $HDFS_BASE_DIR/matr
     ;;
 
 "impCorrMatrix")  
 	echo  "importing correlation matrix to loal FS"
-	hadoop fs -get /user/pranab/real/matr/part-r-00000 $2
+	hadoop fs -get $HDFS_BASE_DIR/matr/part-r-00000 $2
 	ls -l ~/Projects/bin/sifarish/*.txt
     ;;
 
