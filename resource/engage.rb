@@ -123,18 +123,18 @@ time = now - eventCount * (timeGap + 1)
 	
 	if (isBrowseOnly(eventList))
 		#browse mode
-		browseEventCount = 2 + rand(7)
+		browseEventCount = 2 + rand(3)
 		if (eventList.size >= browseEventCount)
 			case rand(10)
 			when 0..3 
 				if (inShoppingCart(eventList))
-					#enter funnel if in shopping cart
+					#enter checkout if in shopping cart
 					event = 2
 				else
 					# add to shopping cart
 					event = 3
 				end
-			when 4..10
+			when 4..9
 				#stay in browse			
 				event = selectBrowseEvent(eventList, eventDist)
 			end
@@ -146,10 +146,10 @@ time = now - eventCount * (timeGap + 1)
 		#in funnel
 		if (inCheckout(eventList))
 			case rand(10)
-			when 0..4 
+			when 0..6 
 				#purchased
 				event = 1	
-			when 5..10
+			when 7..9
 				#left checkout
 				event = -2
 			end		

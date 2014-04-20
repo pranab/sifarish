@@ -9,7 +9,7 @@
 		{
 			 "eventType" : 2,
 			 "description" : "joined checkout",
-			 "scores" : [80]
+			 "scores" : [85]
 		},
 		{
 			 "eventType" : 3,
@@ -24,17 +24,17 @@
 		{
 			 "eventType" : 5,
 			 "description" : "browsed from search result",
-			 "scores" : [25,32,36,39]
+			 "scores" : [25,32,38,43,47]
 		},
 		{
 			 "eventType" : 6,
 			 "description" : "browsed for recommendation list",
-			 "scores" : [15,20,23]
+			 "scores" : [15,21,26,30,33]
 		},
 		{
 			 "eventType" : 7,
 			 "description" : "browsed",
-			 "scores" : [6,11,14]
+			 "scores" : [5,12,17,21,24]
 		},
 		{
 			 "eventType" : -1,

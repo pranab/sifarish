@@ -144,8 +144,11 @@ public class ImplicitRatingEstimator   extends Configured implements Tool{
     	private  boolean outputDetail;
     	private StringBuilder stBld = new StringBuilder();
     	private List<Pair<Integer,Long>> events = new ArrayList<Pair<Integer,Long>>();
-    	private List<Pair<Integer,Long>> filteredEvents = new ArrayList<Pair<Integer,Long>>();
-    	private Map<Integer,Integer> negativeEventConts = new HashMap<Integer,Integer>();
+    	//private List<Pair<Integer,Long>> filteredEvents = new ArrayList<Pair<Integer,Long>>();
+    	private Map<Integer,Integer> negativeEventCounts = new HashMap<Integer,Integer>();
+    	private Map<Integer,Integer> eventCounts = new HashMap<Integer,Integer>();
+    	private int thisRating;
+    	
     	
     	/* (non-Javadoc)
          * @see org.apache.hadoop.mapreduce.Reducer#setup(org.apache.hadoop.mapreduce.Reducer.Context)
@@ -170,32 +173,57 @@ public class ImplicitRatingEstimator   extends Configured implements Tool{
         	
         	//separate negative and positive events
         	events.clear();
-        	filteredEvents.clear();
-        	negativeEventConts.clear();
+        	//filteredEvents.clear();
+        	negativeEventCounts.clear();
+        	eventCounts.clear();
         	for(Tuple value : values) {
         		eventType = value.getInt(0);
         		timeStamp = value.getLong(1);
         		if (eventType < 0) {
-        			Integer negCount = negativeEventConts.get(eventType);
+        			Integer negCount = negativeEventCounts.get(eventType);
         			negCount = null == negCount?  1 : negCount + 1;
-        			negativeEventConts.put(eventType, negCount);
+        			negativeEventCounts.put(eventType, negCount);
         		} else {
         			events.add(new Pair<Integer,Long>(eventType, timeStamp));
         		}
         	}
         	
         	//nullify those positive events that have negatives
+        	latestTimeStamp = 0;
         	for(Pair<Integer,Long> event : events) {
-        		Integer negCount =  negativeEventConts.get(-event.getLeft());
+       			//latest time stamp in the vent sequence 
+        		timeStamp = event.getRight();
+        		eventType = event.getLeft();
+    			if(timeStamp > latestTimeStamp) {
+    				latestTimeStamp = timeStamp;
+    			}
+
+    			Integer negCount =  negativeEventCounts.get(-eventType);
         		if (null != negCount && negCount > 0) {
-        			negativeEventConts.put(-event.getLeft(), negCount - 1);
+        			negativeEventCounts.put(-eventType, negCount - 1);
     				context.getCounter("ImplicitRating", "Num negative events").increment(1);
         		} else {
-        			filteredEvents.add(event);
+        			//filteredEvents.add(event);
+        			Integer posCount = eventCounts.get(eventType);
+        			posCount = null == posCount?  1 : posCount + 1;
+        			eventCounts.put(eventType, posCount);
         		}
         	}
         	
+        	//find most engaging event and corresponding rating
+        	mostEngagingEventType =  0;
+        	rating = 0;
+        	for (int thisEvent : eventCounts.keySet()) {
+            	thisRating =ratingMapper.scoreForEvent(thisEvent, eventCounts.get(thisEvent));
+        		if(thisRating > rating) {
+        			rating = thisRating;
+        			mostEngagingEventType = thisEvent;
+        		}
+        	}
+        	
+        	
         	//find most engaging along with count
+        	/*
         	boolean first = true;
         	count = 0;
         	latestTimeStamp = 0;
@@ -217,8 +245,9 @@ public class ImplicitRatingEstimator   extends Configured implements Tool{
     				latestTimeStamp = timeStamp;
     			}
         	}
+        	*/
         	
-        	rating =ratingMapper.scoreForEvent(mostEngagingEventType, count);
+        	//rating =ratingMapper.scoreForEvent(mostEngagingEventType, count);
         	stBld.append(key.getString(0)).append(fieldDelim).append(key.getString(1)).
         		append(fieldDelim).append(rating).append(fieldDelim).append(latestTimeStamp);
         	if(outputDetail) {
