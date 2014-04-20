@@ -144,7 +144,6 @@ public class ImplicitRatingEstimator   extends Configured implements Tool{
     	private  boolean outputDetail;
     	private StringBuilder stBld = new StringBuilder();
     	private List<Pair<Integer,Long>> events = new ArrayList<Pair<Integer,Long>>();
-    	//private List<Pair<Integer,Long>> filteredEvents = new ArrayList<Pair<Integer,Long>>();
     	private Map<Integer,Integer> negativeEventCounts = new HashMap<Integer,Integer>();
     	private Map<Integer,Integer> eventCounts = new HashMap<Integer,Integer>();
     	private int thisRating;
@@ -203,7 +202,6 @@ public class ImplicitRatingEstimator   extends Configured implements Tool{
         			negativeEventCounts.put(-eventType, negCount - 1);
     				context.getCounter("ImplicitRating", "Num negative events").increment(1);
         		} else {
-        			//filteredEvents.add(event);
         			Integer posCount = eventCounts.get(eventType);
         			posCount = null == posCount?  1 : posCount + 1;
         			eventCounts.put(eventType, posCount);
@@ -221,33 +219,6 @@ public class ImplicitRatingEstimator   extends Configured implements Tool{
         		}
         	}
         	
-        	
-        	//find most engaging along with count
-        	/*
-        	boolean first = true;
-        	count = 0;
-        	latestTimeStamp = 0;
-        	for(Pair<Integer,Long> event : filteredEvents) {
-        		eventType = event.getLeft();
-        		timeStamp = event.getRight();
-        		if (first) {
-        			mostEngagingEventType = eventType;
-        			++count;
-        			first = false;
-        		} else {
-        			//all occurences of the first event type
-        			if (eventType  == mostEngagingEventType) {
-        				++count;
-        			} 
-        		}
-       			//latest time stamp in the vent sequence 
-    			if(timeStamp > latestTimeStamp) {
-    				latestTimeStamp = timeStamp;
-    			}
-        	}
-        	*/
-        	
-        	//rating =ratingMapper.scoreForEvent(mostEngagingEventType, count);
         	stBld.append(key.getString(0)).append(fieldDelim).append(key.getString(1)).
         		append(fieldDelim).append(rating).append(fieldDelim).append(latestTimeStamp);
         	if(outputDetail) {
