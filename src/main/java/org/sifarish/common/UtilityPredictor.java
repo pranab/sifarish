@@ -98,6 +98,11 @@ public class UtilityPredictor extends Configured implements Tool{
     	private boolean isRatingStatFileSplit;
     	private long  ratingTimeCutoff;
     	private  long timeStamp;
+    	private int minInputRating;
+    	private  int inputRating;
+    	private int minCorrelation;
+    	private int correlation;
+    	private int  correlationLength;
     	
         private static final Logger LOG = Logger.getLogger(UtilityPredictor.PredictionMapper.class);
 
@@ -122,6 +127,8 @@ public class UtilityPredictor extends Configured implements Tool{
         	int ratingTimeWindow = conf.getInt("rating.time.window.hour",  -1);
         	ratingTimeCutoff = ratingTimeWindow > 0 ?  System.currentTimeMillis() / 1000 - ratingTimeWindow * 60L * 60L : -1;
         	
+        	minInputRating = conf.getInt("min.input.rating",  -1);
+        	minCorrelation = conf.getInt("min.correlation",  -1);
         	LOG.info("isRatingFileSplit:" + isRatingFileSplit);
         }    
     	
@@ -137,6 +144,7 @@ public class UtilityPredictor extends Configured implements Tool{
         		//user rating
         		boolean toInclude = true;
                	for (int i = 1; i < items.length; ++i) {
+               		//all user ratings for this item
             		ratings = items[i].split(subFieldDelim);
             		
             		//time sensitive recommendation
@@ -145,14 +153,18 @@ public class UtilityPredictor extends Configured implements Tool{
             			 timeStamp = Long.parseLong(ratings[2]);
             			 toInclude = timeStamp > ratingTimeCutoff;
             		 }
-            		
+            
+            		 //check for min input rating threshold
+           			 inputRating = new Integer(ratings[1]);
+            		toInclude = toInclude && inputRating > minInputRating;
+            		 
             		 if (toInclude) {
 	            		//itemID
 	            		keyOut.set(itemID, two);
 	            		
 	            		//userID, rating
 	               		valOut.initialize();
-	            		valOut.add(ratings[0],  new Integer(ratings[1]), two);
+	            		valOut.add(ratings[0],  inputRating, two);
 	       	   			context.write(keyOut, valOut);
             		 }
                	}
@@ -164,28 +176,34 @@ public class UtilityPredictor extends Configured implements Tool{
         		valOut.add(ratingStdDev,   one);
    	   			context.write(keyOut, valOut);
         	} else {
-        		//correlation
-        		keyOut.set(items[0], zero);
-        		valOut.initialize();
-   	   			if (linearCorrelation) {
-   	   				//other itemID, correlation, intersection length (weight)
-   	   				valOut.add(items[1], new Integer( items[2]), new Integer(items[3]), zero);
-   	   			} else {
-   	   				//other itemID, correlation, intersection length (weight)
-   	   				valOut.add(items[1], new Integer("-" + items[2]), new Integer(items[3]), zero);
-   	   			}
-   	   			context.write(keyOut, valOut);
-
-   	   			keyOut.set(items[1], zero);
-        		valOut.initialize();
-   	   			if (linearCorrelation) {
-   	   				//other itemID, correlation, intersection length (weight)
-   	   				valOut.add(items[0], new Integer( items[2]), new Integer(items[3]), zero);
-   	   			} else {
-   	   				//other itemID, correlation, intersection length (weight)
-   	   				valOut.add(items[0], new Integer("-" + items[2]), new Integer(items[3]), zero);
-   	   			}
-   	   			context.write(keyOut, valOut);
+        		//if correlation is above min threshold
+        		correlation =  Integer.parseInt( items[2]);
+        		correlationLength =  Integer.parseInt(items[3]);
+        		if (correlation > minCorrelation) {
+	        		//correlation of 1st item
+	        		keyOut.set(items[0], zero);
+	        		valOut.initialize();
+	   	   			if (linearCorrelation) {
+	   	   				//other itemID, correlation, intersection length (weight)
+	   	   				valOut.add(items[1], correlation, correlationLength, zero);
+	   	   			} else {
+	   	   				//other itemID, correlation, intersection length (weight)
+	   	   				valOut.add(items[1], -correlation, correlationLength, zero);
+	   	   			}
+	   	   			context.write(keyOut, valOut);
+	
+	   	   			//correlation of second item
+	   	   			keyOut.set(items[1], zero);
+	        		valOut.initialize();
+	   	   			if (linearCorrelation) {
+	   	   				//other itemID, correlation, intersection length (weight)
+	   	   				valOut.add(items[0], correlation, correlationLength, zero);
+	   	   			} else {
+	   	   				//other itemID, correlation, intersection length (weight)
+	   	   				valOut.add(items[0], -correlation, correlationLength, zero);
+	   	   			}
+	   	   			context.write(keyOut, valOut);
+        		}
         	}
         }
     }    
