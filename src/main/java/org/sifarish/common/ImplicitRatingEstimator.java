@@ -216,6 +216,7 @@ public class ImplicitRatingEstimator   extends Configured implements Tool{
         		if(thisRating > rating) {
         			rating = thisRating;
         			mostEngagingEventType = thisEvent;
+        			count = eventCounts.get(thisEvent);
         		}
         	}
         	
