@@ -22,6 +22,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.conf.Configured;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.LongWritable;
@@ -115,7 +116,7 @@ public class UtilityAggregator extends Configured implements Tool{
     	private Text valueOut = new Text();
     	private boolean corrLengthWeightedAverage;
     	private boolean inputRatingStdDevWeightedAverage;
-    	private boolean ratingAggregatorAverage;
+    	private String ratingAggregatorStrategy;
     	private int distSum;
     	private int corrScale;
     	private int maxRating;
@@ -129,12 +130,13 @@ public class UtilityAggregator extends Configured implements Tool{
          * @see org.apache.hadoop.mapreduce.Reducer#setup(org.apache.hadoop.mapreduce.Reducer.Context)
          */
         protected void setup(Context context) throws IOException, InterruptedException {
-        	fieldDelim = context.getConfiguration().get("field.delim", ",");
-        	corrLengthWeightedAverage = context.getConfiguration().getBoolean("corr.length.weighted.average", true);
-        	inputRatingStdDevWeightedAverage = context.getConfiguration().getBoolean("input.rating.stdDev.weighted.average", true);
-        	ratingAggregatorAverage = context.getConfiguration().getBoolean("rating.aggregator.average", true);
-        	corrScale = context.getConfiguration().getInt("correlation.scale", 1000);
-        	maxRating = context.getConfiguration().getInt("max.rating", 100);
+        	Configuration config = context.getConfiguration();
+        	fieldDelim = config.get("field.delim", ",");
+        	corrLengthWeightedAverage = config.getBoolean("corr.length.weighted.average", true);
+        	inputRatingStdDevWeightedAverage = config.getBoolean("input.rating.stdDev.weighted.average", false);
+        	ratingAggregatorStrategy = config.get("rating.aggregator.strategy", "average");
+        	corrScale = config.getInt("correlation.scale", 1000);
+        	maxRating = config.getInt("max.rating", 100);
         	maxStdDev = (35 * maxRating)  / 100;
         } 	
         
@@ -144,14 +146,12 @@ public class UtilityAggregator extends Configured implements Tool{
         protected void reduce(TextPair  key, Iterable<Tuple> values, Context context)
         throws IOException, InterruptedException {
 			sum = sumWt = 0;
+			maxRating = 0;
 			int count = 0;
-			if (ratingAggregatorAverage) {
+			if (ratingAggregatorStrategy.equals("average")) {
 				//average
 				for(Tuple value : values) {
 					predRating = value.getInt(0);
-					if (predRating > maxRating) {
-						maxRating = predRating;
-					}
 					if (corrLengthWeightedAverage) {
 						//correlation length weighted average
 						sum += predRating * value.getInt(1);
@@ -176,7 +176,7 @@ public class UtilityAggregator extends Configured implements Tool{
 				}
 				avRating = sum /  sumWt ;
 				utilityScore = avRating;
-			} else {
+			} else if (ratingAggregatorStrategy.equals("median")){
 				//median
 				predRatings.clear();
 				for(Tuple value : values) {
@@ -198,6 +198,16 @@ public class UtilityAggregator extends Configured implements Tool{
 					medianRating = predRatings.get(0);
 				}
 				utilityScore = medianRating * corrScale;
+			} else if (ratingAggregatorStrategy.equals("max")) {
+				//max 
+				for(Tuple value : values) {
+					predRating = value.getInt(0);
+					if (predRating > maxRating) {
+						maxRating = predRating;
+					}
+					++count;
+				}
+				utilityScore = maxRating;
 			}
 			
 			//userID, itemID, score, count
