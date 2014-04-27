@@ -34,8 +34,12 @@ import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 import org.apache.hadoop.util.Tool;
 import org.apache.hadoop.util.ToolRunner;
+import org.apache.log4j.Level;
+import org.apache.log4j.Logger;
+import org.chombo.util.BigTupleList;
 import org.chombo.util.Tuple;
 import org.chombo.util.Utility;
+import org.sifarish.common.ItemDynamicAttributeSimilarity;
 
 /**
  * Calculates per item rating statistics
@@ -131,37 +135,64 @@ public class ItemRatingStat extends Configured implements Tool{
     	private Text valOut = new Text();
     	private int maxCount;
     	private int maxRatingMean;
-    	private int minRatingStdDev;
+    	private int maxRatingStdDev;
     	private int thisCount;
     	private int thisRatingMean;
     	private int thisRatingStdDev;
-    	private String statSummaryFile;
     	private int ratingScale;
-   	
+    	private BigTupleList tupleList;
+    	private Tuple tupleToWrite;
+    	private int statsScale;
+       	private StringBuilder stBld = new StringBuilder();
+       	private boolean normalizedOutput;
+        private static final Logger LOG = Logger.getLogger(ItemRatingStat.StatReducer.class);
+      	
+       	
        	/* (non-Javadoc)
          * @see org.apache.hadoop.mapreduce.Reducer#setup(org.apache.hadoop.mapreduce.Reducer.Context)
          */
         protected void setup(Context context) throws IOException, InterruptedException {
         	Configuration config = context.getConfiguration();
+            if (config.getBoolean("debug.on", false)) {
+             	LOG.setLevel(Level.DEBUG);
+             	System.out.println("in debug mode");
+            }
         	fieldDelim = config.get("field.delim", ",");
         	ratingScale = context.getConfiguration().getInt("rating.scale", 100);
-        	statSummaryFile = config.get("stat.summary.file");
+        	normalizedOutput = config.getBoolean("normalized.output", false);
+    		if (normalizedOutput) {
+	        	int maxInMemory  = config.getInt("tuple.list.max.in.memory", 1000);
+	        	String spillFilePath = config.get("tuple.list.spill.dir", "/tmp/bigTupleList");
+	        	tupleList = new BigTupleList(maxInMemory, spillFilePath);
+	        	tupleList.open(BigTupleList.Mode.Write);
+	        	statsScale = context.getConfiguration().getInt("stats.scale", 100);
+	        	maxCount = 0;
+	        	maxRatingMean = 0;
+	        	maxRatingStdDev = 0;
+    		}
         }
 
 	   	protected void cleanup(Context context)  
 	   			throws IOException, InterruptedException {
-        	Configuration config = context.getConfiguration();
-     	   	FileSystem dfs = FileSystem.get(config);
-     	   	Path dstPath = new Path(statSummaryFile);
-     	   	if (dfs.exists(dstPath)) {
-        	   dfs.delete(dstPath, false);
-     	   	}
-           FSDataOutputStream out = dfs.create(dstPath);
-           out.writeUTF("maxCount:" + maxCount + "\n");
-           out.writeUTF("maxRatingMean:" + maxRatingMean + "\n");
-           out.writeUTF("minRatingStdDev:" + minRatingStdDev + "\n");
-           out.close();
-           dfs.close();
+	   		if (normalizedOutput) {
+	   			LOG.debug("maxRatingMean:" + maxRatingMean + " maxRatingStdDev:" + maxRatingStdDev + " maxCount:" + maxCount);
+	        	tupleList.close();
+	        	tupleList.open(BigTupleList.Mode.Read);
+	        	Tuple value = null;
+	        	while ((value = tupleList.read()) != null) {
+	        		thisCount = value.getInt(3) * statsScale / maxCount;
+	        		thisRatingMean = value.getInt(1) * statsScale / maxRatingMean ;
+	        		thisRatingStdDev =  value.getInt(2) * statsScale /  maxRatingStdDev;
+	    			stBld.delete(0, stBld.length());
+	    			stBld.append(value.getString(0)).append(fieldDelim).append(thisRatingMean).append(fieldDelim).
+	    				append(thisRatingStdDev).append(fieldDelim).append(thisCount);
+	    			
+	        		valOut.set(stBld.toString());
+	    			context.write(NullWritable.get(), valOut);
+	        	}
+	           	tupleList.close();
+	   		}
+	   		
 	   	}
 	   	
 	   	
@@ -170,25 +201,31 @@ public class ItemRatingStat extends Configured implements Tool{
          */
         protected void reduce(Text  key, Iterable<Tuple> values, Context context)
         throws IOException, InterruptedException {
-        	maxCount = 0;
-        	maxRatingMean = 0;
-        	minRatingStdDev = ratingScale;
         	for(Tuple value : values) {
-        		thisCount = value.getInt(2);
-        		thisRatingMean = value.getInt(0);
-        		thisRatingStdDev =  value.getInt(1);
-        		if (thisCount > maxCount) {
-        			maxCount = thisCount;
+        		if (normalizedOutput) {
+	        		thisCount = value.getInt(2);
+	        		thisRatingMean = value.getInt(0);
+	        		thisRatingStdDev =  value.getInt(1);
+	        		if (thisCount > maxCount) {
+	        			maxCount = thisCount;
+	        		}
+	        		if (thisRatingMean > maxRatingMean){
+	        			maxRatingMean = thisRatingMean;
+	        		}
+	        		if (thisRatingStdDev > maxRatingStdDev){
+	        			maxRatingStdDev = thisRatingStdDev; 
+	        		}
+	        		if (null == tupleToWrite) {
+	        			tupleToWrite = value.createClone();
+	        		} else {
+	        			tupleToWrite = value.createClone(tupleToWrite);
+	        		}
+	        		tupleToWrite.prepend(key.toString());
+	       			tupleToWrite = tupleList.write(tupleToWrite);
+        		} else {
+        			valOut.set(key.toString() + fieldDelim + value.toString());
+        			context.write(NullWritable.get(), valOut);
         		}
-        		if (thisRatingMean > maxRatingMean){
-        			maxRatingMean = thisRatingMean;
-        		}
-        		if (thisRatingStdDev < minRatingStdDev){
-        			minRatingStdDev = thisRatingStdDev; 
-        		}
-        		
-        		valOut.set(key.toString() + fieldDelim + value.toString());
-    			context.write(NullWritable.get(), valOut);
         	}
         }        
     }      
