@@ -2,21 +2,50 @@
 
 require '../lib/util.rb'      
 require 'securerandom'
+require 'set'
 
 itemCount = ARGV[0].to_i
 custCount = ARGV[1].to_i
 avEventCountPerCust = ARGV[2].to_i
 eventCount = custCount * avEventCountPerCust
-
 numItemPart = 20
 itemPartSize = itemCount / numItemPart
-
-
 itemIDs = []
 custIDs = []
 eventDist = NumericalFieldRange.new(3..3,6,4..4,9,5..5,15,6..6,10,7..7,11)
 userSession = {}
 eventMap = {}
+novelItems = Set.new
+novelItemsCount = itemCount * 0.05
+popularlItems = Set.new
+popularItemsCount = itemCount * 0.1
+checkouts = []
+shopCartEventLists = []
+purchases = []
+shopCartCount = 0
+checkoutCount = 0
+purchaseCount = 0
+checkoutEventLists = []
+
+# select item
+def selectItem(itemIDs, itemCount, custID, novelItems, numItemPart, itemPartSize)
+	noNovelItem = rand(10) < 6
+	done = false
+	while (!done) do
+		if (rand(10) < 8)
+			#select item from cluster
+			itemPart = custID.hash % numItemPart
+			itemIndx = itemPart * itemPartSize + rand(itemPartSize)
+			itemID = itemIDs[itemIndx]
+		else
+			#select item randomly
+			itemID = itemIDs[rand(itemCount)]
+		end
+		
+		done = !(noNovelItem && novelItems.include?(itemID))
+	end
+	itemID
+end 
 
 # true if only browse events
 def isBrowseOnly(events)
@@ -79,13 +108,21 @@ def selectBrowseEvent(events, eventDist)
 	event
 end
 
+#items
 idGen = IdGenerator.new
 1.upto itemCount do
 	itemIDs << idGen.generate(10)
 end
 
+#user
 1.upto custCount do
 	custIDs << idGen.generate(12)
+end
+
+#novel items
+while (novelItems.size < novelItemsCount) do
+	itemID = itemIDs[rand(itemCount)]
+	novelItems << itemID
 end
 
 timeGap = 20
@@ -94,6 +131,7 @@ time = now - eventCount * (timeGap + 1)
 
 #generate events
 1.upto eventCount do
+	#user
 	custID = custIDs[rand(custCount)]
 	if (userSession.key?(custID))
 		sessionID = userSession[custID]	
@@ -101,16 +139,9 @@ time = now - eventCount * (timeGap + 1)
 		sessionID = SecureRandom.uuid	
 		userSession[custID] = sessionID	
 	end
-	
-	if (rand(10) < 8)
-		#select item from cluster
-		itemPart = custID.hash % numItemPart
-		itemIndx = itemPart * itemPartSize + rand(itemPartSize)
-		itemID = itemIDs[itemIndx]
-	else
-		#select item randomly
-		itemID = itemIDs[rand(itemCount)]
-	end
+
+	#item
+	itemID = selectItem(itemIDs, itemCount, custID, novelItems, numItemPart, itemPartSize)
 	
 	# event list for custID, itemID
 	eventKey = custID+itemID
@@ -123,10 +154,10 @@ time = now - eventCount * (timeGap + 1)
 	
 	if (isBrowseOnly(eventList))
 		#browse mode
-		browseEventCount = 2 + rand(3)
+		browseEventCount = 2 + rand(2)
 		if (eventList.size >= browseEventCount)
 			case rand(10)
-			when 0..3 
+			when 0..7
 				if (inShoppingCart(eventList))
 					#enter checkout if in shopping cart
 					event = 2
@@ -134,7 +165,7 @@ time = now - eventCount * (timeGap + 1)
 					# add to shopping cart
 					event = 3
 				end
-			when 4..9
+			when 8..9
 				#stay in browse			
 				event = selectBrowseEvent(eventList, eventDist)
 			end
@@ -162,6 +193,37 @@ time = now - eventCount * (timeGap + 1)
 	eventList << event
 	time = time + 14 + rand(6)
 	puts "#{custID},#{sessionID},#{itemID},#{event},#{time}"
+	if (event == 3)
+		shopCartCount += 1
+		checkouts << "#{custID},#{sessionID},#{itemID},#{event-1},#{time}"
+		shopCartEventLists << eventList
+	end
+	
+	#add some checkout events
+	if ((rand(1000) < 100) && !checkouts.empty? && checkoutCount < (shopCartCount * 0.5))
+		index = rand(checkouts.length)
+		checkout = checkouts.delete_at(index)
+		puts checkout
+		shopCartEventLists[index] << 2
+		checkoutCount += 1
+		
+		#create purchase event
+		items = checkout.split(',')
+		items[3] = 1
+		purchase = items.join(',')
+		purchases << purchase
+		checkoutEventLists << shopCartEventLists[index]
+	end
+	
+	#add some purchase events
+	if ((rand(1000) < 100) && !purchases.empty? && purchaseCount < (checkoutCount * 0.8))
+		index = rand(purchases.length)
+		purchase = purchases.delete_at(index)
+		puts purchase
+		checkoutEventLists[index] << 1
+		purchaseCount += 1
+	end
+	
 end
 
 
