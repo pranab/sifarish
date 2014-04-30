@@ -18,6 +18,9 @@
 package org.sifarish.social;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.conf.Configured;
@@ -88,7 +91,9 @@ public class ItemRatingStat extends Configured implements Tool{
     	private Text keyOut = new Text();
     	private Tuple  valOut = new Tuple();
     	private int  count;
-   	
+    	private List<Integer> ratings = new ArrayList<Integer>();
+    	private int ratingMedian;
+    	
         /* (non-Javadoc)
          * @see org.apache.hadoop.mapreduce.Mapper#setup(org.apache.hadoop.mapreduce.Mapper.Context)
          */
@@ -108,22 +113,40 @@ public class ItemRatingStat extends Configured implements Tool{
         	
         	ratingSum = 0;
         	ratingSquareSum = 0;
+        	ratings.clear();
         	for (int i = 1; i < items.length; ++ i) {
         		rating = ( Integer.parseInt(items[i].split(subFieldDelim)[1]));
         		ratingSum += rating;
         		ratingSquareSum += (rating * rating);
+        		ratings.add(rating);
         	}
+        	//mean
         	count = items.length - 1;
         	ratingMean = ratingSum / count;
+        	
+        	//median
+			if (count > 1) {
+				Collections.sort(ratings);
+				if (count % 2 == 1) {
+					//odd
+					ratingMedian = ratings.get(count / 2);
+				} else {
+					//even
+					ratingMedian =  (ratings.get(count / 2 - 1) + ratings.get(count / 2) )  / 2 ;
+				}
+			} else {
+				ratingMedian = ratings.get(0);
+			}
+       	
+        	//std dev
         	int var = ratingSquareSum /  count -  ratingMean * ratingMean;
         	ratingStdDev = (int)Math.sqrt(var);
 			
         	keyOut.set(itemID);
         	valOut.initialize();
-        	valOut.add(ratingMean, ratingStdDev,  count);
+        	valOut.add(ratingMean, ratingMedian, ratingStdDev,  count);
    		   	context.write(keyOut, valOut);
         }   
-        
     }
  
     /**
@@ -135,9 +158,11 @@ public class ItemRatingStat extends Configured implements Tool{
     	private Text valOut = new Text();
     	private int maxCount;
     	private int maxRatingMean;
+    	private int maxRatingMedian;
     	private int maxRatingStdDev;
     	private int thisCount;
     	private int thisRatingMean;
+    	private int thisRatingMedian;
     	private int thisRatingStdDev;
     	private int ratingScale;
     	private BigTupleList tupleList;
@@ -145,6 +170,11 @@ public class ItemRatingStat extends Configured implements Tool{
     	private int statsScale;
        	private StringBuilder stBld = new StringBuilder();
        	private boolean normalizedOutput;
+       	private static final int MEAN_ORD = 0;
+       	private static final int MEDIAN_ORD = 1;
+       	private static final int STD_DEV_ORD = 2;
+       	private static final int COUNT_ORD = 3;
+       	
         private static final Logger LOG = Logger.getLogger(ItemRatingStat.StatReducer.class);
       	
        	
@@ -168,6 +198,7 @@ public class ItemRatingStat extends Configured implements Tool{
 	        	statsScale = context.getConfiguration().getInt("stats.scale", 100);
 	        	maxCount = 0;
 	        	maxRatingMean = 0;
+	        	maxRatingMedian = 0;
 	        	maxRatingStdDev = 0;
     		}
         }
@@ -175,26 +206,26 @@ public class ItemRatingStat extends Configured implements Tool{
 	   	protected void cleanup(Context context)  
 	   			throws IOException, InterruptedException {
 	   		if (normalizedOutput) {
-	   			LOG.debug("maxRatingMean:" + maxRatingMean + " maxRatingStdDev:" + maxRatingStdDev + " maxCount:" + maxCount);
+	   			LOG.debug("maxRatingMean:" + maxRatingMean + "maxRatingMedian:" + maxRatingMedian + 
+	   					" maxRatingStdDev:" + maxRatingStdDev + " maxCount:" + maxCount);
 	        	tupleList.close();
 	        	tupleList.open(BigTupleList.Mode.Read);
 	        	Tuple value = null;
 	        	while ((value = tupleList.read()) != null) {
-	        		thisCount = value.getInt(3) * statsScale / maxCount;
-	        		thisRatingMean = value.getInt(1) * statsScale / maxRatingMean ;
-	        		thisRatingStdDev =  value.getInt(2) * statsScale /  maxRatingStdDev;
+	        		thisCount = value.getInt(COUNT_ORD + 1) * statsScale / maxCount;
+	        		thisRatingMean = value.getInt(MEAN_ORD + 1) * statsScale / maxRatingMean ;
+	        		thisRatingMedian = value.getInt(MEDIAN_ORD + 1) * statsScale / maxRatingMedian ;
+	        		thisRatingStdDev =  value.getInt(STD_DEV_ORD + 1) * statsScale /  maxRatingStdDev;
 	    			stBld.delete(0, stBld.length());
 	    			stBld.append(value.getString(0)).append(fieldDelim).append(thisRatingMean).append(fieldDelim).
-	    				append(thisRatingStdDev).append(fieldDelim).append(thisCount);
+	    				append(thisRatingMedian).append(fieldDelim).append(thisRatingStdDev).append(fieldDelim).append(thisCount);
 	    			
 	        		valOut.set(stBld.toString());
 	    			context.write(NullWritable.get(), valOut);
 	        	}
 	           	tupleList.close();
 	   		}
-	   		
 	   	}
-	   	
 	   	
         /* (non-Javadoc)
          * @see org.apache.hadoop.mapreduce.Reducer#reduce(KEYIN, java.lang.Iterable, org.apache.hadoop.mapreduce.Reducer.Context)
@@ -203,14 +234,18 @@ public class ItemRatingStat extends Configured implements Tool{
         throws IOException, InterruptedException {
         	for(Tuple value : values) {
         		if (normalizedOutput) {
-	        		thisCount = value.getInt(2);
-	        		thisRatingMean = value.getInt(0);
-	        		thisRatingStdDev =  value.getInt(1);
+	        		thisCount = value.getInt(COUNT_ORD);
+	        		thisRatingMean = value.getInt(MEAN_ORD);
+	        		thisRatingMedian = value.getInt(MEDIAN_ORD);
+	        		thisRatingStdDev =  value.getInt(STD_DEV_ORD);
 	        		if (thisCount > maxCount) {
 	        			maxCount = thisCount;
 	        		}
 	        		if (thisRatingMean > maxRatingMean){
 	        			maxRatingMean = thisRatingMean;
+	        		}
+	        		if (thisRatingMedian > maxRatingMedian){
+	        			maxRatingMedian = thisRatingMedian;
 	        		}
 	        		if (thisRatingStdDev > maxRatingStdDev){
 	        			maxRatingStdDev = thisRatingStdDev; 

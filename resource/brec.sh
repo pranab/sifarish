@@ -8,6 +8,7 @@ then
 fi
 	
 JAR_NAME=/home/pranab/Projects/sifarish/target/sifarish-1.0.jar
+CHOMBO_JAR_NAME=/home/pranab/Projects/chombo/target/chombo-1.0.jar
 HDFS_BASE_DIR=/user/pranab/reco
 PROP_FILE=/home/pranab/Projects/bin/sifarish/reco.properties
 
@@ -76,12 +77,14 @@ case "$1" in
 "ratingStat")
 	echo "running MR to generate stating stats"
 	CLASS_NAME=org.sifarish.social.ItemRatingStat
-	IN_PATH=$HDFS_BASE_DIR/rate
+	IN_PATH=$HDFS_BASE_DIR/crat
 	OUT_PATH=$HDFS_BASE_DIR/stat
 	echo "input $IN_PATH output $OUT_PATH"
 	hadoop fs -rmr $OUT_PATH
 	echo "removed output dir $OUT_PATH"
 	hadoop jar $JAR_NAME  $CLASS_NAME -Dconf.path=$PROP_FILE  $IN_PATH  $OUT_PATH
+	hadoop fs -rmr $HDFS_BASE_DIR/reco/stat/_logs
+	hadoop fs -rmr $HDFS_BASE_DIR/reco/stat/_SUCCESS	
 	;;
 	
 "copyRatingStat")	
@@ -113,6 +116,19 @@ case "$1" in
 	hadoop jar $JAR_NAME  $CLASS_NAME -Dconf.path=$PROP_FILE  $IN_PATH  $OUT_PATH
 	hadoop fs -rmr $HDFS_BASE_DIR/reco/utag/_logs
 	hadoop fs -rmr $HDFS_BASE_DIR/reco/utag/_SUCCESS	
+	;;
+	
+"itemPopularity")	
+	CLASS_NAME=org.chombo.mr.WeightedAverage
+	echo "running MR for item popularity"
+	IN_PATH=$HDFS_BASE_DIR/stat
+	OUT_PATH=$HDFS_BASE_DIR/popu
+	echo "input $IN_PATH output $OUT_PATH"
+	hadoop fs -rmr $OUT_PATH
+	echo "removed output dir $OUT_PATH"
+	hadoop jar $CHOMBO_JAR_NAME  $CLASS_NAME -Dconf.path=$PROP_FILE  $IN_PATH  $OUT_PATH
+	hadoop fs -rmr $HDFS_BASE_DIR/reco/popu/_logs
+	hadoop fs -rmr $HDFS_BASE_DIR/reco/popu/_SUCCESS	
 	;;
 	
 *) 
