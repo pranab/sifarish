@@ -103,6 +103,7 @@ public class UtilityPredictor extends Configured implements Tool{
     	private int minCorrelation;
     	private int correlation;
     	private int  correlationLength;
+    	private static final int STD_DEV_ORD = 3;
     	
         private static final Logger LOG = Logger.getLogger(UtilityPredictor.PredictionMapper.class);
 
@@ -170,7 +171,7 @@ public class UtilityPredictor extends Configured implements Tool{
                	}
         	} else  if (isRatingStatFileSplit) {
         		//rating stat
-        		int ratingStdDev = Integer.parseInt(items[2]);
+        		int ratingStdDev = Integer.parseInt(items[STD_DEV_ORD]);
         		keyOut.set(itemID, one);
            		valOut.initialize();
         		valOut.add(ratingStdDev,   one);

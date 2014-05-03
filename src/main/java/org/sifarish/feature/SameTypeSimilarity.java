@@ -40,6 +40,7 @@ import org.apache.hadoop.mapreduce.Mapper;
 import org.apache.hadoop.mapreduce.Partitioner;
 import org.apache.hadoop.mapreduce.Reducer;
 import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
+import org.apache.hadoop.mapreduce.lib.input.FileSplit;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 import org.apache.hadoop.util.Tool;
 import org.apache.hadoop.util.ToolRunner;
@@ -118,6 +119,8 @@ public class SameTypeSimilarity  extends Configured implements Tool {
         private  int partitonOrdinal;
         private int hashPair;
         private int hashCode;
+   	 	private boolean interSetMatching;
+   	 	private  boolean  isBaseSetSplit;
         private static final Logger LOG = Logger.getLogger(SimilarityMapper.class);
  
         /* (non-Javadoc)
@@ -140,8 +143,11 @@ public class SameTypeSimilarity  extends Configured implements Tool {
             	LOG.setLevel(Level.DEBUG);
             }
         	LOG.debug("bucketCount: " + bucketCount + "partitonOrdinal: " + partitonOrdinal  + "idOrdinal:" + idOrdinal );
-
+       	 	interSetMatching = conf.getBoolean("inter.set.matching",  false);
+       	 	String baseSetSplitPrefix = conf.get("base.set.split.prefix", "base");
+       	 	isBaseSetSplit = ((FileSplit)context.getInputSplit()).getPath().getName().startsWith(baseSetSplitPrefix);
        }
+
         /* (non-Javadoc)
          * @see org.apache.hadoop.mapreduce.Mapper#map(KEYIN, VALUEIN, org.apache.hadoop.mapreduce.Mapper.Context)
          */
@@ -149,27 +155,47 @@ public class SameTypeSimilarity  extends Configured implements Tool {
         protected void map(LongWritable key, Text value, Context context)
             throws IOException, InterruptedException {
             String[] items  =  value.toString().split(fieldDelimRegex);
-            
             String partition = partitonOrdinal >= 0 ? items[partitonOrdinal] :  "none";
-            	
        		hashCode = items[idOrdinal].hashCode();
        		if (hashCode < 0) {
        			hashCode = - hashCode;
        		}
-    		hash = (hashCode %  bucketCount) / 2 ;
-    		for (int i = 0; i < bucketCount;  ++i) {
-    			if (i < hash){
-       				hashPair = hash * 1000 +  i;
-       				keyHolder.set(partition, hashPair,0);
-       				valueHolder.set("0" + value.toString());
-       	   		 } else {
-    				hashPair =  i * 1000  +  hash;
-       				keyHolder.set(partition, hashPair,1);
-       				valueHolder.set("1" + value.toString());
-    			} 
-    			LOG.debug("hashPair:" + hashPair);
-   	   			context.write(keyHolder, valueHolder);
-    		}
+            	
+            if (interSetMatching) {
+	    		hash = hashCode %  bucketCount ;
+            	if (isBaseSetSplit) {
+    	    		for (int i = 0; i < bucketCount;  ++i) {
+	       				hashPair = hash * 1000 +  i;
+	       				keyHolder.set(partition, hashPair,0);
+	       				valueHolder.set("0" + value.toString());
+		    			LOG.debug("hashPair:" + hashPair);
+		   	   			context.write(keyHolder, valueHolder);
+    	    		}
+            	} else {
+    	    		for (int i = 0; i < bucketCount;  ++i) {
+	    				hashPair =  i * 1000  +  hash;
+	       				keyHolder.set(partition, hashPair,1);
+	       				valueHolder.set("1" + value.toString());
+		    			LOG.debug("hashPair:" + hashPair);
+		   	   			context.write(keyHolder, valueHolder);
+    	    		}            		
+            	}
+            } else {
+	    		hash = (hashCode %  bucketCount) / 2 ;
+	    		for (int i = 0; i < bucketCount;  ++i) {
+	    			if (i < hash){
+	       				hashPair = hash * 1000 +  i;
+	       				keyHolder.set(partition, hashPair,0);
+	       				valueHolder.set("0" + value.toString());
+	       	   		 } else {
+	    				hashPair =  i * 1000  +  hash;
+	       				keyHolder.set(partition, hashPair,1);
+	       				valueHolder.set("1" + value.toString());
+	    			} 
+	    			LOG.debug("hashPair:" + hashPair);
+	   	   			context.write(keyHolder, valueHolder);
+	    		}
+	        }
         }
     	
     }
@@ -200,8 +226,12 @@ public class SameTypeSimilarity  extends Configured implements Tool {
         private String[] secondItems;
         private int  distThreshold;
         private boolean  outputIdFirst ;
-        private boolean interSetMatching;
         private int setIdSize;
+        private boolean inFirstBucket;
+        private int firstBucketSize;
+        private int secondBucketSize;
+        private boolean mixedInSets;
+        private int  firstSetExtraOutputField;
         private static final Logger LOG = Logger.getLogger(SimilarityReducer.class);
         
         
@@ -253,8 +283,9 @@ public class SameTypeSimilarity  extends Configured implements Tool {
         	 outputIdFirst =   conf.getBoolean("output.id.first", true);      	
 
         	 //inter set matching
-        	 interSetMatching = conf.getBoolean("inter.set.matching",  false);
-        	 setIdSize = conf.getInt("set.ID.size",  0);
+        	mixedInSets = conf.getBoolean("mixed.in.sets",  false);
+        	setIdSize = conf.getInt("set.ID.size",  0);
+         	firstSetExtraOutputField = conf.getInt("first.set.extra.output.field", -1);
         	 
              if (conf.getBoolean("debug.on", false)) {
              	LOG.setLevel(Level.DEBUG);
@@ -267,6 +298,8 @@ public class SameTypeSimilarity  extends Configured implements Tool {
         protected void reduce(TextIntInt  key, Iterable<Text> values, Context context)
         throws IOException, InterruptedException {
         	valueList.clear();
+        	inFirstBucket = true;
+        	firstBucketSize = secondBucketSize = 0;
         	int secondPart = key.getSecond().get();
         	LOG.debug("key hash pair:" + secondPart);
         	if (secondPart/1000 == secondPart%1000){
@@ -275,7 +308,7 @@ public class SameTypeSimilarity  extends Configured implements Tool {
 	        		String valSt = value.toString();
 	        		valueList.add(valSt.substring(1));
 	        	}
-	        	
+	        	firstBucketSize = secondBucketSize = valueList.size();
 	        	for (int i = 0;  i < valueList.size();  ++i){
 	        		String first = valueList.get(i);
 	        		firstId =  first.split(fieldDelimRegex)[idOrdinal];
@@ -285,7 +318,7 @@ public class SameTypeSimilarity  extends Configured implements Tool {
 	            		if (!firstId.equals(secondId)){
 		        			dist  = findDistance( first,  second,  context);
 		        			if (dist <= distThreshold) {
-		        				valueHolder.set(createValueField());
+		        				valueHolder.set(createValueField(first));
 		        				context.write(NullWritable.get(), valueHolder);
 		        			}
 	            		} else {
@@ -301,6 +334,11 @@ public class SameTypeSimilarity  extends Configured implements Tool {
 	        		if (valSt.startsWith("0")) {
 	        			valueList.add(valSt.substring(1));
 	        		} else {
+	        			if (inFirstBucket) {
+	        				firstBucketSize = valueList.size();
+	        				inFirstBucket = false;
+	        			}
+	        			++secondBucketSize;
 	        			String second = valSt.substring(1);
 	            		secondId =  second.split(fieldDelimRegex)[idOrdinal];
 	            		for (String first : valueList){
@@ -308,7 +346,7 @@ public class SameTypeSimilarity  extends Configured implements Tool {
 	                		LOG.debug("ID pair:" + firstId + "  " +  secondId);
 		        			dist  = findDistance( first,  second,  context);
 		        			if (dist <= distThreshold) {
-		        				valueHolder.set(createValueField());
+		        				valueHolder.set(createValueField(first));
 		        				context.write(NullWritable.get(), valueHolder);
 		        			}
 	            		}
@@ -316,6 +354,8 @@ public class SameTypeSimilarity  extends Configured implements Tool {
 	        	}
         	}
         	
+        	LOG.debug("bucket pair:" + key.getSecond() + " firstBucketSize:" + firstBucketSize +  
+        			" secondBucketSize:" + secondBucketSize);
         }    
         
         /**
@@ -329,8 +369,8 @@ public class SameTypeSimilarity  extends Configured implements Tool {
         	LOG.debug("findDistance:" + first + "  " + second);
         	int netDist = 0;
 
-       		//if inter set matching, match only same ID from different sets
-        	if (interSetMatching) {
+       		//if inter set matching with mixed in sets, match only same ID from different sets
+        	if (mixedInSets) {
         		String firstEntityId = firstId.substring(setIdSize);
         		String secondEntityId = secondId.substring(setIdSize);
         		if (!firstEntityId.equals(secondEntityId)) {
@@ -454,7 +494,7 @@ public class SameTypeSimilarity  extends Configured implements Tool {
         /**
          * @return
          */
-        private String createValueField() {
+        private String createValueField(String first) {
         	StringBuilder stBld = new StringBuilder();
         	
         	if (outputIdFirst) {
@@ -474,8 +514,12 @@ public class SameTypeSimilarity  extends Configured implements Tool {
         	if (!outputIdFirst) {
         		stBld.append(firstId).append(fieldDelim).append(secondId).append(fieldDelim);
         	}
-
         	stBld.append(dist);
+        	if (firstSetExtraOutputField != -1) {
+        		String extraField = first.split(",")[firstSetExtraOutputField];
+        		stBld.append(fieldDelim).append(extraField);
+        	}
+        
         	return stBld.toString();
         }
         
