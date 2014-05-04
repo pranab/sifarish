@@ -57,7 +57,8 @@ import org.sifarish.util.Utility;
 
 /**
  * Mapreduce for finding similarities between same type of entities with fixed set of attributes. For example, 
- * products   where the attributes are the different product features
+ * products   where the attributes are the different product features. If single set of size n, matches are found 
+ * for n x n pairs. For 2 sets of size n1 and n2, matches are for n1 x n2 pairs 
  *  
  * @author pranab
  *
@@ -231,7 +232,7 @@ public class SameTypeSimilarity  extends Configured implements Tool {
         private int firstBucketSize;
         private int secondBucketSize;
         private boolean mixedInSets;
-        private int  firstSetExtraOutputField;
+        private int  extraOutputField;
         private static final Logger LOG = Logger.getLogger(SimilarityReducer.class);
         
         
@@ -285,7 +286,7 @@ public class SameTypeSimilarity  extends Configured implements Tool {
         	 //inter set matching
         	mixedInSets = conf.getBoolean("mixed.in.sets",  false);
         	setIdSize = conf.getInt("set.ID.size",  0);
-         	firstSetExtraOutputField = conf.getInt("first.set.extra.output.field", -1);
+         	extraOutputField = conf.getInt("extra.output.field", -1);
         	 
              if (conf.getBoolean("debug.on", false)) {
              	LOG.setLevel(Level.DEBUG);
@@ -318,7 +319,7 @@ public class SameTypeSimilarity  extends Configured implements Tool {
 	            		if (!firstId.equals(secondId)){
 		        			dist  = findDistance( first,  second,  context);
 		        			if (dist <= distThreshold) {
-		        				valueHolder.set(createValueField(first));
+		        				valueHolder.set(createValueField(first, first));
 		        				context.write(NullWritable.get(), valueHolder);
 		        			}
 	            		} else {
@@ -346,7 +347,7 @@ public class SameTypeSimilarity  extends Configured implements Tool {
 	                		LOG.debug("ID pair:" + firstId + "  " +  secondId);
 		        			dist  = findDistance( first,  second,  context);
 		        			if (dist <= distThreshold) {
-		        				valueHolder.set(createValueField(first));
+		        				valueHolder.set(createValueField(first, second));
 		        				context.write(NullWritable.get(), valueHolder);
 		        			}
 	            		}
@@ -492,9 +493,10 @@ public class SameTypeSimilarity  extends Configured implements Tool {
         }
         
         /**
+         * generates output to emit
          * @return
          */
-        private String createValueField(String first) {
+        private String createValueField(String first, String second) {
         	StringBuilder stBld = new StringBuilder();
         	
         	if (outputIdFirst) {
@@ -515,14 +517,23 @@ public class SameTypeSimilarity  extends Configured implements Tool {
         		stBld.append(firstId).append(fieldDelim).append(secondId).append(fieldDelim);
         	}
         	stBld.append(dist);
-        	if (firstSetExtraOutputField != -1) {
-        		String extraField = first.split(",")[firstSetExtraOutputField];
-        		stBld.append(fieldDelim).append(extraField);
+        	if (extraOutputField != -1) {
+        		appendExtraField(first, stBld);
+        		appendExtraField(second, stBld);
         	}
-        
         	return stBld.toString();
         }
-        
+
+        /**
+         * @param value
+         * @param stBld
+         */
+        private void appendExtraField(String value, StringBuilder stBld) {
+    		String[] items = value.split(",");
+    		if (extraOutputField < items.length) {
+    			stBld.append(fieldDelim).append(items[extraOutputField]);
+    		}
+        }
         /**
          * @param field
          * @param firstAttr
@@ -631,8 +642,6 @@ public class SameTypeSimilarity  extends Configured implements Tool {
     		}
         	return dist;
         }    
-
-    
     }    
     
     /**
