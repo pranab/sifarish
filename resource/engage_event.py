@@ -100,9 +100,8 @@ def genEngageEvents(threadName, maxEvent):
 
 		events.add(event)				
 		evCount += 1	
-		epochTime = int(time.time())
-		#print "%s,%s,%s,%d,%d" %(user, session, item, event,,epochTime)
-		event = "%s,%s,%s,%d,%d" %(user,session,item,event,epochTime)
+		#print "%s,%s,%s,%d" %(user, item, session, event)
+		event = "%s,%s,%s,%d" %(user,session,item,event)
 		rc.lpush("engageEventQueue", event)
 		print "thread %s generated event" %(threadName)
 		time.sleep(randint(2,6))
@@ -130,6 +129,14 @@ def showRecoQueue():
 	
 #loads items correlation data into redis
 def loadCorrelation(corrFile):
+	loadMatrix(corrFile, "itemCorrelation")
+
+#loads items rating data into redis
+def loadRating(ratingFile):
+	loadMatrix(corrFile, "itemRating")
+
+#loads sparse matrix data
+def loadMatrix(corrFile, cacheKey):
 	#read file
 	file = open(corrFile, 'r')
 	for line in file:
@@ -138,7 +145,7 @@ def loadCorrelation(corrFile):
 		key = line[0:index]
 		val = line[index+1:]
 		print "key %s" %(key)
-		rc.hset("itemCorrelation", key, val)	
+		rc.hset(cacheKey, key, val)	
 			
 #shows items correlation data
 def showCorrelation(key):
@@ -155,8 +162,26 @@ def loadEventMapping(eventMappingFile):
 def showEventMapping():
 	mappingData = rc.get('eventMappingMetadata')
 	print "eventMappingMetaData: \n%s" %(mappingData)
-	
-#command processing
+
+#loads popular items ratinfs to redis cache
+def loadPopRating(ratingFile):
+	key = '************'
+	ratingList = []
+	file = open(corrFile, 'r')
+	for line in file:
+		line = line.strip().replace(',', ':')
+		ratingList.append(line)
+	value = ', '.join(ratingList)
+	rc.hset('popularItemRating', key, val)	
+		
+#generate rating dither event for popular items
+def genPopDitherEvents(threadName, maxEvent):
+	user = '************'
+	for e in range(maxEvent):	
+		rc.lpush("recoDitherQueue", user)
+		time.sleep(randint(2,6))
+
+########################### command processing #########################	
 op = sys.argv[1]
 if (op == "genEvents"):	            
 	#load user and items
@@ -189,4 +214,26 @@ elif (op == "showEventMapping"):
 	showEventMapping()	
 elif (op == "showRecoQueue"):
 	showRecoQueue()
+elif (op == "loadRating"):
+	ratingFile = sys.argv[2]
+	loadRating(ratingFile)
+elif (op == "loadPopRating"):
+	ratingFile = sys.argv[2]
+	loadPopRating(ratingFile)
+elif (op == "genPopDitherEvents"):	            
+	#load user and items
+	eventFile = sys.argv[2]
+	loadUsersAndItems(eventFile)
+
+	#start multiple session threads
+	try:
+		if (len(sys.argv) == 4):
+			numSession = int(sys.argv[3])
+		for i in range(numSession):
+			threadName = "session-%d" %(i)
+			maxEvent = randint(eventCountMin, eventCountMax)
+   			t = threading.Thread(target=genPopDitherEvents, args=(threadName,maxEvent, ))
+   			t.start()
+	except:
+   		print "Error: unable to start thread"
 	

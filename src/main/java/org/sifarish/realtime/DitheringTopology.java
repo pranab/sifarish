@@ -24,6 +24,7 @@ import backtype.storm.topology.TopologyBuilder;
 import backtype.storm.tuple.Fields;
 
 /**
+ * Rating dithering storm topology
  * @author pranab
  *
  */
@@ -34,11 +35,11 @@ public class DitheringTopology {
      * @throws Exception
      */
     public static void main(String[] args) throws Exception {
-    	String topologyName = args[0];
-    	String configFilePath = args[1];
     	if (args.length != 2) {
     		throw new IllegalArgumentException("Need two arguments: topology name and config file path");
     	}
+    	String topologyName = args[0];
+    	String configFilePath = args[1];
     	Config conf = RealtimeUtil.buildStormConfig(configFilePath);
     	
     	//spout
