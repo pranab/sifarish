@@ -293,6 +293,10 @@ public class UserItemRatings {
 			return getRight();
 		}
 		
+		public void setRating(int rating) {
+			setRight(rating);
+		}
+		
 		@Override
 		public int compareTo(ItemRating that) {
 			return that.getRight().compareTo(this.getRight());

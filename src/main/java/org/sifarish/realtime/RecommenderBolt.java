@@ -49,8 +49,8 @@ public class RecommenderBolt extends GenericBolt {
 	public static final String ITEM_ID = "itemID";
 	public static final String EVENT_ID = "eventID";
 	public static final String TS_ID = "timeStamp";
-	private static final String FIELD_DELIM = ",";
-	private static final String SUB_FIELD_DELIM = ":";
+	public static final String FIELD_DELIM = ",";
+	public static final String SUB_FIELD_DELIM = ":";
 	
 
 	private static final Logger LOG = Logger.getLogger(RecommenderBolt.class);

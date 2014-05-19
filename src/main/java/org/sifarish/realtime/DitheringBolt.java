@@ -17,6 +17,7 @@
 package org.sifarish.realtime;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
@@ -27,6 +28,7 @@ import org.apache.log4j.Logger;
 import org.chombo.storm.GenericBolt;
 import org.chombo.storm.MessageHolder;
 import org.chombo.util.ConfigUtility;
+import org.chombo.util.Utility;
 
 import redis.clients.jedis.Jedis;
 import backtype.storm.task.TopologyContext;
@@ -49,6 +51,9 @@ public class DitheringBolt extends  GenericBolt {
 	private static final Logger LOG = Logger.getLogger(DitheringBolt.class);
 	private LoadingCache<String, List<UserItemRatings.ItemRating>> itemRatingCache = null;
 	private String itemRatingKey;
+	private int  ratingScale;
+	private double ditherStdDev;
+	
 	
 	@Override
 	public Map<String, Object> getComponentConfiguration() {
@@ -61,9 +66,9 @@ public class DitheringBolt extends  GenericBolt {
 		jedis = RealtimeUtil.buildRedisClient(stormConf);
 		writeRecommendationToQueue = ConfigUtility.getBoolean(stormConf,"write.recommendation.to.queue");
 		if (writeRecommendationToQueue) {
-			recommendationQueue = ConfigUtility.getString(stormConf, "redis.recommendation.queue");
+			recommendationQueue = ConfigUtility.getString(stormConf, "redis.dithered.recomm.queue");
 		}else {
-			recommendationCache = ConfigUtility.getString(stormConf, "redis.recommendation.cache");
+			recommendationCache = ConfigUtility.getString(stormConf, "redis.dithered.recomm.cache");
 		}
 		if (debugOn) {
 			LOG.setLevel(Level.INFO);;
@@ -71,16 +76,18 @@ public class DitheringBolt extends  GenericBolt {
 		}
 		
 		//initialize rating cache
+		ratingScale = ConfigUtility.getInt(stormConf,"rating.scale", 100);
 		itemRatingKey = ConfigUtility.getString(stormConf, "redis.item.rating.key");
 		int ratingCacheSize = ConfigUtility.getInt(stormConf,"rating.cache.size");
-		int ratingCacheExpiryTimeSec = ConfigUtility.getInt(stormConf,"correlation.cache.expiry.time.sec");
+		int ratingCacheExpiryTimeSec = ConfigUtility.getInt(stormConf,"rating.cache.expiry.time.sec");
 		if (null == itemRatingCache) {
 			itemRatingCache = CacheBuilder.newBuilder()
 					.maximumSize(ratingCacheSize)
 				    .expireAfterAccess(ratingCacheExpiryTimeSec, TimeUnit.SECONDS)
-				    .build(new ItemRatingLoader(jedis, itemRatingKey, debugOn));
+				    .build(new ItemRatingLoader(jedis, itemRatingKey, ratingScale, debugOn));
 		}
 		
+		ditherStdDev = ConfigUtility.getDouble(stormConf,"dither.std.dev");
 	}
 
 	@Override
@@ -88,7 +95,23 @@ public class DitheringBolt extends  GenericBolt {
 		boolean status = true;
 		try {
 			String user = input.getStringByField(RecommenderBolt.USER_ID);
-			List<UserItemRatings.ItemRating> itemRatings = itemRatingCache.get(user);
+			List<UserItemRatings.ItemRating> itemRatingList = itemRatingCache.get(user);
+			dither(itemRatingList);
+			
+			//serialize ratings
+			StringBuilder stBld = new StringBuilder(user);
+			for (UserItemRatings.ItemRating itemRating : itemRatingList) {
+				stBld.append(RecommenderBolt.FIELD_DELIM).append(itemRating.getItem()).
+					append(RecommenderBolt.SUB_FIELD_DELIM).append(itemRating.getRating());
+			}
+			String itemRatings  = stBld.toString();
+
+			//write to queue or cache
+			if (writeRecommendationToQueue) {
+				jedis.lpush(recommendationQueue, itemRatings);
+			} else {
+				jedis.hset(recommendationCache, user, itemRatings);
+			}
 		} catch (ExecutionException e) {
 			LOG.info("got error  " + e);
 			status = false;
@@ -104,6 +127,30 @@ public class DitheringBolt extends  GenericBolt {
 	}
 	
 	/**
+	 * @param itemRatingList
+	 */
+	private void dither(List<UserItemRatings.ItemRating> itemRatingList) {
+		int maxRating = 0;
+		for (UserItemRatings.ItemRating itemRating : itemRatingList ) {
+			//log of rating plus gaussian white noise
+			 int rating   =(int) ((Math.log10( itemRating.getRating()) + Utility.sampleGaussian(0.0, ditherStdDev)) * ratingScale);
+			 itemRating.setRating(rating);
+				if (rating > maxRating) {
+					maxRating = rating;
+				}
+		}
+		
+		//normalize
+		for (UserItemRatings.ItemRating itemRating : itemRatingList ) {
+			int rating =( itemRating.getRating() * ratingScale) / maxRating;
+			itemRating.setRating(rating);
+		}
+		
+		//sort
+		Collections.sort(itemRatingList);
+	}
+	
+	/**
 	 * Cache loader for item correlation
 	 * @author pranab
 	 *
@@ -113,14 +160,21 @@ public class DitheringBolt extends  GenericBolt {
 		private Jedis jedis;
 		private boolean debugOn;
 		private static final Logger LOG = Logger.getLogger(ItemRatingLoader.class);
+		private int ratingScale;
 		
-		public ItemRatingLoader(Jedis jedis, String itemRatingKey, boolean debugOn) {
+		/**
+		 * @param jedis
+		 * @param itemRatingKey
+		 * @param ratingScale
+		 * @param debugOn
+		 */
+		public ItemRatingLoader(Jedis jedis, String itemRatingKey, int ratingScale, boolean debugOn) {
 			this.jedis = jedis;
 			this.itemRatingKey = itemRatingKey;
 			this.debugOn = debugOn;
+			this.ratingScale = ratingScale;
 			if (debugOn) 
 				LOG.setLevel(Level.INFO);
-
 		}
 		
 		@Override
@@ -131,14 +185,23 @@ public class DitheringBolt extends  GenericBolt {
 			if (debugOn)
 				LOG.info("user:" + user + " rating:" +ratings);
 			String[] parts = ratings.split(",");
+			int maxRating = 0;
 			for (String part : parts) {
 				String[] subParts = part.split(":"); 
-				UserItemRatings.ItemRating itemRating = new UserItemRatings.ItemRating(subParts[0], Integer.parseInt(subParts[1]));
+				int rating = Integer.parseInt(subParts[1]);
+				UserItemRatings.ItemRating itemRating = new UserItemRatings.ItemRating(subParts[0], rating);
+				if (rating > maxRating) {
+					maxRating = rating;
+				}
 				itemRatingList.add(itemRating);
+			}
+			
+			//normalize
+			for (UserItemRatings.ItemRating itemRating : itemRatingList ) {
+				int rating =( itemRating.getRating() * ratingScale) / maxRating;
+				itemRating.setRating(rating);
 			}
 			return itemRatingList;
 		}
 	}
-	
-
 }
