@@ -28,7 +28,7 @@ import org.apache.log4j.Logger;
 import org.chombo.storm.GenericBolt;
 import org.chombo.storm.MessageHolder;
 import org.chombo.util.ConfigUtility;
-import org.chombo.util.Utility;
+import org.chombo.util.MathUtility;
 
 import redis.clients.jedis.Jedis;
 import backtype.storm.task.TopologyContext;
@@ -64,7 +64,7 @@ public class DitheringBolt extends  GenericBolt {
 	@Override
 	public void intialize(Map stormConf, TopologyContext context) {
 		jedis = RealtimeUtil.buildRedisClient(stormConf);
-		writeRecommendationToQueue = ConfigUtility.getBoolean(stormConf,"write.recommendation.to.queue");
+		writeRecommendationToQueue = ConfigUtility.getBoolean(stormConf,"write.dithered.recomm.to.queue");
 		if (writeRecommendationToQueue) {
 			recommendationQueue = ConfigUtility.getString(stormConf, "redis.dithered.recomm.queue");
 		}else {
@@ -133,7 +133,7 @@ public class DitheringBolt extends  GenericBolt {
 		int maxRating = 0;
 		for (UserItemRatings.ItemRating itemRating : itemRatingList ) {
 			//log of rating plus gaussian white noise
-			 int rating   =(int) ((Math.log10( itemRating.getRating()) + Utility.sampleGaussian(0.0, ditherStdDev)) * ratingScale);
+			 int rating   =(int) ((Math.log10( itemRating.getRating()) + MathUtility.sampleGaussian(0.0, ditherStdDev)) * ratingScale);
 			 itemRating.setRating(rating);
 				if (rating > maxRating) {
 					maxRating = rating;

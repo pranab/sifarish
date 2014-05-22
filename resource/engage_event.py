@@ -167,12 +167,17 @@ def showEventMapping():
 def loadPopRating(ratingFile):
 	key = '************'
 	ratingList = []
-	file = open(corrFile, 'r')
+	file = open(ratingFile, 'r')
 	for line in file:
 		line = line.strip().replace(',', ':')
 		ratingList.append(line)
-	value = ', '.join(ratingList)
-	rc.hset('popularItemRating', key, val)	
+	value = ','.join(ratingList)
+	rc.hset('popularItemRating', key, value)	
+
+#shows items correlation data
+def showDitheredPopRating():
+	val = rc.hget("ditheredPopRecommCache", '************')	
+	print "popular item rating %s" %(val)
 		
 #generate rating dither event for popular items
 def genPopDitherEvents(threadName, maxEvent):
@@ -180,6 +185,7 @@ def genPopDitherEvents(threadName, maxEvent):
 	for e in range(maxEvent):	
 		rc.lpush("recoDitherQueue", user)
 		time.sleep(randint(2,6))
+		print "generated user event"
 
 ########################### command processing #########################	
 op = sys.argv[1]
@@ -220,15 +226,13 @@ elif (op == "loadRating"):
 elif (op == "loadPopRating"):
 	ratingFile = sys.argv[2]
 	loadPopRating(ratingFile)
+elif (op == "showDithPopRating"):
+	showDitheredPopRating()
 elif (op == "genPopDitherEvents"):	            
-	#load user and items
-	eventFile = sys.argv[2]
-	loadUsersAndItems(eventFile)
-
 	#start multiple session threads
 	try:
-		if (len(sys.argv) == 4):
-			numSession = int(sys.argv[3])
+		if (len(sys.argv) == 3):
+			numSession = int(sys.argv[2])
 		for i in range(numSession):
 			threadName = "session-%d" %(i)
 			maxEvent = randint(eventCountMin, eventCountMax)

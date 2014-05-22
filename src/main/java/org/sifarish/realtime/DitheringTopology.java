@@ -50,7 +50,7 @@ public class DitheringTopology {
         builder.setSpout("ditheringRedisSpout", spout, spoutThreads);    
         
         //bolt
-        RecommenderBolt bolt = new RecommenderBolt();
+        DitheringBolt bolt = new DitheringBolt();
         int boltThreads = ConfigUtility.getInt(conf, "bolt.threads", 1);
         boolean globalDithering = ConfigUtility.getBoolean(conf, "global.dithering", true);
         if (globalDithering) {

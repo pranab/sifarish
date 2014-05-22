@@ -14,7 +14,7 @@ case "$1" in
 
 "copyPopular")
 	echo "copy popular items to local FS"
-	hadoop fs -get $HDFS_BASE_DIR/popu/part-m-00000 $2
+	hadoop fs -get $HDFS_BASE_DIR/popu/part-r-00000 $2
 	ls -l ~/Projects/bin/sifarish/$2
     ;;
 
@@ -25,7 +25,7 @@ case "$1" in
 
 "genEvents")  
 	echo  "generating dither event and push to redis queue"
-	./engage_event.py genPopDitherEvents $2 $3
+	./engage_event.py genPopDitherEvents $2 
     ;;
 
 "showDitheredRecocache")  
@@ -44,7 +44,7 @@ case "$1" in
 
 "buildJar")
 	echo  "building uber jar"
-	ant -f build_storm.xml
+	ant -f build_storm_gen.xml
 	;;
 
 "deployTopology")
