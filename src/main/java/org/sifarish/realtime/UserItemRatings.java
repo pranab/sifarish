@@ -302,6 +302,9 @@ public class UserItemRatings {
 			return that.getRight().compareTo(this.getRight());
 		}
 		
+		public ItemRating cloneItemRating() {
+			return new ItemRating(this.left, this.right);
+		}
 	}
 
 	/**

@@ -95,7 +95,9 @@ public class DitheringBolt extends  GenericBolt {
 		boolean status = true;
 		try {
 			String user = input.getStringByField(RecommenderBolt.USER_ID);
-			List<UserItemRatings.ItemRating> itemRatingList = itemRatingCache.get(user);
+			List<UserItemRatings.ItemRating> itemRatingListCached = itemRatingCache.get(user);
+			List<UserItemRatings.ItemRating> itemRatingList = cloneItemRatingList(itemRatingListCached) ;
+			
 			dither(itemRatingList);
 			
 			//serialize ratings
@@ -120,6 +122,15 @@ public class DitheringBolt extends  GenericBolt {
 		return status;
 	}
 
+	private List<UserItemRatings.ItemRating> cloneItemRatingList(List<UserItemRatings.ItemRating> itemRatingListCached) {
+		List<UserItemRatings.ItemRating> itemRatingList = new ArrayList<UserItemRatings.ItemRating>();
+		for (UserItemRatings.ItemRating itemRatingCached : itemRatingListCached) {
+			UserItemRatings.ItemRating clonedItemRating = itemRatingCached.cloneItemRating();
+			 itemRatingList.add(clonedItemRating);
+		}		
+		return itemRatingList;
+	}
+	
 	@Override
 	public List<MessageHolder> getOutput() {
 		// TODO Auto-generated method stub
