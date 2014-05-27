@@ -44,7 +44,7 @@ case "$1" in
 
 "buildJar")
 	echo  "building uber jar"
-	ant -f build_storm_gen.xml
+	ant -f build_storm.xml
 	;;
 
 "deployTopology")

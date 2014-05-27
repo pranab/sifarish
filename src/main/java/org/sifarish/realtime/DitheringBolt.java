@@ -122,6 +122,10 @@ public class DitheringBolt extends  GenericBolt {
 		return status;
 	}
 
+	/**
+	 * @param itemRatingListCached
+	 * @return
+	 */
 	private List<UserItemRatings.ItemRating> cloneItemRatingList(List<UserItemRatings.ItemRating> itemRatingListCached) {
 		List<UserItemRatings.ItemRating> itemRatingList = new ArrayList<UserItemRatings.ItemRating>();
 		for (UserItemRatings.ItemRating itemRatingCached : itemRatingListCached) {

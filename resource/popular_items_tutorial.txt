@@ -1,0 +1,65 @@
+This tutorial is for finding popular items from user engagement signals. 
+Then we dither the popular items before presenting to userss. Processing 
+is done with a pipeline of MR jobs. Dithering is done in real time using 
+Storm
+
+Dependency Jars
+===============
+Please refer to resource/jar_dpendency.txt
+
+Export signal mapping metatdata to HDFS
+=======================================
+./brec.sh expSchema
+
+Generate user engagement signals
+================================
+./brec.sh genHistEvent
+
+Export user engagement signals to HDFS
+======================================
+./brec.sh expEvent
+
+Generate implicit rating
+========================
+./brec.sh genRating
+
+Compact rating data
+===================
+./brec.sh compactRating
+
+Calculate rating statistics
+===========================
+./brec.sh ratingStat
+
+Calculate popularity scores
+===========================
+./brec.sh  itemPopularity
+
+Copy popular data to local FS
+=============================
+./dith.sh copyPopular <popular_data_file>
+
+Load popular item data to redis cache
+=====================================
+./dith.sh loadPopular <popular_data_file>
+
+Build mega jar for storm deployment
+===================================
+./dith.sh  buildJar
+
+Start storm
+===========
+./dith.sh  startStorm
+
+Deploy storm topology
+=====================
+./dith.sh deployTopology
+
+Read dithered list and generate new ones
+========================================
+./dith.sh genEvents <num_of_sessions>
+
+Configurations
+==============
+reco.properties
+rt_reco.properties

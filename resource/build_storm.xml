@@ -8,9 +8,6 @@
 			includes="sifarish-1.0.jar, " /> 
 		<zipgroupfileset dir="/home/pranab/Projects/chombo/target" 
 			includes="chombo-1.0.jar, " /> 
-		<manifest>
-			<attribute name="Main-Class" value="org.sifarish.realtime.RecommenderTopology" />
-		</manifest>
 	</jar>
 </target>
 </project>

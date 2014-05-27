@@ -183,9 +183,15 @@ def showDitheredPopRating():
 def genPopDitherEvents(threadName, maxEvent):
 	user = '************'
 	for e in range(maxEvent):	
+		val = rc.hget("ditheredPopRecommCache", '************')	
+		if val is not None:
+			items = val.split(',')
+			items = items[:11]
+			val = ','.join(items)
+			print val
 		rc.lpush("recoDitherQueue", user)
 		time.sleep(randint(2,6))
-		print "generated user event"
+		#print "generated user event"
 
 ########################### command processing #########################	
 op = sys.argv[1]
