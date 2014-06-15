@@ -372,6 +372,7 @@ public class SameTypeSimilarity  extends Configured implements Tool {
 
        		//if inter set matching with mixed in sets, match only same ID from different sets
         	if (mixedInSets) {
+        		//entityID is concatenation of setID and real entityID
         		String firstEntityId = firstId.substring(setIdSize);
         		String secondEntityId = secondId.substring(setIdSize);
         		if (!firstEntityId.equals(secondEntityId)) {
@@ -483,6 +484,7 @@ public class SameTypeSimilarity  extends Configured implements Tool {
         private void intializePassiveFieldOrdinal(List<Integer> activeFields, int numFields) {
         	int len = numFields - activeFields.size();
         	if (len > 0) {
+        		//all fields that are not active
 	        	passiveFields = new int[len];
 	        	for (int i = 0,j=0; i < numFields; ++i) {
 	        		if (!activeFields.contains(i) ) {
@@ -518,8 +520,8 @@ public class SameTypeSimilarity  extends Configured implements Tool {
         	}
         	stBld.append(dist);
         	if (extraOutputField != -1) {
-        		appendExtraField(first, stBld);
-        		appendExtraField(second, stBld);
+        		appendExtraField(firstItems, stBld);
+        		appendExtraField(secondItems, stBld);
         	}
         	return stBld.toString();
         }
@@ -528,8 +530,7 @@ public class SameTypeSimilarity  extends Configured implements Tool {
          * @param value
          * @param stBld
          */
-        private void appendExtraField(String value, StringBuilder stBld) {
-    		String[] items = value.split(",");
+        private void appendExtraField(String[] items, StringBuilder stBld) {
     		if (extraOutputField < items.length) {
     			stBld.append(fieldDelim).append(items[extraOutputField]);
     		}
