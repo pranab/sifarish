@@ -51,14 +51,16 @@ public class IndividualNovelty extends Transformer {
         	
         	Configuration config = context.getConfiguration();
         	String strategy = config.get("novelty.gen.strategy", "selfInformation");
-        	int maxRating = config.getInt("max.rating", 100);
+        	int maxRating = config.getInt("rating.scale", 100);
         	if (strategy.equals("selfInformation")) {
-        		 registerTransformers(2, new SelfInformation(maxRating));
+        		 int engaementDistrScale = config.getInt("engaement.distr.scale",  1000);
+       		 	 registerTransformers(2, new Transformer.NullTransformer());
+        		 registerTransformers(3, new IndividualNovelty.SelfInformation(engaementDistrScale, maxRating));
         	} else if  (strategy.equals("nonLinearInverse")) {
         		double param = config.getFloat("quadratic.param", (float) 0.8);
-       		 	registerTransformers(2, new NonLinearInverse(maxRating, param));
+       		 	registerTransformers(2, new IndividualNovelty.NonLinearInverse(maxRating, param));
+      		 	registerTransformers(3, new Transformer.NullTransformer());
         	}
-        	
         }
 	}
 	
@@ -67,12 +69,14 @@ public class IndividualNovelty extends Transformer {
 	 *
 	 */
 	public static class SelfInformation implements AttributeTransformer {
-		private int maxRating; 
+		private int engaementDistrScale; 
 		private double maxNovelty;
+		private int maxRating;
 		
-		public SelfInformation(int maxRating) {
+		public SelfInformation(int engaementDistrScale, int maxRating) {
+			this.engaementDistrScale = engaementDistrScale;
+			maxNovelty = log2(engaementDistrScale);
 			this.maxRating = maxRating;
-			maxNovelty = log2(maxRating);
 		}
 		
 		private double log2(int val) {
