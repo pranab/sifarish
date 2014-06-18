@@ -25,8 +25,8 @@ import org.chombo.mr.Transformer;
 import org.chombo.util.AttributeTransformer;
 
 /**
- * Per user item novelty. Novelty has an inverse relationship with user's engagement with an item.
- * 
+ * Per user item novelty. Novelty has an inverse relationship with user's engagement 
+ * with an item.
  * @author pranab
  *
  */
@@ -34,21 +34,20 @@ public class IndividualNovelty extends Transformer {
 	
 	@Override
 	public int run(String[] args) throws Exception {
-		return start("Individual novelty MR", IndividualNovelty.class, IndividualNoveltyMapper.class,  args);
+		return start("Individual novelty MR", IndividualNovelty.class, IndividualNovelty.NoveltyMapper.class,  args);
 	}
 	
 	/**
 	 * @author pranab
 	 *
 	 */
-	public static class IndividualNoveltyMapper extends  Transformer.TransformerMapper {
+	public static class NoveltyMapper extends  Transformer.TransformerMapper {
 		
         /* (non-Javadoc)
          * @see org.chombo.mr.Transformer.TransformerMapper#setup(org.apache.hadoop.mapreduce.Mapper.Context)
          */
         protected void setup(Context context) throws IOException, InterruptedException {
         	super.setup(context);
-        	
         	Configuration config = context.getConfiguration();
         	String strategy = config.get("novelty.gen.strategy", "selfInformation");
         	int maxRating = config.getInt("rating.scale", 100);
@@ -69,12 +68,10 @@ public class IndividualNovelty extends Transformer {
 	 *
 	 */
 	public static class SelfInformation implements AttributeTransformer {
-		private int engaementDistrScale; 
 		private double maxNovelty;
 		private int maxRating;
 		
 		public SelfInformation(int engaementDistrScale, int maxRating) {
-			this.engaementDistrScale = engaementDistrScale;
 			maxNovelty = log2(engaementDistrScale);
 			this.maxRating = maxRating;
 		}

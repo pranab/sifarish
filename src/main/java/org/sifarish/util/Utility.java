@@ -28,7 +28,8 @@ import org.apache.hadoop.conf.Configuration;
  *
  */
 public class Utility {
-
+	public final static double AVERAGE_RADIUS_OF_EARTH = 6371;
+	
     public static void setConfiguration(Configuration conf) throws Exception{
         String confFilePath = conf.get("conf.path");
         if (null != confFilePath){
@@ -43,4 +44,39 @@ public class Utility {
         }
     }
 
+    /**
+     * @param loc1
+     * @param loc2
+     * @return
+     */
+    public static int getGeoDistance(String loc1, String loc2) {
+    	String[] items = loc1.split(":");
+    	double lat1 = Double.parseDouble(items[0]);
+    	double long1 = Double.parseDouble(items[1]);
+    	
+    	items = loc2.split(":");
+    	double lat2 = Double.parseDouble(items[0]);
+    	double long2 = Double.parseDouble(items[1]);
+    	
+    	return getGeoDistance(lat1, long1, lat2, long2) ;
+    }
+    
+    /**
+     * geo location distance by Haversine formula
+     * @param lat1
+     * @param long1
+     * @param lat2
+     * @param long2
+     * @return distance in km
+     */
+    public static int getGeoDistance(double lat1, double long1, double lat2, double long2) {
+        double latDistance = Math.toRadians(lat1 - lat2);
+        double longDistance = Math.toRadians(long1 - long2);
+
+        double a = (Math.sin(latDistance / 2) * Math.sin(latDistance / 2)) + (Math.cos(Math.toRadians(lat1))) *
+                        (Math.cos(Math.toRadians(lat2))) * (Math.sin(longDistance / 2)) * (Math.sin(longDistance / 2));
+        double c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        return (int) (Math.round(AVERAGE_RADIUS_OF_EARTH * c));
+
+    }    
 }

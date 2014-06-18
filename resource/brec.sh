@@ -138,11 +138,24 @@ case "$1" in
 	hadoop fs -rmr $HDFS_BASE_DIR/reco/bigo/_logs
 	hadoop fs -rmr $HDFS_BASE_DIR/reco/bigo/_SUCCESS	
 	;;
+
+"genEngageDistr")	
+	CLASS_NAME=org.sifarish.common.ItemEngagementDistr
+	echo "running MR to generate per user item engaement distribution"
+	IN_PATH=$HDFS_BASE_DIR/rate
+	OUT_PATH=$HDFS_BASE_DIR/endi
+	echo "input $IN_PATH output $OUT_PATH"
+	hadoop fs -rmr $OUT_PATH
+	echo "removed output dir $OUT_PATH"
+	hadoop jar $JAR_NAME  $CLASS_NAME -Dconf.path=$PROP_FILE  $IN_PATH  $OUT_PATH
+	hadoop fs -rmr $HDFS_BASE_DIR/reco/endi/_logs
+	hadoop fs -rmr $HDFS_BASE_DIR/reco/endi/_SUCCESS	
+	;;
 	
 "genItemNovelty")	
 	CLASS_NAME=org.sifarish.common.IndividualNovelty
 	echo "running MR to generate per user item novelty from implicit rating"
-	IN_PATH=$HDFS_BASE_DIR/rate
+	IN_PATH=$HDFS_BASE_DIR/endi
 	OUT_PATH=$HDFS_BASE_DIR/novl
 	echo "input $IN_PATH output $OUT_PATH"
 	hadoop fs -rmr $OUT_PATH
