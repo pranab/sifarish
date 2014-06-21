@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.UUID;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.conf.Configured;
@@ -31,10 +32,13 @@ import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.mapreduce.Mapper;
 import org.apache.hadoop.mapreduce.Reducer;
+import org.apache.hadoop.mapreduce.Reducer.Context;
 import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 import org.apache.hadoop.util.Tool;
 import org.apache.hadoop.util.ToolRunner;
+import org.chombo.redis.RedisCache;
+import org.chombo.util.ConfigUtility;
 import org.chombo.util.TextPair;
 import org.chombo.util.Tuple;
 import org.chombo.util.Utility;
@@ -125,7 +129,11 @@ public class UtilityAggregator extends Configured implements Tool{
     	private int predRating;
     	private int medianRating;
     	private int maxStdDev;
-    	
+    	private int maxPredictedRating;
+    	private boolean  outputAggregationCount;
+		private StringBuilder stBld = new  StringBuilder();
+		private RedisCache redisCache;
+
         /* (non-Javadoc)
          * @see org.apache.hadoop.mapreduce.Reducer#setup(org.apache.hadoop.mapreduce.Reducer.Context)
          */
@@ -138,13 +146,31 @@ public class UtilityAggregator extends Configured implements Tool{
         	corrScale = config.getInt("correlation.scale", 1000);
         	maxRating = config.getInt("max.rating", 100);
         	maxStdDev = (35 * maxRating)  / 100;
+        	maxPredictedRating = 0;
+        	outputAggregationCount = config.getBoolean("output.aggregation.count", true);
+        	
+    		String redisHost = config.get("redis.server.host", "localhost");
+    		int redisPort = config.getInt("redis.server.port",  6379);
+    		String defaultOrgId = config.get("default.org.id");
+    		String cacheName = "si-" + defaultOrgId;
+    		redisCache = new   RedisCache( redisHost, redisPort, cacheName);
         } 	
+        
+        /* (non-Javadoc)
+         * @see org.apache.hadoop.mapreduce.Reducer#cleanup(org.apache.hadoop.mapreduce.Reducer.Context)
+         */
+        @Override
+        protected void cleanup(Context context) throws IOException, InterruptedException {
+        	//need UUID because multiple reducers might write their own max
+        	redisCache.put("maxPredictedRating-" + UUID.randomUUID().toString(), "" + maxPredictedRating);
+        }
         
         /* (non-Javadoc)
          * @see org.apache.hadoop.mapreduce.Reducer#reduce(KEYIN, java.lang.Iterable, org.apache.hadoop.mapreduce.Reducer.Context)
          */
         protected void reduce(TextPair  key, Iterable<Tuple> values, Context context)
         throws IOException, InterruptedException {
+			stBld.delete(0, stBld.length());
 			sum = sumWt = 0;
 			maxRating = 0;
 			int count = 0;
@@ -160,7 +186,7 @@ public class UtilityAggregator extends Configured implements Tool{
 						//input rating std dev weighted average
 						int stdDev =  value.getInt(3);
 						if (stdDev < 0) {
-							throw new IllegalStateException("No rating std dev found");
+							throw new IllegalStateException("No rating std dev found stdDev:" + stdDev);
 						}
 						
 						int normStdDev = invMapeStdDev(stdDev);
@@ -210,8 +236,18 @@ public class UtilityAggregator extends Configured implements Tool{
 				utilityScore = maxRating;
 			}
 			
+			//max predicted rating
+			if (utilityScore > maxPredictedRating) {
+				maxPredictedRating = utilityScore;
+			}
+			
 			//userID, itemID, score, count
-        	valueOut.set(key.getFirst() + fieldDelim + key.getSecond() + fieldDelim + utilityScore + fieldDelim + count);
+			stBld.append(key.getFirst()).append(fieldDelim).append(key.getSecond()).append(fieldDelim).
+				append(utilityScore);
+			if (outputAggregationCount) {
+				stBld.append(fieldDelim).append(count);
+			}
+        	valueOut.set(stBld.toString());
 	   		context.write(NullWritable.get(), valueOut);
         }
         

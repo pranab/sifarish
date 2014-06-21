@@ -59,7 +59,7 @@ public class UtilityPredictor extends Configured implements Tool{
         
         job.setJarByClass(UtilityPredictor.class);
         
-        FileInputFormat.addInputPath(job, new Path(args[0]));
+        FileInputFormat.addInputPaths(job, args[0]);
         FileOutputFormat.setOutputPath(job, new Path(args[1]));
 
         job.setMapperClass(UtilityPredictor.PredictionMapper.class);
@@ -143,6 +143,8 @@ public class UtilityPredictor extends Configured implements Tool{
     		String itemID = items[0];
         	if (isRatingFileSplit) {
         		//user rating
+				context.getCounter("Record type count", "Rating").increment(1);
+
         		boolean toInclude = true;
                	for (int i = 1; i < items.length; ++i) {
                		//all user ratings for this item
@@ -171,6 +173,7 @@ public class UtilityPredictor extends Configured implements Tool{
                	}
         	} else  if (isRatingStatFileSplit) {
         		//rating stat
+				context.getCounter("Record type count", "Rating stat").increment(1);
         		int ratingStdDev = Integer.parseInt(items[STD_DEV_ORD]);
         		keyOut.set(itemID, one);
            		valOut.initialize();
@@ -178,6 +181,7 @@ public class UtilityPredictor extends Configured implements Tool{
    	   			context.write(keyOut, valOut);
         	} else {
         		//if correlation is above min threshold
+				context.getCounter("Record type count", "Correlation").increment(1);
         		correlation =  Integer.parseInt( items[2]);
         		correlationLength =  Integer.parseInt(items[3]);
         		if (correlation > minCorrelation) {
