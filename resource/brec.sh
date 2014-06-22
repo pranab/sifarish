@@ -85,26 +85,33 @@ case "$1" in
 	hadoop fs -rmr $OUT_PATH
 	echo "removed output dir $OUT_PATH"
 	hadoop jar $JAR_NAME  $CLASS_NAME -Dconf.path=$PROP_FILE  $IN_PATH  $OUT_PATH
-	hadoop fs -rmr $HDFS_BASE_DIR/reco/stat/_logs
-	hadoop fs -rmr $HDFS_BASE_DIR/reco/stat/_SUCCESS	
+	hadoop fs -rmr $HDFS_BASE_DIR/stat/_logs
+	hadoop fs -rmr $HDFS_BASE_DIR/stat/_SUCCESS	
 	;;
 	
 "copyRatingStat")	
 	echo "copying rating stat file to rating predictor input dir"
 	hadoop fs -cp $HDFS_BASE_DIR/stat/part-r-00000 $HDFS_BASE_DIR/simi/stat_ratings.txt
+	hadoop fs -ls $HDFS_BASE_DIR/simi
 	;;
 
+"renameRatingFile")	
+	echo "renaming rating  file"
+	hadoop fs -mv $HDFS_BASE_DIR/crat/$2 $HDFS_BASE_DIR/crat/$3  
+	hadoop fs -ls $HDFS_BASE_DIR/crat
+	;;
+	
 "ratingPred")
 	echo "running MR for rating predictor"
 	CLASS_NAME=org.sifarish.common.UtilityPredictor
-	IN_PATH=$HDFS_BASE_DIR/simi
+	IN_PATH=$HDFS_BASE_DIR/crat,$HDFS_BASE_DIR/simi
 	OUT_PATH=$HDFS_BASE_DIR/utpr
 	echo "input $IN_PATH output $OUT_PATH"
 	hadoop fs -rmr $OUT_PATH
 	echo "removed output dir $OUT_PATH"
 	hadoop jar $JAR_NAME  $CLASS_NAME -Dconf.path=$PROP_FILE  $IN_PATH  $OUT_PATH
-	hadoop fs -rmr $HDFS_BASE_DIR/reco/utpr/_logs
-	hadoop fs -rmr $HDFS_BASE_DIR/reco/utpr/_SUCCESS	
+	hadoop fs -rmr $HDFS_BASE_DIR/utpr/_logs
+	hadoop fs -rmr $HDFS_BASE_DIR/utpr/_SUCCESS	
 	;;
 
 "ratingAggr")	
@@ -116,8 +123,8 @@ case "$1" in
 	hadoop fs -rmr $OUT_PATH
 	echo "removed output dir $OUT_PATH"
 	hadoop jar $JAR_NAME  $CLASS_NAME -Dconf.path=$PROP_FILE  $IN_PATH  $OUT_PATH
-	hadoop fs -rmr $HDFS_BASE_DIR/reco/utag/_logs
-	hadoop fs -rmr $HDFS_BASE_DIR/reco/utag/_SUCCESS	
+	hadoop fs -rmr $HDFS_BASE_DIR/utag/_logs
+	hadoop fs -rmr $HDFS_BASE_DIR/utag/_SUCCESS	
 	;;
 
 "expBizData")  
@@ -135,8 +142,8 @@ case "$1" in
 	hadoop fs -rmr $OUT_PATH
 	echo "removed output dir $OUT_PATH"
 	hadoop jar $JAR_NAME  $CLASS_NAME -Dconf.path=$PROP_FILE  $IN_PATH  $OUT_PATH
-	hadoop fs -rmr $HDFS_BASE_DIR/reco/bigo/_logs
-	hadoop fs -rmr $HDFS_BASE_DIR/reco/bigo/_SUCCESS	
+	hadoop fs -rmr $HDFS_BASE_DIR/bigo/_logs
+	hadoop fs -rmr $HDFS_BASE_DIR/bigo/_SUCCESS	
 	;;
 
 "genEngageDistr")	
@@ -148,8 +155,8 @@ case "$1" in
 	hadoop fs -rmr $OUT_PATH
 	echo "removed output dir $OUT_PATH"
 	hadoop jar $JAR_NAME  $CLASS_NAME -Dconf.path=$PROP_FILE  $IN_PATH  $OUT_PATH
-	hadoop fs -rmr $HDFS_BASE_DIR/reco/endi/_logs
-	hadoop fs -rmr $HDFS_BASE_DIR/reco/endi/_SUCCESS	
+	hadoop fs -rmr $HDFS_BASE_DIR/endi/_logs
+	hadoop fs -rmr $HDFS_BASE_DIR/endi/_SUCCESS	
 	;;
 	
 "genItemNovelty")	
@@ -161,22 +168,41 @@ case "$1" in
 	hadoop fs -rmr $OUT_PATH
 	echo "removed output dir $OUT_PATH"
 	hadoop jar $JAR_NAME  $CLASS_NAME -Dconf.path=$PROP_FILE  $IN_PATH  $OUT_PATH
-	hadoop fs -rmr $HDFS_BASE_DIR/reco/novl/_logs
-	hadoop fs -rmr $HDFS_BASE_DIR/reco/novl/_SUCCESS	
+	hadoop fs -rmr $HDFS_BASE_DIR/novl/_logs
+	hadoop fs -rmr $HDFS_BASE_DIR/novl/_SUCCESS	
 	;;
 
+"renamePredRatingFile")	
+	hadoop fs -mv $HDFS_BASE_DIR/utag/$2 $HDFS_BASE_DIR/utag/$3  
+	hadoop fs -ls $HDFS_BASE_DIR/utag
+	;;
+
+"joinRatingNovelty")	
+	CLASS_NAME=org.chombo.mr.Joiner
+	JAR_NAME=/home/pranab/Projects/chombo/target/chombo-1.0.jar
+	echo "running MR to join predicted rating with novelty"
+	IN_PATH=$HDFS_BASE_DIR/utag,$HDFS_BASE_DIR/novl
+	OUT_PATH=$HDFS_BASE_DIR/rano
+	echo "input $IN_PATH output $OUT_PATH"
+	hadoop fs -rmr $OUT_PATH
+	echo "removed output dir $OUT_PATH"
+	hadoop jar $JAR_NAME  $CLASS_NAME -Dconf.path=$PROP_FILE  $IN_PATH  $OUT_PATH
+	hadoop fs -rmr $HDFS_BASE_DIR/rano/_logs
+	hadoop fs -rmr $HDFS_BASE_DIR/rano/_SUCCESS	
+	;;
 
 "injectItemNovelty")	
 	CLASS_NAME=org.chombo.mr.WeightedAverage
+	JAR_NAME=/home/pranab/Projects/chombo/target/chombo-1.0.jar
 	echo "running MR to generate per user item novelty from implicit rating"
-	IN_PATH=$HDFS_BASE_DIR/utag,$HDFS_BASE_DIR/novl
+	IN_PATH=$HDFS_BASE_DIR/rano
 	OUT_PATH=$HDFS_BASE_DIR/utno
 	echo "input $IN_PATH output $OUT_PATH"
 	hadoop fs -rmr $OUT_PATH
 	echo "removed output dir $OUT_PATH"
 	hadoop jar $JAR_NAME  $CLASS_NAME -Dconf.path=$PROP_FILE  $IN_PATH  $OUT_PATH
-	hadoop fs -rmr $HDFS_BASE_DIR/reco/utno/_logs
-	hadoop fs -rmr $HDFS_BASE_DIR/reco/utno/_SUCCESS	
+	hadoop fs -rmr $HDFS_BASE_DIR/utno/_logs
+	hadoop fs -rmr $HDFS_BASE_DIR/utno/_SUCCESS	
 	;;
 
 "itemPopularity")	
@@ -188,8 +214,8 @@ case "$1" in
 	hadoop fs -rmr $OUT_PATH
 	echo "removed output dir $OUT_PATH"
 	hadoop jar $CHOMBO_JAR_NAME  $CLASS_NAME -Dconf.path=$PROP_FILE  $IN_PATH  $OUT_PATH
-	hadoop fs -rmr $HDFS_BASE_DIR/reco/popu/_logs
-	hadoop fs -rmr $HDFS_BASE_DIR/reco/popu/_SUCCESS	
+	hadoop fs -rmr $HDFS_BASE_DIR/popu/_logs
+	hadoop fs -rmr $HDFS_BASE_DIR/popu/_SUCCESS	
 	;;
 	
 *) 

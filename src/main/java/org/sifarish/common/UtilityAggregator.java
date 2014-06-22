@@ -23,6 +23,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 
+import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.conf.Configured;
 import org.apache.hadoop.fs.Path;
@@ -152,8 +153,10 @@ public class UtilityAggregator extends Configured implements Tool{
     		String redisHost = config.get("redis.server.host", "localhost");
     		int redisPort = config.getInt("redis.server.port",  6379);
     		String defaultOrgId = config.get("default.org.id");
-    		String cacheName = "si-" + defaultOrgId;
-    		redisCache = new   RedisCache( redisHost, redisPort, cacheName);
+    		if (!StringUtils.isBlank(defaultOrgId)) {
+    			String cacheName = "si-" + defaultOrgId;
+    	   		redisCache = new   RedisCache( redisHost, redisPort, cacheName);
+    	   	}
         } 	
         
         /* (non-Javadoc)
@@ -162,7 +165,12 @@ public class UtilityAggregator extends Configured implements Tool{
         @Override
         protected void cleanup(Context context) throws IOException, InterruptedException {
         	//need UUID because multiple reducers might write their own max
-        	redisCache.put("maxPredictedRating-" + UUID.randomUUID().toString(), "" + maxPredictedRating);
+        	if (null != redisCache) {
+        		//default org
+        		redisCache.put("maxPredRating-" + UUID.randomUUID().toString(), "" + maxPredictedRating);
+        	} else {
+        		//mutiple org
+        	}
         }
         
         /* (non-Javadoc)
