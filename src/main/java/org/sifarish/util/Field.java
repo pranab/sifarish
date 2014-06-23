@@ -44,6 +44,7 @@ public class Field {
 	private double[] componentWeights;
 	private IDistanceStrategy distStrategy;
 	private double distThreshold = -1.0;
+	private int maxDistance;
 
 	
 	public boolean isType() {
@@ -266,5 +267,11 @@ public class Field {
 	
 	public boolean isDistanceThresholdCrossed(double dist) {
 		return distThreshold > 0.0 && dist > distThreshold;
+	}
+	public int getMaxDistance() {
+		return maxDistance;
+	}
+	public void setMaxDistance(int maxDistance) {
+		this.maxDistance = maxDistance;
 	}
 }

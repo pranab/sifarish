@@ -50,6 +50,8 @@ import org.sifarish.util.Utility;
 
 /**
  * Similarity between two different entity types based distance measure of attributes
+ * Attributes  from the two different entity types are linked through meta data. Meta data
+ * for both entity types are defined in JSON
  * @author pranab
  */
 public class DiffTypeSimilarity  extends Configured implements Tool {
@@ -332,6 +334,7 @@ public class DiffTypeSimilarity  extends Configured implements Tool {
         }
         
     	/**
+    	 * Gets distance between two entities
     	 * @param source
     	 * @param target
     	 * @param context
@@ -419,7 +422,15 @@ public class DiffTypeSimilarity  extends Configured implements Tool {
     							skipAttr = true;
     						}
     					}
-    					
+    				} else if (field.getDataType().equals("location")) {
+      					if (!mappedValues.isEmpty()) {
+       						String trgItemTxt = trgItem;
+       						String srcItemTxt = mappedValues.get(0);
+       						dist = getDistForLocation(trgItemTxt, srcItemTxt, field);
+    					} else {
+    						//missing source
+    						skipAttr = true;
+    					}  						
     				}
 				} else {
 					//missing target value
@@ -440,6 +451,7 @@ public class DiffTypeSimilarity  extends Configured implements Tool {
     	}
     	
     	/**
+    	 * Gets distance between numerial values
     	 * @param srcField
     	 * @param srcVal
     	 * @param trgField
@@ -494,6 +506,21 @@ public class DiffTypeSimilarity  extends Configured implements Tool {
     	}
     	
     	/**
+    	 * Gets distance between geo location values 
+    	 * @param trgItemTxt
+    	 * @param srcItemTxt
+    	 * @param field
+    	 * @return
+    	 */
+    	private double getDistForLocation(String trgItemTxt, String srcItemTxt,  Field field ) {
+    		double dist = org.sifarish.util.Utility.getGeoDistance(trgItemTxt, srcItemTxt);
+    		dist /= field.getMaxDistance();
+    		dist = dist <= 1.0 ? dist : 1.0;
+    		return dist;
+    	}
+    	
+    	/**
+    	 * gets distance for missing source field
     	 * @param trgField
     	 * @param trgVal
     	 * @return
@@ -517,7 +544,7 @@ public class DiffTypeSimilarity  extends Configured implements Tool {
     		return dist;
     	}
     	
-    	/**
+    	/** Gets distance when source attribute is missing
     	 * @param trgField
     	 * @param mappedValues
     	 * @return
@@ -543,6 +570,7 @@ public class DiffTypeSimilarity  extends Configured implements Tool {
     	}
     	
     	/**
+    	 * Gets values for the mapped attributes in src mapped from the target
     	 * @param source
     	 * @param context
     	 */
@@ -579,6 +607,7 @@ public class DiffTypeSimilarity  extends Configured implements Tool {
 						if (null != valueMappings) {
 							for (FieldMapping.ValueMapping valMapping : valueMappings) {
 								if (field.getDataType().equals("categorical")) {
+									//store mapped values
 									if (valMapping.getThisValue().equals(value)) {
 										mappedValues.add(valMapping.getThatValue());
 			    						context.getCounter("Data", "Mapped Value").increment(1);
@@ -626,11 +655,7 @@ public class DiffTypeSimilarity  extends Configured implements Tool {
     		int fItemInt = sum / count;
     		return fItemInt;
         }
-        
-    	
     }  
-    
-     
 
     /**
      * @author pranab
