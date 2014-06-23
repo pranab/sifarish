@@ -1,8 +1,17 @@
-This tutorial is for social recommendation. Processing is done with a 
-pipeline of MR jobs. Some of them are optional.
+This tutorial is for social recommendation base on collaborative filtering. Processing 
+is done with a  pipeline of MR jobs. Some of them are optional. All commands are in the 
+shell script brec.sh. Please make necessary changes for path, environment etc in that file 
+before  proceeding
 
-Generating Rating data
-======================
+
+Dependency Jars
+===============
+Please refer to resource/jar_dpendency.txt
+
+
+Generating Rating data (optional)
+================================
+You could generate rating data directly, by following the steps here.
 The format of rating is as follows. Each line has rating by all users for a given item
 
 item1,user1:3,user2:4,..
@@ -13,7 +22,7 @@ It requires util.rb to be in the ../lib directory. You can get util.rb
 from the visitante project at the following location
 https://github.com/pranab/visitante/tree/master/script/ruby
 
-ruby ratings.rb <item_count> <user_count> <user_per_items_multipler>  > rating.txt
+ruby ratings.rb <item_count> <user_count> <user_per_items_multipler>  > <rating_file>
 
 In the output, average number of users rating for an item will be 
 item_count *  user_per_items_multipler / user_count
@@ -23,34 +32,30 @@ So choose the last argument as per your need.
 User count should be an order of magnitude higher than item count. The value of
 user_per_items_multipler should be 5 or more. A reasoable value is 10
 
-Dependency Jars
-===============
-Please refer to resource/jar_dpendency.txt
+Copy rating data to HDFS
+hadoop fs -rmr $HDFS_BASE_DIR/rate/*
+hadoop fs -put <rating_file> $HDFS_BASE_DIR/rate
 
 
 Implicit Rating Predictor (optiuonal)
 =====================================
 This MR task is optional. You want to run this MR if you want to generate rating data
-from user engaement click stream data. If you have generated rating data from script
+from user engaement click stream data. If you have generated rating data directly from script
 then skip this.
 
-Generate user engagement data as follows
-ruby engage.rb <item_count> <customer_count> <event_count> > engage.txt
-event_count = number of events per customer (a reasonable number is around 10)
+1.Export user engaement schema to HDFS
+./brec.sh expSchema
 
-Copy the input data file to  HDFS input directory. This is the script to run MR
+2.Generate user engagement data as follows
+./brec.sh genHistEvent <item_count> <user_count> <average_event_count_per_user>
+average_event_count_per_user = number of events per customer (a reasonable number is around 10)
 
-JAR_NAME=/home/pranab/Projects/sifarish/target/sifarish-1.0.jar
-CLASS_NAME=org.sifarish.common.ImplicitRatingEstimator
+3.Copy the input data file to  HDFS input directory. This is the script to run MR
+./brec.sh expEvent
 
-echo "running ImplicitRatingEstimator mr"
-IN_PATH=/user/pranab/reco/enga
-OUT_PATH=/user/pranab/reco/rate
-echo "input $IN_PATH output $OUT_PATH"
-hadoop fs -rmr $OUT_PATH
-echo "removed output dir $OUT_PATH"
+4. Run MR
+./brec.sh genRating
 
-hadoop jar $JAR_NAME  $CLASS_NAME -Dconf.path=/home/pranab/Projects/bin/sifarish/reco.properties  $IN_PATH  $OUT_PATH
 
 Rating data formatter (optional)
 ================================
@@ -60,15 +65,7 @@ However, Rating Correlation MR below expects data in a compact format as below
 itemID, userID1:rating1, userId2:rating2
 
 This map reduce is necessary to do the format conversion to the compact form and it can be run as follows
-
-CLASS_NAME=org.sifarish.common.CompactRatingFormatter
-echo "running CompactRatingFormatter mr"
-IN_PATH=/user/pranab/reco/rate
-OUT_PATH=/user/pranab/reco/crat
-echo "input $IN_PATH output $OUT_PATH"
-hadoop fs -rmr $OUT_PATH
-echo "removed output dir $OUT_PATH"
-hadoop jar $JAR_NAME  $CLASS_NAME -Dconf.path=/home/pranab/Projects/bin/sifarish/reco.properties  $IN_PATH  $OUT_PATH
+./brech.sh compactRating
 
 
 Rating Statistics (optional)
@@ -76,112 +73,47 @@ Rating Statistics (optional)
 If the parameter input.rating.stdDev.weighted.average is set to true for UtilityAggregator,
 then rating std dev calculation is necessary. In our example, we are not using it.
 
-Here is the script to calculate rating statistics
-
-JAR_NAME=/home/pranab/Projects/sifarish/target/sifarish-1.0.jar
-CLASS_NAME=org.sifarish.social.ItemRatingStat
-echo "running ItemRatingStat mr"
-IN_PATH=/user/pranab/reco/item
-OUT_PATH=/user/pranab/reco/stat
-echo "input $IN_PATH output $OUT_PATH"
-hadoop fs -rmr $OUT_PATH
-echo "removed output dir $OUT_PATH"
-hadoop jar $JAR_NAME  $CLASS_NAME -Dconf.path=/home/pranab/Projects/bin/sifarish/reco.properties  $IN_PATH  $OUT_PATH
+run this to calculate rating statistics
+./brec.sh ratingStat
 
 
 Rating correlation
 ==================
 Correlation can be calculated in various ways. We will be using cosine similarity.
 
-Copy the script generated rating data file as below
-hadoop fs -put rating.txt /user/pranab/reco/item
-
-If you used ImplicitRatingEstimator MR  to generate rating data, then copy the Haddop
-generated rating data as follows
-hadoop fs -cp  /user/pranab/reco/crat/part-r-00000 /user/pranab/reco/item
-
 Here is shell script to calculate correlation. 
-
-JAR_NAME=/home/pranab/Projects/sifarish/target/sifarish-1.0.jar
-CLASS_NAME=org.sifarish.common.ItemDynamicAttributeSimilarity
-echo "running ItemDynamicAttributeSimilarity mr"
-IN_PATH=/user/pranab/reco/item
-OUT_PATH=/user/pranab/reco/simi
-echo "input $IN_PATH output $OUT_PATH"
-hadoop fs -rmr $OUT_PATH
-echo "removed output dir $OUT_PATH"
-hadoop jar $JAR_NAME  $CLASS_NAME -Dconf.path=/home/pranab/Projects/bin/sifarish/reco.properties  $IN_PATH  $OUT_PATH
-
-
-If you wanted to use some other correlator, for example Pearson Correlator, change the CLASS_NAME 
-in the script as follows
-CLASS_NAME=org.sifarish.social.PearsonCorrelator
-
+./brec.sh correlation
 
 Rating Predictor
 ================
 The next step is to predict rating based on items already rated by user and the correlation
 calculated in the first MR
 
-The shell scripts is as follows. The input directory is the output directory of the previous
-MR. Hadoop creates some directories and files besides the output. Please remove everything
-from the Hadoop output directory of Rating Correlation MR,except for the output files as below
+1.The rating file should be renamed so that it has the same prefix  have the prefix as defined by 
+the config param rating.file.prefix (prRating here)
+./brec.sh renameRatingFile part-r-00000 prRating.txt 
 
-hadoop fs -rmr ..../_logs
-hadoop fs -rmr ..../_SUCCESS
-
-The rating file should also be copied hadoop input directory. The rating file name should 
-have the prefix as defined by the config param rating.file.prefix
-
-JAR_NAME=/home/pranab/Projects/sifarish/target/sifarish-1.0.jar
-CLASS_NAME=org.sifarish.common.UtilityPredictor
-echo "running mr"
-IN_PATH=/user/pranab/reco/simi
-OUT_PATH=/user/pranab/reco/utpr
-echo "input $IN_PATH output $OUT_PATH"
-hadoop fs -rmr $OUT_PATH
-echo "removed output dir $OUT_PATH"
-hadoop jar $JAR_NAME  $CLASS_NAME -Dconf.path=/home/pranab/Projects/bin/sifarish/reco.properties  $IN_PATH  $OUT_PATH
+2. Run MR as follows
+./brec.sh ratingPred
 
 Aggregate Rating Predictor
 ==========================
 This predicts the final rating by aggregating contribution from all items rated by the user
 
-The input directory is the output directory of the Rating Predictor MR. Please remove everything 
-from the Hadoop output directory of Rating Predictor MR,except for the output files as below
-
-hadoop fs -rmr ..../_logs
-hadoop fs -rmr ..../_SUCCESS
-
-Here is the sample shell script. It's input is the output of the previous MR 
-
-JAR_NAME=/home/pranab/Projects/sifarish/target/sifarish-1.0.jar
-CLASS_NAME=org.sifarish.common.UtilityAggregator
-echo "running UtilityAggregator mr"
-IN_PATH=/user/pranab/reco/utpr
-OUT_PATH=/user/pranab/reco/utag
-echo "input $IN_PATH output $OUT_PATH"
-hadoop fs -rmr $OUT_PATH
-echo "removed output dir $OUT_PATH"
-hadoop jar $JAR_NAME  $CLASS_NAME -Dconf.path=/home/pranab/Projects/bin/sifarish/reco.properties  $IN_PATH  $OUT_PATH
+Run MR
+./brec.sh ratingAggr
 
 Business Goal Injection (optional)
 ==================================
 This is an optional MR, that combines scores of various business goals with recommendation score
 using relative weighting to come up with the final score. In our example, we are not using it.
 
-Here is the sample shell script. It's input is the output of Aggregate Rating Predictor MR 
+1. Copy business score data
+./brec.sh expBizData
 
- 
-JAR_NAME=/home/pranab/Projects/sifarish/target/sifarish-1.0.jar
-CLASS_NAME=org.sifarish.common.BusinessGoalInjector
-echo "running mr"
-IN_PATH=/user/pranab/reco/utag
-OUT_PATH=/user/pranab/reco/bigo
-echo "input $IN_PATH output $OUT_PATH"
-hadoop fs -rmr $OUT_PATH
-echo "removed output dir $OUT_PATH"
-hadoop jar $JAR_NAME  $CLASS_NAME -Dconf.path=/home/pranab/Projects/bin/sifarish/reco.properties  $IN_PATH  $OUT_PATH
+2. Run MR
+./brec.sh injectBizGoal
+
 
 Order by User ID (optional)
 ===========================
@@ -204,92 +136,36 @@ hadoop fs -rmr $OUT_PATH
 echo "removed output dir $OUT_PATH"
 hadoop jar $JAR_NAME  $CLASS_NAME -Dconf.path=/home/pranab/Projects/bin/sifarish/reco.properties  $IN_PATH  $OUT_PATH
 
-Uber script
-===========
-Here is an example script that runs all the MR jobs
+Novelty per user (optional)
+===========================
+Nobelty can blended in with predicted rating as follows
 
-base="$1"
-echo "copy rating data"
-hadoop fs -put  ratings.txt "${base}"/reco/item
+1. Caculate user item engaement distribution
+./brec.sh genEngageDistr
 
-echo "running rating stat MR"
-./rast.sh
+2. Generate item novelty score
+./brec.sh genItemNovelty
 
-echo "running rating matrix MR"
-./itsi.sh
-hadoop fs -rmr "${base}"/reco/simi/_logs
-hadoop fs -rmr "${base}"/reco/simi/_SUCCESS
+3. Rename predicted rating file to have prefix as defined in config. It should be repeated
+if there are multiple reducer output files
+./brec.sh renamePredRatingFile  part-r-00000 prRatings0.txt
 
-echo "copying rating data to rating predictor input dir"
-hadoop fs -put ratings.txt "${base}"/reco/simi
+4. Join predicted rating and novelty
+./brec.sh joinRatingNovelty
 
-echo "copying rating stat file to predictor input dir"
-hadoop fs -cp "${base}"/reco/stat/part-r-00000 /user/pranab/reco/simi/stat_ratings.txt
+5. Weighted average of predicted rating and novelty
+./brec.sh injectItemNovelty
 
+Item popularity global
+======================
+It can be used to solve cold start problem. Popularity is calculated by taking weighted 
+average of various rating stats
 
-echo "running rating predictor MR"
-./utpr.sh
-hadoop fs -rmr "${base}"/reco/utpr/_logs
-hadoop fs -rmr "${base}"/reco/utpr/_SUCCESS
-
-echo "running rating aggregate predictor MR"
-./utag.sh
-hadoop fs -rmr "${base}"/reco/utag/_logs
-hadoop fs -rmr "${base}"/reco/utag/_SUCCESS
-
+Run MR
+./brec.sh itemPopularity
 
 Configuration
 =============
-Here is a sample properties file (reco.properties) containing all the configurations
-
-field.delim.regex=,
-field.delim=,
-num.reducer=1
-
-#ImplicitRatingEstimator
-rating.mapper.config.path=/user/pranab/meta/imra/engageEvent.json
-rating.estimator.output.detail=true
-
-#ItemDynamicAttributeSimilarity
-bucket.count=10
-hash.pair.multiplier=1000
-similarity.algorithm=cosine
-vec.type.boolean=false
-vec.type.semantic=false
-vec.count.included=true
-distance.scale=1000
-output.correlation=true
-min.intersection.length=2
-
-#UtilityPredictor
-correlation.linear=true
-correlation.linear.scale=1000
-max.rating=100
-sub.field.delim=:
-rating.file.prefix=rating
-rating.stat.file.prefix=stat
-correlation.scale=1000
-correlation.modifier=1.1
-
-#UtilityAggregator
-corr.length.weighted.average=false
-input.rating.stdDev.weighted.average=false
-rating.aggregator.strategy=average
-semantic.matcher.class=org.sifarish.common.ResourceDescribedEntity
-semantic.top.match.count=1
-semantic.matcher.params=semantic.rdf.modelFilePath
-semantic.rdf.modelFilePath=/user/pranab/reco/semantic/pref.rdf
-
-#BusinessGoalInjector
-biz.goal.file.prefix=biz
-biz.goal.weights=25,15
-max.biz.goal.weight=70
-biz.goal.min.threshold=5,-1
-
-sort.field=0
-
-rating.scale=100
-debug.on=true
-
+it's in reco.properties
 
  
