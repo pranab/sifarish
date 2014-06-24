@@ -11,8 +11,9 @@ Please refer to resource/jar_dpendency.txt
 
 Generating Rating data (optional)
 ================================
-You could generate rating data directly, by following the steps here.
-The format of rating is as follows. Each line has rating by all users for a given item
+You could generate rating data directly, by following the steps here. If not 
+you could generate implicit rating data as described below. The format of rating data 
+generated is as follows. Each line has rating by all  users for a given item
 
 item1,user1:3,user2:4,..
 item2,user2:5,user4:2,...
@@ -22,20 +23,16 @@ It requires util.rb to be in the ../lib directory. You can get util.rb
 from the visitante project at the following location
 https://github.com/pranab/visitante/tree/master/script/ruby
 
-ruby ratings.rb <item_count> <user_count> <user_per_items_multipler>  > <rating_file>
+1. generate explicit rating data
+./brec.sh genExplicitRating <item_count> <user_count> <user_per_items_multipler>  > <rating_file>
 
 In the output, average number of users rating for an item will be 
-item_count *  user_per_items_multipler / user_count
+item_count *  user_per_items_multipler / user_count. So choose the last argument 
+as per your need. User count should be an order of magnitude higher than item count. 
+The value of user_per_items_multipler should be 5 or more. A reasoable value is 10
 
-So choose the last argument as per your need.
-
-User count should be an order of magnitude higher than item count. The value of
-user_per_items_multipler should be 5 or more. A reasoable value is 10
-
-Copy rating data to HDFS
-hadoop fs -rmr $HDFS_BASE_DIR/rate/*
-hadoop fs -put <rating_file> $HDFS_BASE_DIR/rate
-
+2. Copy rating data to HDFS
+./brec.sh expExplicitRating <rating_file>
 
 Implicit Rating Predictor (optiuonal)
 =====================================
@@ -59,12 +56,11 @@ average_event_count_per_user = number of events per customer (a reasonable numbe
 
 Rating data formatter (optional)
 ================================
-If you ran ImplicitRatingPredictor, it generated rating data in an exploded format as below
-userID, itemID, rating
-However, Rating Correlation MR below expects data in a compact format as below
-itemID, userID1:rating1, userId2:rating2
+If you ran ImplicitRatingPredictor, it generated rating data in an exploded format as 
+userID, itemID, rating. However, Rating Correlation MR below expects data in a compact 
+format as  itemID, userID1:rating1, userId2:rating2
 
-This map reduce is necessary to do the format conversion to the compact form and it can be run as follows
+1. Run MR
 ./brech.sh compactRating
 
 
@@ -73,7 +69,7 @@ Rating Statistics (optional)
 If the parameter input.rating.stdDev.weighted.average is set to true for UtilityAggregator,
 then rating std dev calculation is necessary. In our example, we are not using it.
 
-run this to calculate rating statistics
+1. Run MR
 ./brec.sh ratingStat
 
 
@@ -81,7 +77,7 @@ Rating correlation
 ==================
 Correlation can be calculated in various ways. We will be using cosine similarity.
 
-Here is shell script to calculate correlation. 
+1. Run MR
 ./brec.sh correlation
 
 Rating Predictor
@@ -89,18 +85,24 @@ Rating Predictor
 The next step is to predict rating based on items already rated by user and the correlation
 calculated in the first MR
 
-1.The rating file should be renamed so that it has the same prefix  have the prefix as defined by 
-the config param rating.file.prefix (prRating here)
-./brec.sh renameRatingFile part-r-00000 prRating.txt 
+1.The rating file should be renamed so that it has the same prefix   
+as defined by  the config param rating.file.prefix (prRating here). It should 
+be repeated if there are multiple reducer output files
+./brec.sh renameRatingFile part-r-00000 prRating0.txt 
 
-2. Run MR as follows
+2. The rating file should be renamed so that it has the same prefix   
+as defined by  the config param rating.stat.file.prefix. It should 
+be repeated if there are multiple reducer output files
+./brec.sh renameRatingStat
+
+3. Run MR as follows
 ./brec.sh ratingPred
 
 Aggregate Rating Predictor
 ==========================
 This predicts the final rating by aggregating contribution from all items rated by the user
 
-Run MR
+1. Run MR
 ./brec.sh ratingAggr
 
 Business Goal Injection (optional)
@@ -120,21 +122,11 @@ Order by User ID (optional)
 It orders the final result by userID, so that you get all recommendation for
 a given user together
 
-Here is the sample shell script. It's input is the output of the previous MR 
+1. Run MR. Unsroted data dir name (not full path) needs to be specified, because
+unsorted data location depends on post processing  done with predicted rating 
+(e.g., business goal injection) 
+./brec.sh  sortByUser <unsorted_data_hdfs_dir>
 
-JAR_NAME=/home/pranab/Projects/chombo/target/chombo-1.0.jar
-CLASS_NAME=org.chombo.mr.TextSorter
-
-hadoop fs -rmr /user/pranab/reco/bigo/_logs
-hadoop fs -rmr /user/pranab/reco/bigo/_SUCCESS
-
-echo "running TextSorter mr"
-IN_PATH=/user/pranab/reco/bigo
-OUT_PATH=/user/pranab/reco/usso
-echo "input $IN_PATH output $OUT_PATH"
-hadoop fs -rmr $OUT_PATH
-echo "removed output dir $OUT_PATH"
-hadoop jar $JAR_NAME  $CLASS_NAME -Dconf.path=/home/pranab/Projects/bin/sifarish/reco.properties  $IN_PATH  $OUT_PATH
 
 Novelty per user (optional)
 ===========================
@@ -146,8 +138,8 @@ Nobelty can blended in with predicted rating as follows
 2. Generate item novelty score
 ./brec.sh genItemNovelty
 
-3. Rename predicted rating file to have prefix as defined in config. It should be repeated
-if there are multiple reducer output files
+3. Rename predicted rating file to have prefix as defined in config param first.type.prefix. 
+The command should be repeatedly executed  if there are multiple reducer output files
 ./brec.sh renamePredRatingFile  part-r-00000 prRatings0.txt
 
 4. Join predicted rating and novelty
@@ -161,7 +153,7 @@ Item popularity global
 It can be used to solve cold start problem. Popularity is calculated by taking weighted 
 average of various rating stats
 
-Run MR
+1. Run MR
 ./brec.sh itemPopularity
 
 Configuration
