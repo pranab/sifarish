@@ -4,6 +4,14 @@ Sifarish is a suite of recommendation engines implementaed on Hadoop and Storm. 
 algorithms, including  feature similarity based recommendation and collaborative 
 filtering based recommendation using social rating data will be available
 
+## Philosophy
+* Providing complete business soltion, not just bunch of machine learning algorithms
+* Simple to use
+* Input output in CSV format
+* Metadata defined in simple JSON file
+* Extremely configurable with tons of configuration knobs
+
+
 ## Blogs
 
 The following blogs of mine are good source of details of sifarish. These are the only source
@@ -19,6 +27,8 @@ of detail documentation
 * http://pkghosh.wordpress.com/2012/09/03/from-item-correlation-to-rating-prediction/
 * http://pkghosh.wordpress.com/2014/02/10/from-explicit-user-engagement-to-implicit-product-rating/
 * http://pkghosh.wordpress.com/2014/04/14/making-recommendations-in-real-time/
+* http://pkghosh.wordpress.com/2014/05/26/popularity-shaken/
+* http://pkghosh.wordpress.com/2014/06/23/novelty-in-personalization/
 
 ## Content Similarity Based Recommendation
 
@@ -84,8 +94,8 @@ There two phases for collaborative filetering based recommendation using social 
 1. Find correlation between items 2. Predict rating based on items alreadyv rated and 
 result of 1
 
-The process involved running map reduce jobs. Some of them are optional. Please refer to the 
-tutorial document tutorial.txt
+The process involved running multiple map reduce jobs. Some of them are optional. Please refer to the 
+tutorial document tutorial.txt in the resource directory
 
 
 ## Real Time Recommendation
@@ -102,7 +112,7 @@ in the mobile space
 
 ## Diversilty, Novelty 
 
-Based on recent work in this area, I am working on implementing some  algorithms to introduce  
+Based on recent work in the acdemic world, I am working on implementing some  algorithms to introduce  
 diversity and novelty in recommendation
 
 ## Facted Match
@@ -120,6 +130,9 @@ are presented to the user.
 Please use the tutorial.txt file in the resource directory for batch mode recommendation 
 processing. For real time recommendation please use the tutorial document there is a separate
 tutorial document realtime\_recommendation\_tutorial.txt
+
+## Help
+Please feel free to email me at pkghosh99@gmail.com
 
 
 
