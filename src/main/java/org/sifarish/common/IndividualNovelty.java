@@ -26,7 +26,7 @@ import org.chombo.util.AttributeTransformer;
 
 /**
  * Per user item novelty. Novelty has an inverse relationship with user's engagement 
- * with an item.
+ * with an item. Input: userID, itemID, rating, rating distr
  * @author pranab
  *
  */
@@ -52,10 +52,12 @@ public class IndividualNovelty extends Transformer {
         	String strategy = config.get("novelty.gen.strategy", "selfInformation");
         	int maxRating = config.getInt("rating.scale", 100);
         	if (strategy.equals("selfInformation")) {
+        		//based on rating distribution
         		 int engaementDistrScale = config.getInt("engaement.distr.scale",  1000);
        		 	 registerTransformers(2, new Transformer.NullTransformer());
         		 registerTransformers(3, new IndividualNovelty.SelfInformation(engaementDistrScale, maxRating));
         	} else if  (strategy.equals("nonLinearInverse")) {
+        		//based on rating
         		double param = config.getFloat("quadratic.param", (float) 0.8);
        		 	registerTransformers(2, new IndividualNovelty.NonLinearInverse(maxRating, param));
       		 	registerTransformers(3, new Transformer.NullTransformer());
@@ -82,6 +84,7 @@ public class IndividualNovelty extends Transformer {
 		
 		@Override
 		public String tranform(String value) {
+			//from rating distr to novelty
 			int rating = Integer.parseInt(value);
 			rating = rating == 0 ? 1 : rating;
 			Integer novelty = (int)((1.0 - log2(rating) / maxNovelty) * maxRating);
@@ -106,9 +109,16 @@ public class IndividualNovelty extends Transformer {
 
 		@Override
 		public String tranform(String value) {
+			//from rating to novelty
 			int rating = Integer.parseInt(value);
-			rating = rating == 0 ? 1 : rating;
-			Integer novelty = (int)(k2 * rating * rating + k1 * rating + k0);
+			Integer novelty = null;
+			if (rating == 0) {
+				novelty = maxRating;
+			} else if (rating == maxRating){
+				novelty = 0;
+			} else {
+				novelty = (int)(k2 * rating * rating + k1 * rating + k0);
+			}
 			return novelty.toString();
 		}
 		

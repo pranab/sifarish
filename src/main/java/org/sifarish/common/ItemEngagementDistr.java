@@ -93,7 +93,7 @@ public class ItemEngagementDistr extends Configured implements Tool {
 	        throws IOException, InterruptedException {
         	String[] items  =  value.toString().split(fieldDelimRegex);
         	
-        	//emit itemsID as key and user: rating as value
+        	//emit userID as key and itemID,  rating as value
         	outKey.set(items[0]);
         	outVal.initialize();
         	outVal.add(items[1],  Integer.parseInt(items[2]));
@@ -149,11 +149,14 @@ public class ItemEngagementDistr extends Configured implements Tool {
 
            		stBld.append(fieldDelim).append(rating);
           		stBld.append(fieldDelim).append(distr);
+          		
+          		//userID,  itemID, rating, rating distr
                	valOut.set(stBld.toString());
         		context.write(NullWritable.get(), valOut);
            	}
         }
     }
+    
     /**
      * @param args
      * @throws Exception
