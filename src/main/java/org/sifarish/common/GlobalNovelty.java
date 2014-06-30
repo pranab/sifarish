@@ -50,9 +50,9 @@ public class GlobalNovelty  extends Transformer {
         	Configuration config = context.getConfiguration();
         	String strategy = config.get("novelty.gen.strategy", "selfInformation");
         	int maxRating = config.getInt("rating.scale", 100);
+    		RedisCache cache = RedisCache.createRedisCache(config, "ch");
         	if (strategy.equals("selfInformation")) {
         		//based on rating distribution
-        		RedisCache cache = RedisCache.createRedisCache(config, "ch");
 				String countMaxValueKeyPrefix = config.get("count.max.value.key.prefix");
         		int engaementDistrScale = cache.getIntMax(countMaxValueKeyPrefix);
        		 	registerTransformers(1, new Transformer.NullTransformer());
@@ -60,7 +60,9 @@ public class GlobalNovelty  extends Transformer {
         	} else if  (strategy.equals("nonLinearInverse")) {
         		//based on rating
         		double param = config.getFloat("quadratic.param", (float) 0.8);
-       		 	registerTransformers(1, new IndividualNovelty.NonLinearInverse(maxRating, param));
+				String ratingMaxValueKeyPrefix = config.get("rating.max.value.key.prefix");
+        		int maxRatingInData = cache.getIntMax(ratingMaxValueKeyPrefix);
+       		 	registerTransformers(1, new IndividualNovelty.NonLinearInverse(maxRating, param, maxRatingInData));
       		 	registerTransformers(2, new Transformer.NullTransformer());
         	}
         }

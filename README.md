@@ -1,8 +1,7 @@
 ## Introduction
-
-Sifarish is a suite of recommendation engines implementaed on Hadoop and Storm. Various 
-algorithms, including  feature similarity based recommendation and collaborative 
-filtering based recommendation using social rating data will be available
+Sifarish is a suite of solutions for recommendation personalization implementaed on 
+Hadoop and Storm. Various  algorithms, including  feature similarity based recommendation 
+and collaborative filtering based recommendation using social rating data are available
 
 ## Philosophy
 * Providing complete business soltion, not just bunch of machine learning algorithms
@@ -13,7 +12,6 @@ filtering based recommendation using social rating data will be available
 
 
 ## Blogs
-
 The following blogs of mine are good source of details of sifarish. These are the only source
 of detail documentation
 
@@ -31,7 +29,6 @@ of detail documentation
 * http://pkghosh.wordpress.com/2014/06/23/novelty-in-personalization/
 
 ## Content Similarity Based Recommendation
-
 In the absence of social rating data, the only options is a feature similarity 
 based recommendation. Similarity is calculated based on distance between entities 
 in a multi dimensional feature space. Some examples are - recommending jobs based 
@@ -55,7 +52,6 @@ importance of different attributes.
 
 
 ## Social Interaction Data Based Recommendation
-
 These solutions are based user behavior data with respect to some product 
 or service. these algorithms are also known as collaborative filtering.  
 
@@ -66,7 +62,6 @@ also be boolean,  if the user's interest in an item is expressed as a boolean
 
 
 ## Cold Starting Recommenders
-
 These solutions are used when enough social data is not avaialable. 
 
 1. If data contains text attributes, use TextAnalyzer MR to convert text to token stream 
@@ -76,7 +71,6 @@ These solutions are used when enough social data is not avaialable.
 
 
 ## Warm Starting Recommenders
-
 When limited amount of user behavior data is available, these solutuions are appropriate
 
 1. If data contains text attributes, use TextAnalyzer MR to convert text to token stream 
@@ -86,7 +80,6 @@ When limited amount of user behavior data is available, these solutuions are app
 
 
 ## Recommenders with Fully engaged Users
-
 When significant of user behavior data is available, these soltions can be used. In 
 the order of  complexity, the choices are as follows. They are all based on social data
 
@@ -99,34 +92,37 @@ tutorial document tutorial.txt in the resource directory
 
 
 ## Real Time Recommendation
-
 Recommendations can be made real time based on user's current behavior in a pre defined time
 window. The solution is based on Storm, although Hadoop gets used to compute item correlation
 matrix from historical user behavior data.
 
 ## Complex Attributes
-
 There is  suppoort for structured fields e.g., Location, Time Window, Categorized Item, Product etc. 
 These provide contextual dimensions to recommendation. They are particularly relevant for recommendation
 in the mobile space
 
-## Diversilty, Novelty 
+## Novelty 
+Novelty for an item can be computed at individual user level or the whole user community as a
+whole. Novelty is blended into the final recommendation list by taking weighted average of
+predicted rating and novelty  
 
-Based on recent work in the acdemic world, I am working on implementing some  algorithms to introduce  
-diversity and novelty in recommendation
+## Diversilty 
+Based on recent work in the academic world, I am working on implementing some  algorithms to introduce  
+diversity in recommendation. Unlike novelty, diversity is group wise property. Diversity can be
+defined either in terms item dissimilarity in a collaborative filtering sense or structural and content 
+sense
 
 ## Facted Match
-
 For content based recommendation, faceted match is supported as faceted search in Solr.
 Faceted fields are specified through a configuration parameter
 
 ## Dithering
+
 Dithering effectively handles the problem users usually not browsing the first few items
 in a list. The dithering process shuffles the list little bit, every time recommended items 
 are presented to the user.
  
 ## Getting started
-
 Please use the tutorial.txt file in the resource directory for batch mode recommendation 
 processing. For real time recommendation please use the tutorial document there is a separate
 tutorial document realtime\_recommendation\_tutorial.txt

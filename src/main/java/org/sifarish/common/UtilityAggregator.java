@@ -150,13 +150,7 @@ public class UtilityAggregator extends Configured implements Tool{
         	maxPredictedRating = 0;
         	outputAggregationCount = config.getBoolean("output.aggregation.count", true);
         	
-    		String redisHost = config.get("redis.server.host", "localhost");
-    		int redisPort = config.getInt("redis.server.port",  6379);
-    		String defaultOrgId = config.get("default.org.id");
-    		if (!StringUtils.isBlank(defaultOrgId)) {
-    			String cacheName = "si-" + defaultOrgId;
-    	   		redisCache = new   RedisCache( redisHost, redisPort, cacheName);
-    	   	}
+    	   	redisCache = RedisCache.createRedisCache(config, "si");
         } 	
         
         /* (non-Javadoc)
@@ -167,8 +161,8 @@ public class UtilityAggregator extends Configured implements Tool{
         	//need UUID because multiple reducers might write their own max
         	if (null != redisCache) {
         		//default org
-        		redisCache.put("maxPredRating-" + UUID.randomUUID().toString(), "" + maxPredictedRating);
-        	} else {
+				redisCache.put("maxPredRating" ,  "" + maxPredictedRating, true);
+      	} else {
         		//mutiple org
         	}
         }

@@ -122,6 +122,7 @@ public class SameTypeSimilarity  extends Configured implements Tool {
         private int hashCode;
    	 	private boolean interSetMatching;
    	 	private  boolean  isBaseSetSplit;
+   	 	private static final int hashMultiplier = 1000;
         private static final Logger LOG = Logger.getLogger(SimilarityMapper.class);
  
         /* (non-Javadoc)
@@ -163,10 +164,11 @@ public class SameTypeSimilarity  extends Configured implements Tool {
        		}
             	
             if (interSetMatching) {
+            	// 2 sets
 	    		hash = hashCode %  bucketCount ;
             	if (isBaseSetSplit) {
     	    		for (int i = 0; i < bucketCount;  ++i) {
-	       				hashPair = hash * 1000 +  i;
+	       				hashPair = hash * hashMultiplier +  i;
 	       				keyHolder.set(partition, hashPair,0);
 	       				valueHolder.set("0" + value.toString());
 		    			LOG.debug("hashPair:" + hashPair);
@@ -174,7 +176,7 @@ public class SameTypeSimilarity  extends Configured implements Tool {
     	    		}
             	} else {
     	    		for (int i = 0; i < bucketCount;  ++i) {
-	    				hashPair =  i * 1000  +  hash;
+	    				hashPair =  i * hashMultiplier  +  hash;
 	       				keyHolder.set(partition, hashPair,1);
 	       				valueHolder.set("1" + value.toString());
 		    			LOG.debug("hashPair:" + hashPair);
@@ -182,14 +184,15 @@ public class SameTypeSimilarity  extends Configured implements Tool {
     	    		}            		
             	}
             } else {
+            	// 1 set
 	    		hash = (hashCode %  bucketCount) / 2 ;
 	    		for (int i = 0; i < bucketCount;  ++i) {
 	    			if (i < hash){
-	       				hashPair = hash * 1000 +  i;
+	       				hashPair = hash * hashMultiplier +  i;
 	       				keyHolder.set(partition, hashPair,0);
 	       				valueHolder.set("0" + value.toString());
 	       	   		 } else {
-	    				hashPair =  i * 1000  +  hash;
+	    				hashPair =  i * hashMultiplier  +  hash;
 	       				keyHolder.set(partition, hashPair,1);
 	       				valueHolder.set("1" + value.toString());
 	    			} 
@@ -451,6 +454,9 @@ public class SameTypeSimilarity  extends Configured implements Tool {
 	    			}  else if (field.getDataType().equals("location")) {
 	    				//location
 	    				dist = locationDistance(field, firstAttr,  secondAttr, context);
+	    			} else if (field.getDataType().equals("geoLocation")) {
+	    				//geo location
+	    				dist = geoLocationDistance(field, firstAttr,  secondAttr, context);
 	    			}  else if (field.getDataType().equals("event")) {
 	    				//event
 	    				dist = eventDistance(field, firstAttr,  secondAttr, context);
@@ -613,6 +619,19 @@ public class SameTypeSimilarity  extends Configured implements Tool {
         	return dist;
         }    
 
+        /**
+         * @param field
+         * @param firstAttr
+         * @param secondAttr
+         * @param context
+         * @return
+         */
+        private double geoLocationDistance(Field field, String firstAttr, String secondAttr,Context context) {
+    		double dist = org.sifarish.util.Utility.getGeoDistance(firstAttr, secondAttr);
+    		dist /= field.getMaxDistance();
+    		dist = dist <= 1.0 ? dist : 1.0;
+    		return dist;
+        }    
         
         /**
          * @param field

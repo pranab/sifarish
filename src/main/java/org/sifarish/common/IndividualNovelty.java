@@ -93,12 +93,14 @@ public class IndividualNovelty extends Transformer {
 	}
 
 	/**
+	 * Second degree polynomial
 	 * @author pranab
 	 *
 	 */
 	public static class NonLinearInverse  implements AttributeTransformer {
 		private int maxRating; 
 		private double k0, k1, k2;
+		private int maxRatingInData;
 		
 		public NonLinearInverse(int maxRating, double param) {
 			this.maxRating = maxRating;
@@ -106,11 +108,21 @@ public class IndividualNovelty extends Transformer {
 			k1 = -3 + 2 * param;
 			k2 = 2 * (1 - param)  / maxRating;
 		}
-
+		public NonLinearInverse(int maxRating, double param, int maxRatingInData) {
+			this(maxRating, param);
+			this.maxRatingInData = maxRatingInData;
+		}
+		
 		@Override
 		public String tranform(String value) {
 			//from rating to novelty
 			int rating = Integer.parseInt(value);
+			
+			//scale it
+			if (maxRatingInData > 0) {
+				rating = (rating * maxRating) / maxRatingInData;
+			}
+			
 			Integer novelty = null;
 			if (rating == 0) {
 				novelty = maxRating;
