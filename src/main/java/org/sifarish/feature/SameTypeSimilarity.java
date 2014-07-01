@@ -401,6 +401,11 @@ public class SameTypeSimilarity  extends Configured implements Tool {
     				}
     			}
     			
+    			//if ID or class attribute field, skip it
+    			if (field.isId() ||  field.isClassAttribute()) {
+    				continue;
+    			}
+    			
     			//track fields participating is dist calculation
     			if (includePassiveFields && null == passiveFields) {
     				if (null == activeFields) {
@@ -436,6 +441,7 @@ public class SameTypeSimilarity  extends Configured implements Tool {
     					continue;
     				}
     			} else {
+    				dist = 0;
 	    			if (field.getDataType().equals("categorical")) {
 	    				//categorical
 	    				dist = field.findDistance(firstAttr, secondAttr);
