@@ -128,9 +128,9 @@ unsorted data location depends on post processing  done with predicted rating
 ./brec.sh  sortByUser <unsorted_data_hdfs_dir>
 
 
-Novelty per user (optional)
-===========================
-Nobelty can blended in with predicted rating as follows
+Individual Novelty (optional)
+=============================
+Novelty can blended in with predicted rating as follows
 
 1. Caculate user item engaement distribution
 ./brec.sh genEngageDistr
@@ -148,8 +148,8 @@ The command should be repeatedly executed  if there are multiple reducer output 
 5. Weighted average of predicted rating and novelty
 ./brec.sh injectItemNovelty
 
-Item popularity global
-======================
+Item popularity global (optional)
+=================================
 It can be used to solve cold start problem. Popularity is calculated by taking weighted 
 average of various rating stats
 

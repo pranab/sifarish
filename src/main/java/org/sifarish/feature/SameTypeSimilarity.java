@@ -256,7 +256,7 @@ public class SameTypeSimilarity  extends Configured implements Tool {
             schema.setConf(conf);
         	
             idOrdinal = schema.getEntity().getIdField().getOrdinal();
-        	fieldDelimRegex = conf.get("field.delim.regex", "\\[\\]");
+        	fieldDelimRegex = conf.get("field.delim.regex", ",");
         	fieldDelim = context.getConfiguration().get("field.delim", ",");
         	scale = conf.getInt("distance.scale", 1000);
         	subFieldDelim = conf.get("sub.field.delim.regex", "::");
@@ -305,7 +305,7 @@ public class SameTypeSimilarity  extends Configured implements Tool {
         	inFirstBucket = true;
         	firstBucketSize = secondBucketSize = 0;
         	int secondPart = key.getSecond().get();
-        	LOG.debug("key hash pair:" + secondPart);
+        	LOG.debug("reducer key hash pair:" + secondPart);
         	if (secondPart/1000 == secondPart%1000){
         		//same hash bucket
 	        	for (Text value : values){
@@ -370,7 +370,7 @@ public class SameTypeSimilarity  extends Configured implements Tool {
          * @throws IOException 
          */
         private int findDistance(String first, String second, Context context) throws IOException {
-        	LOG.debug("findDistance:" + first + "  " + second);
+        	//LOG.debug("findDistance:" + first + "  " + second);
         	int netDist = 0;
 
        		//if inter set matching with mixed in sets, match only same ID from different sets
@@ -435,10 +435,16 @@ public class SameTypeSimilarity  extends Configured implements Tool {
     			if (firstAttr.isEmpty() || secondAttr.isEmpty() ) {
     				//handle missing value
 					context.getCounter("Missing Data", "Field:" + field.getOrdinal()).increment(1);
-    				if (schema.getMissingValueHandler().equals("default")) {
-    					dist = 1.0;
-    				} else {
+					String missingValueHandler = schema.getMissingValueHandler();
+    				if (missingValueHandler.equals("default")) {
+       					context.getCounter("Missing Data", "Distance Set at Max").increment(1);
+       				    dist = 1.0;
+    				} else if (missingValueHandler.equals("skip")) {
+    					context.getCounter("Missing Data", "FieldSkipped").increment(1);
     					continue;
+    				} else {
+    					//custom handler
+    					
     				}
     			} else {
     				dist = 0;
