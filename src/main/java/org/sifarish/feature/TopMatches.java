@@ -18,27 +18,22 @@
 package org.sifarish.feature;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
 
-import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.conf.Configured;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.io.Text;
-import org.apache.hadoop.io.WritableComparable;
-import org.apache.hadoop.io.WritableComparator;
 import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.mapreduce.Mapper;
-import org.apache.hadoop.mapreduce.Partitioner;
 import org.apache.hadoop.mapreduce.Reducer;
-import org.apache.hadoop.mapreduce.Mapper.Context;
 import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 import org.apache.hadoop.util.Tool;
 import org.apache.hadoop.util.ToolRunner;
+import org.chombo.util.SecondarySort;
 import org.chombo.util.TextInt;
+import org.chombo.util.Tuple;
 import org.chombo.util.Utility;
 
 /**
@@ -62,19 +57,17 @@ public class TopMatches extends Configured implements Tool {
         job.setMapperClass(TopMatches.TopMatchesMapper.class);
         job.setReducerClass(TopMatches.TopMatchesReducer.class);
         
-        job.setMapOutputKeyClass(TextInt.class);
+        job.setMapOutputKeyClass(Tuple.class);
         job.setMapOutputValueClass(Text.class);
 
         job.setOutputKeyClass(NullWritable.class);
         job.setOutputValueClass(Text.class);
         
-        job.setGroupingComparatorClass(IdRankGroupComprator.class);
-        job.setPartitionerClass(IdRankPartitioner.class);
+        job.setGroupingComparatorClass(SecondarySort.TuplePairGroupComprator.class);
+        job.setPartitionerClass(SecondarySort.TupleTextPartitioner.class);
 
         Utility.setConfiguration(job.getConfiguration());
-
         job.setNumReduceTasks(job.getConfiguration().getInt("num.reducer", 1));
-        
         int status =  job.waitForCompletion(true) ? 0 : 1;
         return status;
 	}
@@ -83,25 +76,21 @@ public class TopMatches extends Configured implements Tool {
 	 * @author pranab
 	 *
 	 */
-	public static class TopMatchesMapper extends Mapper<LongWritable, Text, TextInt, Text> {
+	public static class TopMatchesMapper extends Mapper<LongWritable, Text, Tuple, Text> {
 		private String srcEntityId;
 		private String trgEntityId;
 		private int rank;
-		private TextInt outKey = new TextInt();
+		private Tuple outKey = new Tuple();
 		private Text outVal = new Text();
         private String fieldDelimRegex;
         private String fieldDelim;
-        private boolean classify;
-        private String firstClassAttr;
-        private String secondClassAttr;
 
         /* (non-Javadoc)
          * @see org.apache.hadoop.mapreduce.Mapper#setup(org.apache.hadoop.mapreduce.Mapper.Context)
          */
         protected void setup(Context context) throws IOException, InterruptedException {
-           	fieldDelim = context.getConfiguration().get("field.delim", "\\[\\]");
-            fieldDelimRegex = context.getConfiguration().get("field.delim.regex", "\\[\\]");
-            classify = context.getConfiguration().getBoolean("knn.classify", false);
+           	fieldDelim = context.getConfiguration().get("field.delim", ",");
+            fieldDelimRegex = context.getConfiguration().get("field.delim.regex", ",");
         }    
 
         /* (non-Javadoc)
@@ -115,15 +104,10 @@ public class TopMatches extends Configured implements Tool {
             srcEntityId = items[0];
             trgEntityId = items[1];
             rank = Integer.parseInt(items[items.length - 1]);
-            outKey.set(srcEntityId, rank);
-            if (classify) {
-            	firstClassAttr = items[2];
-            	secondClassAttr = items[3];
-	            outVal.set(trgEntityId + fieldDelim + firstClassAttr +  fieldDelim + secondClassAttr +  fieldDelim + items[items.length - 1]);
-            } else {
-	            outVal.set(trgEntityId + fieldDelim + items[items.length - 1]);
-            }
-			context.write(outKey, outVal);
+            outKey.initialize();
+            outKey.add(srcEntityId, rank);
+ 	        outVal.set(trgEntityId + fieldDelim + items[items.length - 1]);
+ 			context.write(outKey, outVal);
         }
 	}
 	
@@ -131,7 +115,7 @@ public class TopMatches extends Configured implements Tool {
      * @author pranab
      *
      */
-    public static class TopMatchesReducer extends Reducer<TextInt, Text, NullWritable, Text> {
+    public static class TopMatchesReducer extends Reducer<Tuple, Text, NullWritable, Text> {
     	private boolean nearestByCount;
     	private int topMatchCount;
     	private int topMatchDistance;
@@ -140,46 +124,32 @@ public class TopMatches extends Configured implements Tool {
 		private int distance;
 		private Text outVal = new Text();
         private String fieldDelim;
-        private boolean classify;
-        private List<String> neighbors = new ArrayList<String>();
-        private NearestNeighborClassifier classifier;
-        private String sourceClass;
     	
         /* (non-Javadoc)
          * @see org.apache.hadoop.mapreduce.Reducer#setup(org.apache.hadoop.mapreduce.Reducer.Context)
          */
         protected void setup(Context context) throws IOException, InterruptedException {
-           	fieldDelim = context.getConfiguration().get("field.delim", "\\[\\]");
+           	fieldDelim = context.getConfiguration().get("field.delim", ",");
         	nearestByCount = context.getConfiguration().getBoolean("nearest.by.count", true);
         	if (nearestByCount) {
         		topMatchCount = context.getConfiguration().getInt("top.match.count", 10);
         	} else {
         		topMatchDistance = context.getConfiguration().getInt("top.match.distance", 200);
         	}
-            classify = context.getConfiguration().getBoolean("knn.classify", false);
-        	if (classify) {
-        		classifier = new VotingClassifier();
-        	}
         }
     	
     	/* (non-Javadoc)
     	 * @see org.apache.hadoop.mapreduce.Reducer#reduce(KEYIN, java.lang.Iterable, org.apache.hadoop.mapreduce.Reducer.Context)
     	 */
-    	protected void reduce(TextInt key, Iterable<Text> values, Context context)
+    	protected void reduce(Tuple key, Iterable<Text> values, Context context)
         	throws IOException, InterruptedException {
-    		srcEntityId  = key.getFirst().toString();
+    		srcEntityId  = key.getString(0);
     		count = 0;
-    		neighbors.clear();
         	for (Text value : values){
         		//count based neighbor
 				if (nearestByCount) {
-					if (classify) {
-						neighbors.add(value.toString());
-						sourceClass = value.toString().split("*")[1];
-					} else  {
-						outVal.set(srcEntityId +fieldDelim + value.toString());
-						context.write(NullWritable.get(), outVal);
-					}
+					outVal.set(srcEntityId +fieldDelim + value.toString());
+					context.write(NullWritable.get(), outVal);
 	        		if (++count == topMatchCount){
 	        			break;
 	        		}
@@ -187,65 +157,17 @@ public class TopMatches extends Configured implements Tool {
 					//distance based neighbor
 					distance =Integer.parseInt( value.toString().split(",")[2]);
 					if (distance  <=  topMatchDistance ) {
-						if (classify) {
-							neighbors.add(value.toString());
-							sourceClass = value.toString().split("*")[1];
-						} else {
 							outVal.set(srcEntityId + "," + value.toString());
 							context.write(NullWritable.get(), outVal);
-						}
 					} else {
 						break;
 					}
 				}
         	}
-        	
-        	if (classify) {
-        		String predClass = classifier.classify(neighbors);
-				outVal.set(srcEntityId + "," + sourceClass + "," + predClass);
-				context.write(NullWritable.get(), outVal);
-        	}
     	}
-    	
     	
     }
 	
-    /**
-     * @author pranab
-     *
-     */
-    public static class IdRankPartitioner extends Partitioner<TextInt, Text> {
-	     @Override
-	     public int getPartition(TextInt key, Text value, int numPartitions) {
-	    	 //consider only base part of  key
-		     Text id = key.getFirst();
-		     return id.hashCode() % numPartitions;
-	     }
-   }
-    
-    /**
-     * @author pranab
-     *
-     */
-    public static class IdRankGroupComprator extends WritableComparator {
-    	protected IdRankGroupComprator() {
-    		super(TextInt.class, true);
-    	}
-
-    	/* (non-Javadoc)
-    	 * @see org.apache.hadoop.io.WritableComparator#compare(org.apache.hadoop.io.WritableComparable, org.apache.hadoop.io.WritableComparable)
-    	 */
-    	@Override
-    	public int compare(WritableComparable w1, WritableComparable w2) {
-    		//consider only the base part of the key
-    		Text t1 = ((TextInt)w1).getFirst();
-    		Text t2 = ((TextInt)w2).getFirst();
-    		
-    		int comp = t1.compareTo(t2);
-    		return comp;
-    	}
-     }
-
 	/**
 	 * @param args
 	 * @throws Exception
