@@ -32,7 +32,6 @@ import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 import org.apache.hadoop.util.Tool;
 import org.apache.hadoop.util.ToolRunner;
 import org.chombo.util.SecondarySort;
-import org.chombo.util.TextInt;
 import org.chombo.util.Tuple;
 import org.chombo.util.Utility;
 
@@ -56,6 +55,7 @@ public class TopMatches extends Configured implements Tool {
         
         job.setMapperClass(TopMatches.TopMatchesMapper.class);
         job.setReducerClass(TopMatches.TopMatchesReducer.class);
+        job.setCombinerClass(TopMatches.TopMatchesCombiner.class);
         
         job.setMapOutputKeyClass(Tuple.class);
         job.setMapOutputValueClass(Text.class);
@@ -110,7 +110,58 @@ public class TopMatches extends Configured implements Tool {
  			context.write(outKey, outVal);
         }
 	}
-	
+
+    /**
+     * @author pranab
+     *
+     */
+    public static class TopMatchesCombiner extends Reducer<Tuple, Text, Tuple, Text> {
+    	private boolean nearestByCount;
+    	private int topMatchCount;
+    	private int topMatchDistance;
+		private int count;
+		private int distance;
+        private String fieldDelim;
+    
+        /* (non-Javadoc)
+         * @see org.apache.hadoop.mapreduce.Reducer#setup(org.apache.hadoop.mapreduce.Reducer.Context)
+         */
+        protected void setup(Context context) throws IOException, InterruptedException {
+           	fieldDelim = context.getConfiguration().get("field.delim", ",");
+        	nearestByCount = context.getConfiguration().getBoolean("nearest.by.count", true);
+        	if (nearestByCount) {
+        		topMatchCount = context.getConfiguration().getInt("top.match.count", 10);
+        	} else {
+        		topMatchDistance = context.getConfiguration().getInt("top.match.distance", 200);
+        	}
+        }
+       	/* (non-Javadoc)
+    	 * @see org.apache.hadoop.mapreduce.Reducer#reduce(KEYIN, java.lang.Iterable, org.apache.hadoop.mapreduce.Reducer.Context)
+    	 */
+    	protected void reduce(Tuple key, Iterable<Text> values, Context context)
+        	throws IOException, InterruptedException {
+    		count = 0;
+        	for (Text value : values){
+        		//count based neighbor
+				if (nearestByCount) {
+					context.write(key, value);
+	        		if (++count == topMatchCount){
+	        			break;
+	        		}
+				} else {
+					//distance based neighbor
+					distance =Integer.parseInt( value.toString().split(fieldDelim)[1]);
+					if (distance  <=  topMatchDistance ) {
+						context.write(key, value);
+					} else {
+						break;
+					}
+				}
+        	}
+    	}
+    }
+    
+    
     /**
      * @author pranab
      *
@@ -155,7 +206,7 @@ public class TopMatches extends Configured implements Tool {
 	        		}
 				} else {
 					//distance based neighbor
-					distance =Integer.parseInt( value.toString().split(",")[2]);
+					distance =Integer.parseInt( value.toString().split(fieldDelim)[1]);
 					if (distance  <=  topMatchDistance ) {
 							outVal.set(srcEntityId + "," + value.toString());
 							context.write(NullWritable.get(), outVal);
