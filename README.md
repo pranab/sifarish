@@ -4,7 +4,7 @@ Hadoop and Storm. Various  algorithms, including  feature similarity based recom
 and collaborative filtering based recommendation using social rating data are available
 
 ## Philosophy
-* Providing complete business soltion, not just bunch of machine learning algorithms
+* Providing complete business solutions, not just bunch of machine learning algorithms
 * Simple to use
 * Input output in CSV format
 * Metadata defined in simple JSON file
