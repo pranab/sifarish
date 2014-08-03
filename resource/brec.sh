@@ -15,6 +15,11 @@ HDFS_META_BASE_DIR=/user/pranab/meta/imra
 
 case "$1" in
 
+"createDirs"
+     hadoop fs -mkdir $HDFS_BASE_DIR/rate
+    ;;
+
+
 "genExplicitRating")  
 	echo "generating explicit rating data"
 	ruby ratings.rb $2 $3 $4  > $5
@@ -90,9 +95,10 @@ case "$1" in
     ;;
 
 "ratingStat")
+	# 2nd arg is either rate (explicitly generated rating) or crat (implicitly generated data
 	echo "running MR to generate stating stats"
 	CLASS_NAME=org.sifarish.social.ItemRatingStat
-	IN_PATH=$HDFS_BASE_DIR/crat
+	IN_PATH=$HDFS_BASE_DIR/$2
 	OUT_PATH=$HDFS_BASE_DIR/stat
 	echo "input $IN_PATH output $OUT_PATH"
 	hadoop fs -rmr $OUT_PATH

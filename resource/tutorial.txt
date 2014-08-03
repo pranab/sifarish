@@ -8,9 +8,17 @@ Dependency Jars
 ===============
 Please refer to resource/jar_dpendency.txt
 
+Create HDFS directories
+=======================
+./brec.sh createDirs
 
-Generating Rating data (optional)
-================================
+Rating Data
+===========
+Uou have to generate rating data explicitly or implicit ly
+
+
+Explicit  Rating Data Generation (optional)
+===========================================
 You could generate rating data directly, by following the steps here. If not 
 you could generate implicit rating data as described below. The format of rating data 
 generated is as follows. Each line has rating by all  users for a given item
@@ -34,24 +42,24 @@ The value of user_per_items_multipler should be 5 or more. A reasoable value is 
 2. Copy rating data to HDFS
 ./brec.sh expExplicitRating <rating_file>
 
-Implicit Rating Predictor (optiuonal)
+Implicit Rating Predictor (optional)
 =====================================
 This MR task is optional. You want to run this MR if you want to generate rating data
 from user engaement click stream data. If you have generated rating data directly from script
 then skip this.
 
 1.Export user engaement schema to HDFS
-./brec.sh expSchema
+./brec.sh expSchema <schema_file>
 
 2.Generate user engagement data as follows
 ./brec.sh genHistEvent <item_count> <user_count> <average_event_count_per_user>
 average_event_count_per_user = number of events per customer (a reasonable number is around 10)
 
 3.Copy the input data file to  HDFS input directory. This is the script to run MR
-./brec.sh expEvent
+./brec.sh expEvent 
 
 4. Run MR
-./brec.sh genRating
+./brec.sh genRating  <event_data_file>
 
 
 Rating data formatter (optional)
@@ -70,7 +78,7 @@ If the parameter input.rating.stdDev.weighted.average is set to true for Utility
 then rating std dev calculation is necessary. In our example, we are not using it.
 
 1. Run MR
-./brec.sh ratingStat
+./brec.sh ratingStat <rating_dat
 
 
 Rating correlation
