@@ -49,6 +49,7 @@ import org.apache.log4j.Logger;
 import org.codehaus.jackson.map.ObjectMapper;
 import org.sifarish.util.Event;
 import org.sifarish.util.Field;
+import org.sifarish.util.HourWindow;
 import org.sifarish.util.Location;
 import org.sifarish.util.TimeWindow;
 import org.sifarish.util.Utility;
@@ -463,7 +464,10 @@ public class SameTypeSimilarity  extends Configured implements Tool {
 	    			} else if (field.getDataType().equals("timeWindow")) {
 	    				//time window
 	    				dist = timeWindowDistance(field, firstAttr,  secondAttr, context);
-	    			}  else if (field.getDataType().equals("location")) {
+	    			} else if (field.getDataType().equals("hourWindow")) {
+	    				//hour window
+	    				dist = hourWindowDistance(field, firstAttr,  secondAttr, context);
+	    			}   else if (field.getDataType().equals("location")) {
 	    				//location
 	    				dist = locationDistance(field, firstAttr,  secondAttr, context);
 	    			} else if (field.getDataType().equals("geoLocation")) {
@@ -592,6 +596,7 @@ public class SameTypeSimilarity  extends Configured implements Tool {
         }       
         
         /**
+         * Distance as overlap between time ranges
          * @param field
          * @param firstAttr
          * @param secondAttr
@@ -613,6 +618,28 @@ public class SameTypeSimilarity  extends Configured implements Tool {
         	return dist;
         }    
         
+        /**
+         * @param field
+         * @param firstAttr
+         * @param secondAttr
+         * @param context
+         * @return
+         */
+        private double hourWindowDistance(Field field, String firstAttr, String secondAttr,Context context) {
+        	double dist = 0;
+    		try {
+    			String[] subFields = firstAttr.split(subFieldDelim);
+    			HourWindow firstTimeWindow = new HourWindow(subFields[0], subFields[1]);
+    			subFields = secondAttr.split(subFieldDelim);
+    			HourWindow secondTimeWindow = new HourWindow(subFields[0], subFields[1]);
+
+    			dist = field.findDistance(firstTimeWindow, secondTimeWindow);
+    		} catch (ParseException e) {
+    			context.getCounter("Invalid Data Format", "Field:" + field.getOrdinal()).increment(1);
+    		}
+        	return dist;
+        }    
+
         /**
          * @param field
          * @param firstAttr

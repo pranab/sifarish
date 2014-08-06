@@ -17,41 +17,37 @@
 
 package org.sifarish.util;
 
-import java.text.DateFormat;
 import java.text.ParseException;
-import java.text.SimpleDateFormat;
 
 /**
- * Time window attribute
  * @author pranab
  *
  */
-public class TimeWindow  extends StructuredAttribute{
-	private long start;
-	private long end;
-	private static DateFormat df = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-
-	public TimeWindow(String start, String end) throws ParseException {
-		this.start = df.parse(start).getTime();
-		this.end = df.parse(end).getTime();
+public class HourWindow extends StructuredAttribute  {
+	private int start;
+	private int end;
+	
+	public HourWindow(String startHourMin, String endHourMin) throws ParseException {
+		int hourStart = Integer.parseInt(startHourMin.substring(0, 2));
+		int minStart = Integer.parseInt(startHourMin.substring(2));
+		start = hourStart * 60 + minStart;
+		
+		int hourEnd = Integer.parseInt(endHourMin.substring(0, 2));
+		int minEnd = Integer.parseInt(endHourMin.substring(2));
+		end = hourEnd * 60 + minEnd;
+		
 		if (this.start > this.end) {
-			throw new IllegalArgumentException("start time should be less than end time start:" + start + 
+			throw new IllegalArgumentException("invalid HourWindow start time should be less than end time start:" + start + 
 					" end:" + end);
 		}
 	}
 	
-	public long getLength() {
-		return end - start;
-	}
-	
-	/* (non-Javadoc)
-	 * @see org.sifarish.util.StructuredAttribute#distance(org.sifarish.util.StructuredAttribute, org.sifarish.util.Field)
-	 * Based on the extent of overlap
-	 */
+	@Override
 	public double distance(StructuredAttribute otherAttr, Field field) {
-		TimeWindow other = (TimeWindow)otherAttr;
+		HourWindow other = (HourWindow)otherAttr;
 		double distance = 0;
 		long overlap = 0;
+		//long min = getLength() < other.getLength() ?  getLength() : other.getLength();
 		if (start < other.start) {
 			if (end < other.start) {
 				distance = 1;
@@ -71,10 +67,9 @@ public class TimeWindow  extends StructuredAttribute{
 		}
 		
 		if (overlap > 0) {
-			distance =( (double)overlap) / field.getMaxTimeWindowInMili();
+			distance =( (double)overlap) / field.getMaxTimeWindow();
 		}
 		return distance;
 	}
-	
 
 }

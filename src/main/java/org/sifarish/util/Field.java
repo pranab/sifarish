@@ -45,6 +45,7 @@ public class Field {
 	private IDistanceStrategy distStrategy;
 	private double distThreshold = -1.0;
 	private int maxDistance;
+	private int maxTimeWindow;
 
 	
 	public boolean isType() {
@@ -273,5 +274,16 @@ public class Field {
 	}
 	public void setMaxDistance(int maxDistance) {
 		this.maxDistance = maxDistance;
+	}
+	public int getMaxTimeWindow() {
+		return maxTimeWindow;
+	}
+
+	public long  getMaxTimeWindowInMili() {
+		return maxTimeWindow * 60 * 1000L;
+	}
+	
+	public void setMaxTimeWindow(int maxTimeWindow) {
+		this.maxTimeWindow = maxTimeWindow;
 	}
 }
