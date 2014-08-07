@@ -1,0 +1,32 @@
+{
+	"distAlgorithm" : "euclidean",
+	"textMatchingAlgorithm" : "jaccard",
+	"entity" : 
+	{
+		"name" : "restaurant",
+		"fields" :
+		[
+			{
+				"name" : "ID",
+				"ordinal" : 0,
+				"id" : true,
+				"dataType" : "string"
+			},
+			{
+				"name" : "cuisine",
+				"ordinal" : 2,
+				"dataType" : "text"
+			},
+			{
+				"name" : "location",
+				"ordinal" : 3,
+				"dataType" : "geoLocation"
+			},
+			{
+				"name" : "hours",
+				"ordinal" : 4,
+				"dataType" : "hourWindow"
+			}
+		]
+	}
+}
