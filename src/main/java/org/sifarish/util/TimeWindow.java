@@ -50,7 +50,7 @@ public class TimeWindow  extends StructuredAttribute{
 	 */
 	public double distance(StructuredAttribute otherAttr, Field field) {
 		TimeWindow other = (TimeWindow)otherAttr;
-		double distance = 0;
+		double distance = 1.0;
 		long overlap = 0;
 		if (start < other.start) {
 			if (end < other.start) {
@@ -71,7 +71,9 @@ public class TimeWindow  extends StructuredAttribute{
 		}
 		
 		if (overlap > 0) {
-			distance =( (double)overlap) / field.getMaxTimeWindowInMili();
+			distance = ((double)overlap) / field.getMaxTimeWindowInMili();
+			distance = distance > 1.0 ? 1.0 : distance;
+			distance = 1.0 - distance;
 		}
 		return distance;
 	}

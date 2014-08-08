@@ -20,12 +20,22 @@
 			{
 				"name" : "location",
 				"ordinal" : 3,
-				"dataType" : "geoLocation"
+				"dataType" : "geoLocation",
+				"maxDistance" : 10,
+				"weight" : 0.9
 			},
 			{
 				"name" : "hours",
 				"ordinal" : 4,
-				"dataType" : "hourWindow"
+				"dataType" : "hourWindow",
+				"maxTimeWindow" : 90
+			},
+			{
+				"name" : "rating",
+				"ordinal" : 5,
+				"dataType" : "int",
+				"min" : 1,
+				"max" : 5
 			}
 		]
 	}

@@ -45,7 +45,7 @@ public class HourWindow extends StructuredAttribute  {
 	@Override
 	public double distance(StructuredAttribute otherAttr, Field field) {
 		HourWindow other = (HourWindow)otherAttr;
-		double distance = 0;
+		double distance = 1.0;
 		long overlap = 0;
 		//long min = getLength() < other.getLength() ?  getLength() : other.getLength();
 		if (start < other.start) {
@@ -67,7 +67,9 @@ public class HourWindow extends StructuredAttribute  {
 		}
 		
 		if (overlap > 0) {
-			distance =( (double)overlap) / field.getMaxTimeWindow();
+			distance = ((double)overlap) / field.getMaxTimeWindow();
+			distance = distance > 1.0 ? 1.0 : distance;
+			distance = 1.0 - distance;
 		}
 		return distance;
 	}
