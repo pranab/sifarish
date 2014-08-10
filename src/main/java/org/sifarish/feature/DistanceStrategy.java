@@ -124,7 +124,7 @@ public abstract class DistanceStrategy  implements  IDistanceStrategy {
 			}
 		}
 		
-		//explode of implode only when there is consensus
+		//explode or implode only when there is consensus
 		if (explodedCount > 0 && implodedCount == 0) {
 			status = DistanceStatus.DistanceExploded;
 		} else if (implodedCount > 0 && explodedCount == 0) {

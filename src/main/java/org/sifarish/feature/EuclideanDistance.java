@@ -62,7 +62,16 @@ public class EuclideanDistance extends DistanceStrategy {
 	 * @see org.sifarish.feature.DistanceStrategy#getSimilarity()
 	 */
 	public int getSimilarity() {
-		int sim = (int)((Math.sqrt(sumWt) * scale) / count);
+		int sim = 0;
+		DistanceStatus status = getDistanceStatus();
+		if (status == DistanceStatus.DistanceUntouched) {
+			sim = (int)((Math.sqrt(sumWt) * scale) / count);
+		} else if (status == DistanceStatus.DistanceImploded) {
+			sim = 0;
+		} else if (status == DistanceStatus.DistanceExploded) {
+			sim = scale;
+		}
+		
 		return sim;
 	}
 

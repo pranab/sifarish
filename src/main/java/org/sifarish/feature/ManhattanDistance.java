@@ -17,6 +17,7 @@
 
 package org.sifarish.feature;
 
+import org.sifarish.feature.DistanceStrategy.DistanceStatus;
 import org.sifarish.util.Field;
 
 /**
@@ -49,11 +50,18 @@ public class ManhattanDistance extends DistanceStrategy {
 		++count;
 	}
 	
-
 	@Override
 	public int getSimilarity() {
-		//int sim = (int)(sumWt / totalWt * (double)scale);
-		int sim = (int)((sumWt * scale) / count);
+		int sim = 0;
+		DistanceStatus status = getDistanceStatus();
+		if (status == DistanceStatus.DistanceUntouched) {
+			sim = (int)((sumWt * scale) / count);
+		} else if (status == DistanceStatus.DistanceImploded) {
+			sim = 0;
+		} else if (status == DistanceStatus.DistanceExploded) {
+			sim = scale;
+		}
+		
 		return sim;
 	}
 

@@ -17,6 +17,7 @@
 
 package org.sifarish.feature;
 
+import org.sifarish.feature.DistanceStrategy.DistanceStatus;
 import org.sifarish.util.Field;
 
 /**
@@ -55,13 +56,23 @@ public class MinkwoskiDistance extends DistanceStrategy {
 		++count;
 	}
 
+	
+	
 	/* (non-Javadoc)
 	 * @see org.sifarish.feature.DistanceStrategy#getSimilarity()
 	 */
 	@Override
 	public int getSimilarity() {
-//		int sim = (int)(Math.pow(sumWt, 1.0/power) / totalWt * (double)scale);
-		int sim = (int)((Math.pow(sumWt, 1.0/power)  * scale) / count);
+		int sim = 0;
+		DistanceStatus status = getDistanceStatus();
+		if (status == DistanceStatus.DistanceUntouched) {
+			sim = (int)((Math.pow(sumWt, 1.0/power)  * scale) / count);
+		} else if (status == DistanceStatus.DistanceImploded) {
+			sim = 0;
+		} else if (status == DistanceStatus.DistanceExploded) {
+			sim = scale;
+		}
+		
 		return sim;
 	}
 
