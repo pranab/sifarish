@@ -46,6 +46,8 @@ public class Field {
 	private double distThreshold = -1.0;
 	private int maxDistance;
 	private int maxTimeWindow;
+	private String contAttrDistanceFunction = "none";
+	private double sigmoidFunctionThreshold = 0.5;
 
 	
 	public boolean isType() {
@@ -114,6 +116,7 @@ public class Field {
 	}
 	public void setWeight(double weight) {
 		this.weight = weight;
+		this.contAttrDistanceFunction = "nonLinear";
 	}
 	public List<FieldMapping> getMappings() {
 		return mappings;
@@ -285,5 +288,17 @@ public class Field {
 	
 	public void setMaxTimeWindow(int maxTimeWindow) {
 		this.maxTimeWindow = maxTimeWindow;
+	}
+	public String getContAttrDistanceFunction() {
+		return contAttrDistanceFunction;
+	}
+	public void setContAttrDistanceFunction(String contAttrDistanceFunction) {
+		this.contAttrDistanceFunction = contAttrDistanceFunction;
+	}
+	public double getSigmoidFunctionThreshold() {
+		return sigmoidFunctionThreshold;
+	}
+	public void setSigmoidFunctionThreshold(double sigmoidFunctionThreshold) {
+		this.sigmoidFunctionThreshold = sigmoidFunctionThreshold;
 	}
 }

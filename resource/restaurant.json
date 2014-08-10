@@ -22,7 +22,8 @@
 				"ordinal" : 3,
 				"dataType" : "geoLocation",
 				"maxDistance" : 10,
-				"weight" : 0.9
+				"weight" : 1.1,
+				"contAttrDistanceFunction" : "nonLinear"
 			},
 			{
 				"name" : "hours",

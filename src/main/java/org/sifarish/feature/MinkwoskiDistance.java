@@ -17,6 +17,8 @@
 
 package org.sifarish.feature;
 
+import org.sifarish.util.Field;
+
 /**
  * Monowski distance
  * @author pranab
@@ -36,12 +38,19 @@ public class MinkwoskiDistance extends DistanceStrategy {
 	 */
 	@Override
 	public void accumulate(double distance, double weight) {
-		if (distance < 0) {
-			distance = - distance;
-		}
-		//sumWt +=  Math.pow(distance, power) / weight;
-		//totalWt += 1 / weight;
+		distance = Math.abs(distance);
 		double effectDist =  (1 / weight) * distance  + ( 1 - 1 / weight) * distance * distance;
+		sumWt += Math.pow(effectDist, power);
+		++count;
+	}
+
+	/**
+	 * @param distance
+	 * @param field
+	 */
+	public void accumulate(double distance, Field field){
+		distance = Math.abs(distance);
+		double effectDist = getEffectiveDistance(distance, field);
 		sumWt += Math.pow(effectDist, power);
 		++count;
 	}

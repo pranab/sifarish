@@ -17,6 +17,8 @@
 
 package org.sifarish.feature;
 
+import org.sifarish.util.Field;
+
 /**
  * Euclidean ditance
  * @author pranab
@@ -35,19 +37,31 @@ public class EuclideanDistance extends DistanceStrategy {
 	 * @see org.sifarish.feature.DistanceStrategy#accumulate(double, double)
 	 */
 	public void accumulate(double distance, double weight){
-		//sumWt +=  (distance * distance) / weight;
-		//totalWt += 1 / weight;
-		
-		double effectDist =  (1 / weight) * distance  + ( 1 - 1 / weight) * distance * distance;
+		distance = Math.abs(distance);
+		double effectDist = 0;
+		//if weight < 1 then convex i.e. effective distance greater than distance otherwise concave
+		effectDist =  (1 / weight) * distance  + ( 1 - 1 / weight) * distance * distance;
+			
 		sumWt += effectDist * effectDist;
 		++count;
 	}
+	
+	/**
+	 * @param distance
+	 * @param field
+	 */
+	public void accumulate(double distance, Field field){
+		distance = Math.abs(distance);
+		double effectDist = getEffectiveDistance(distance, field);
+		sumWt += effectDist * effectDist;
+		++count;
+	}
+	
 	
 	/* (non-Javadoc)
 	 * @see org.sifarish.feature.DistanceStrategy#getSimilarity()
 	 */
 	public int getSimilarity() {
-		//int sim = (int)(Math.sqrt(sumWt) / totalWt * (double)scale);
 		int sim = (int)((Math.sqrt(sumWt) * scale) / count);
 		return sim;
 	}

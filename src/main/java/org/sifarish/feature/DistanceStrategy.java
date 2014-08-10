@@ -17,6 +17,7 @@
 
 package org.sifarish.feature;
 
+import org.sifarish.util.Field;
 import org.sifarish.util.IDistanceStrategy;
 
 /**
@@ -52,6 +53,32 @@ public abstract class DistanceStrategy  implements  IDistanceStrategy {
 	 * @param weight
 	 */
 	public abstract void accumulate(double distance, double weight);
+	
+	/**
+	 * @param distance
+	 * @param field
+	 */
+	public abstract void accumulate(double distance, Field field);
+	
+	/**
+	 * @param distance
+	 * @param field
+	 */
+	protected double getEffectiveDistance(double distance, Field field){
+		double effectDist = 0;
+		String distanceFunction = field.getContAttrDistanceFunction();
+		double weight = field.getWeight(); 
+		if (distanceFunction.equals("none")) {
+			effectDist = distance;
+		} else if (distanceFunction.equals("nonLinear")) {
+			//if weight < 1 then convex i.e. effective distance greater than distance otherwise concave
+			effectDist =  (1 / weight) * distance  + ( 1 - 1 / weight) * distance * distance;
+		} else if (distanceFunction.equals("sigmoid")) {
+			double threshold = field.getSigmoidFunctionThreshold();
+			effectDist = 1.0 / (1 + Math.exp(-weight * (distance - threshold)));
+		}
+		return effectDist;
+	}
 	
 	/**
 	 * @return

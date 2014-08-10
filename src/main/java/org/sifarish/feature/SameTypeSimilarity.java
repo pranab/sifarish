@@ -487,7 +487,7 @@ public class SameTypeSimilarity  extends Configured implements Tool {
     			}
     			
     			//aggregate attribute  distance for all entity attributes
-				distStrategy.accumulate(dist, field.getWeight());
+				distStrategy.accumulate(dist, field);
     		}  
     		
     		//initialize passive fields

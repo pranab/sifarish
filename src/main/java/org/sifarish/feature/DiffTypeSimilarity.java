@@ -443,7 +443,7 @@ public class DiffTypeSimilarity  extends Configured implements Tool {
 				}
     			
 				if (!skipAttr) {
-					distStrategy.accumulate(dist, field.getWeight());
+					distStrategy.accumulate(dist, field);
 				}
     		}
     		sim = distStrategy.getSimilarity();
