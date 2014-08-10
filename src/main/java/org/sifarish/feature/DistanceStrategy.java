@@ -17,6 +17,9 @@
 
 package org.sifarish.feature;
 
+import java.util.HashMap;
+import java.util.Map;
+
 import org.sifarish.util.Field;
 import org.sifarish.util.IDistanceStrategy;
 
@@ -32,6 +35,14 @@ public abstract class DistanceStrategy  implements  IDistanceStrategy {
 	protected double totalWt;
 	protected int count;
 	
+	protected enum DistanceStatus {
+	    DistanceImploded, 
+	    DistanceExploded, 
+	    DistanceUntouched 
+	}
+	
+	private Map<Integer, DistanceStatus> attributeDistanceStatus = new HashMap<Integer, DistanceStatus>();
+	
 	/**
 	 * @param scale
 	 */
@@ -46,6 +57,7 @@ public abstract class DistanceStrategy  implements  IDistanceStrategy {
 		sumWt = 0.0;
 		totalWt = 0.0;
 		count = 0;
+		attributeDistanceStatus.clear();
 	}
 
 	/**
@@ -68,16 +80,57 @@ public abstract class DistanceStrategy  implements  IDistanceStrategy {
 		double effectDist = 0;
 		String distanceFunction = field.getContAttrDistanceFunction();
 		double weight = field.getWeight(); 
+		double threshold = field.getFunctionThreshold();
+
 		if (distanceFunction.equals("none")) {
 			effectDist = distance;
 		} else if (distanceFunction.equals("nonLinear")) {
 			//if weight < 1 then convex i.e. effective distance greater than distance otherwise concave
 			effectDist =  (1 / weight) * distance  + ( 1 - 1 / weight) * distance * distance;
 		} else if (distanceFunction.equals("sigmoid")) {
-			double threshold = field.getSigmoidFunctionThreshold();
+			//transtion at threshold, higher weight will simulate step function
 			effectDist = 1.0 / (1 + Math.exp(-weight * (distance - threshold)));
+		} else if (distanceFunction.equals("step")) {
+			//transition at threshold
+			effectDist = distance < threshold ? 0 : 1;
+		} else if (distanceFunction.equals("ramp")) {
+			//transtion at threshold
+			effectDist = distance < threshold ? 0 : distance;
+		} 
+		
+		//check for distance implosion and explosion
+		if (effectDist < field.getImplodeThreshold()) {
+			attributeDistanceStatus.put(field.getOrdinal(), DistanceStatus.DistanceImploded);
+		} else if (effectDist > field.getExplodeThreshold()) {
+			attributeDistanceStatus.put(field.getOrdinal(), DistanceStatus.DistanceExploded);
 		}
+		
 		return effectDist;
+	}
+	
+	/**
+	 * @return
+	 */
+	protected DistanceStatus getDistanceStatus() {
+		DistanceStatus status = DistanceStatus.DistanceUntouched;
+		int explodedCount = 0;
+		int implodedCount = 0;
+		
+		for (int fieldOrd : attributeDistanceStatus.keySet()) {
+			if (attributeDistanceStatus.get(fieldOrd) == DistanceStatus.DistanceExploded) {
+				++explodedCount;
+			} else {
+				++implodedCount;
+			}
+		}
+		
+		//explode of implode only when there is consensus
+		if (explodedCount > 0 && implodedCount == 0) {
+			status = DistanceStatus.DistanceExploded;
+		} else if (implodedCount > 0 && explodedCount == 0) {
+			status = DistanceStatus.DistanceImploded;
+		}
+		return status;
 	}
 	
 	/**

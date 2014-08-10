@@ -47,7 +47,9 @@ public class Field {
 	private int maxDistance;
 	private int maxTimeWindow;
 	private String contAttrDistanceFunction = "none";
-	private double sigmoidFunctionThreshold = 0.5;
+	private double functionThreshold = 0.5;
+	private double implodeThreshold = -0.1;
+	private double explodeThreshold = 1.1;
 
 	
 	public boolean isType() {
@@ -295,10 +297,22 @@ public class Field {
 	public void setContAttrDistanceFunction(String contAttrDistanceFunction) {
 		this.contAttrDistanceFunction = contAttrDistanceFunction;
 	}
-	public double getSigmoidFunctionThreshold() {
-		return sigmoidFunctionThreshold;
+	public double getFunctionThreshold() {
+		return functionThreshold;
 	}
-	public void setSigmoidFunctionThreshold(double sigmoidFunctionThreshold) {
-		this.sigmoidFunctionThreshold = sigmoidFunctionThreshold;
+	public void setFunctionThreshold(double functionThreshold) {
+		this.functionThreshold = functionThreshold;
+	}
+	public double getImplodeThreshold() {
+		return implodeThreshold;
+	}
+	public void setImplodeThreshold(double implodeThreshold) {
+		this.implodeThreshold = implodeThreshold;
+	}
+	public double getExplodeThreshold() {
+		return explodeThreshold;
+	}
+	public void setExplodeThreshold(double explodeThreshold) {
+		this.explodeThreshold = explodeThreshold;
 	}
 }
