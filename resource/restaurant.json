@@ -15,7 +15,8 @@
 			{
 				"name" : "cuisine",
 				"ordinal" : 2,
-				"dataType" : "text"
+				"dataType" : "text",
+				"explodeThreshold" : 0.9
 			},
 			{
 				"name" : "location",
