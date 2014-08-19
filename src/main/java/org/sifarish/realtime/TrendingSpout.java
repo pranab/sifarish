@@ -29,6 +29,10 @@ import redis.clients.jedis.Jedis;
 import backtype.storm.task.TopologyContext;
 import backtype.storm.tuple.Values;
 
+/**
+ * @author pranab
+ *
+ */
 public class TrendingSpout extends GenericSpout {
 	private String eventQueue;
 	private Jedis jedis;
