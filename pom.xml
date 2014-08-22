@@ -110,6 +110,12 @@ xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/ma
             <version>1.0</version>
         </dependency>
         
+        <dependency>
+            <groupId>mawazo</groupId>
+            <artifactId>hoidla</artifactId>
+            <version>1.0</version>
+        </dependency>
+ 
    		<dependency>
   			<groupId>org.apache.jena</groupId>
   			<artifactId>jena-arq</artifactId>

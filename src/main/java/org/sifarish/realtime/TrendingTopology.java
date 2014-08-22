@@ -52,7 +52,7 @@ public class TrendingTopology {
         
         //sketches bolt
         TrendingSketchesBolt bolt = new TrendingSketchesBolt();
-        int boltThreads = ConfigUtility.getInt(conf, "bolt.threads", 1);
+        int boltThreads = ConfigUtility.getInt(conf, "sketches.bolt.threads", 1);
         builder.
         	setBolt("trendingSketchesBolt", bolt, boltThreads).
         	shuffleGrouping("trendingRedisSpout", TrendingSpout.EVENT_STREAM).

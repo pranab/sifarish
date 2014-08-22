@@ -69,7 +69,7 @@ public class TrendingSpout extends GenericSpout {
 	@Override
 	public void intialize(Map stormConf, TopologyContext context) {
 		jedis = RealtimeUtil.buildRedisClient(stormConf);
-		eventQueue = ConfigUtility.getString(stormConf, "redis.userID.queue");
+		eventQueue = ConfigUtility.getString(stormConf, "redis.event.queue");
 		debugOn = ConfigUtility.getBoolean(stormConf,"debug.on", false);
 		if (debugOn) {
 			LOG.setLevel(Level.INFO);;
@@ -89,10 +89,6 @@ public class TrendingSpout extends GenericSpout {
 			int event = Integer.parseInt(items[3]);
 			Values values = new Values(items[0], items[1], items[2], event);
 			msgHolder = new  MessageHolder(values);
-			if (debugOn) {
-				if (messageCounter % messageCountInterval == 0)
-					LOG.info("event message - message counter:" + messageCounter );
-			}
 			msgHolder.setStream(event == epochEvent ? EPOCH_STREAM : EVENT_STREAM);
 		}
 		return msgHolder;
