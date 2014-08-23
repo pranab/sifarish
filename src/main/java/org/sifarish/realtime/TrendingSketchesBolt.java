@@ -26,6 +26,7 @@ import org.chombo.storm.GenericBolt;
 import org.chombo.storm.MessageHolder;
 import org.chombo.util.ConfigUtility;
 
+import backtype.storm.Config;
 import backtype.storm.task.TopologyContext;
 import backtype.storm.tuple.Tuple;
 
@@ -34,19 +35,28 @@ import backtype.storm.tuple.Tuple;
  *
  */
 public class TrendingSketchesBolt extends  GenericBolt {
+	 private int tickFrequencyInSeconds;
 	private static final Logger LOG = Logger.getLogger(TrendingSketchesBolt.class);
 	private static final long serialVersionUID = 8844719835097201335L;
 
+	
+	/**
+	 * @param tickFrequencyInSeconds
+	 */
+	public TrendingSketchesBolt(int tickFrequencyInSeconds) {
+		super();
+		this.tickFrequencyInSeconds = tickFrequencyInSeconds;
+	}
+
 	@Override
 	public Map<String, Object> getComponentConfiguration() {
-		// TODO Auto-generated method stub
-		return null;
+		  Config conf = new Config();
+		  conf.put(Config.TOPOLOGY_TICK_TUPLE_FREQ_SECS, tickFrequencyInSeconds);
+		  return conf;
 	}
 
 	@Override
 	public void intialize(Map stormConf, TopologyContext context) {
-		// TODO 
-		
 		debugOn = ConfigUtility.getBoolean(stormConf,"debug.on", false);
 		if (debugOn) {
 			LOG.setLevel(Level.INFO);;
@@ -56,16 +66,15 @@ public class TrendingSketchesBolt extends  GenericBolt {
 
 	@Override
 	public boolean process(Tuple input) {
-		String itemID = input.getStringByField(RecommenderBolt.ITEM_ID);
-		int eventID = input.getIntegerByField(RecommenderBolt.EVENT_ID);
-		String stream = input.getSourceStreamId();
-		LOG.info("got message from stream:" + stream);
-		if (stream.equals(TrendingSpout.EVENT_STREAM)) {
-
-		} else {
-			
-		}
-		return false;
+		boolean status = true;
+		  if (isTickTuple(input)) {
+			  LOG.info("got tick tuple ");
+		  } else {
+			  String itemID = input.getStringByField(RecommenderBolt.ITEM_ID);
+			  int eventID = input.getIntegerByField(RecommenderBolt.EVENT_ID);
+			  LOG.info("got message tuple ");
+		  }
+		return status;
 	}
 
 	@Override
@@ -73,5 +82,6 @@ public class TrendingSketchesBolt extends  GenericBolt {
 		// TODO Auto-generated method stub
 		return null;
 	}
+
 
 }

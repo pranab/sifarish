@@ -44,19 +44,17 @@ public class TrendingTopology {
         TopologyBuilder builder = new TopologyBuilder();
         int spoutThreads = ConfigUtility.getInt(conf, "spout.threads", 1);
         TrendingSpout spout  = new TrendingSpout();
-        spout.withStreamTupleFields(TrendingSpout.EVENT_STREAM, RecommenderBolt.USER_ID, RecommenderBolt.SESSION_ID, 
-        		RecommenderBolt.ITEM_ID, RecommenderBolt.EVENT_ID);
-        spout.withStreamTupleFields(TrendingSpout.EPOCH_STREAM, RecommenderBolt.USER_ID, RecommenderBolt.SESSION_ID, 
+        spout.withTupleFields(RecommenderBolt.USER_ID, RecommenderBolt.SESSION_ID, 
         		RecommenderBolt.ITEM_ID, RecommenderBolt.EVENT_ID);
         builder.setSpout("trendingRedisSpout", spout, spoutThreads);
         
         //sketches bolt
-        TrendingSketchesBolt bolt = new TrendingSketchesBolt();
+        int tickFrequencyInSeconds = ConfigUtility.getInt(conf, "tick.freq.sec", 1);
+        TrendingSketchesBolt bolt = new TrendingSketchesBolt(tickFrequencyInSeconds);
         int boltThreads = ConfigUtility.getInt(conf, "sketches.bolt.threads", 1);
         builder.
         	setBolt("trendingSketchesBolt", bolt, boltThreads).
-        	shuffleGrouping("trendingRedisSpout", TrendingSpout.EVENT_STREAM).
-        	allGrouping("trendingRedisSpout", TrendingSpout.EPOCH_STREAM);
+        	shuffleGrouping("trendingRedisSpout");
         
         //submit
         RealtimeUtil.submitStormTopology(topologyName, conf,  builder);

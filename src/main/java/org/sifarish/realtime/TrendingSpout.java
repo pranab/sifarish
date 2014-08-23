@@ -36,7 +36,6 @@ import backtype.storm.tuple.Values;
 public class TrendingSpout extends GenericSpout {
 	private String eventQueue;
 	private Jedis jedis;
-	private int epochEvent;
 	public static String EPOCH_STREAM = "epoch";
 	public static String EVENT_STREAM = "event";
 	
@@ -74,7 +73,6 @@ public class TrendingSpout extends GenericSpout {
 		if (debugOn) {
 			LOG.setLevel(Level.INFO);;
 		}
-		epochEvent = ConfigUtility.getInt(stormConf, "epoch.event", 100);
 	}
 
 	@Override
@@ -89,7 +87,6 @@ public class TrendingSpout extends GenericSpout {
 			int event = Integer.parseInt(items[3]);
 			Values values = new Values(items[0], items[1], items[2], event);
 			msgHolder = new  MessageHolder(values);
-			msgHolder.setStream(event == epochEvent ? EPOCH_STREAM : EVENT_STREAM);
 		}
 		return msgHolder;
 	}

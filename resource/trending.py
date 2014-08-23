@@ -16,18 +16,20 @@ users = []
 items = []
 events = [1,2,3,4,5]
 rc = redis.StrictRedis(host='localhost', port=6379, db=0)
-epochInterval = 10000
+epochInterval = 10
 
 def genEpochEvent(threadName, interval, numEvent):
+	print "starting epoch thread with interval %d and number of events %d" %(interval,numEvent)
 	epochTime = int(time.time())
-	remainder = 2 * interval - (epochTime % interval)
+	remainder = interval - (epochTime % interval)
 	time.sleep(remainder/1000)
 	session = uuid.uuid1()
 	
-	for in in range(numEvent)
+	for i in range(numEvent):
 		eventRec = "XXXXXXXXXXXX,%s,XXXXXXXX,100" %(session)
 		rc.lpush("engageEventQueue", eventRec)	
-		time.sleep(iterval/1000)
+		print "sent epoch event"
+		time.sleep(interval)
 	
 # generates (userID, itemID, sessionID, event, time) tuples	
 def genEngageEvents(threadName, users, items, trendingItems, maxEvent, events):
@@ -78,8 +80,8 @@ if (op == "genEvents"):
 	trendingItems = selectRandomSubListFromList(items, 5)	
 	
 	try:
-   		t = threading.Thread(target=genEpochEvent, args=(threadName,epochInterval,20, ))
-   		t.start()
+   		#t = threading.Thread(target=genEpochEvent, args=("epoch event thread",epochInterval,20, ))
+   		#t.start()
 	
 		for i in range(numSession):
 			threadName = "user session-%d" %(i)

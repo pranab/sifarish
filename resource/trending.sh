@@ -37,6 +37,11 @@ case "$1" in
 	$STORM_HOME/bin/storm  jar uber-sifarish-1.0.jar  org.sifarish.realtime.TrendingTopology  trending trending.properties
 	;;
 	
+"killTopology")
+	echo  "killing sifarish storm topology"
+	$STORM_HOME/bin/storm  kill  trending
+	;;
+
 *) 
 	echo "unknown operation $1"
 	;;
