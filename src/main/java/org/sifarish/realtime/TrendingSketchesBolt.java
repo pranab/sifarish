@@ -25,6 +25,8 @@ import org.apache.log4j.Logger;
 import org.chombo.storm.GenericBolt;
 import org.chombo.storm.MessageHolder;
 import org.chombo.util.ConfigUtility;
+import org.hoidla.stream.CountMinSketchesFrequent;
+import org.hoidla.util.BoundedSortedObjects;
 
 import backtype.storm.Config;
 import backtype.storm.task.TopologyContext;
@@ -36,6 +38,10 @@ import backtype.storm.tuple.Tuple;
  */
 public class TrendingSketchesBolt extends  GenericBolt {
 	 private int tickFrequencyInSeconds;
+	 private CountMinSketchesFrequent sketches;
+	public static final String BOLT_ID = "boltID";
+	public static final String FREQ_COUNTS = "freqCounts";
+	 
 	private static final Logger LOG = Logger.getLogger(TrendingSketchesBolt.class);
 	private static final long serialVersionUID = 8844719835097201335L;
 
@@ -57,6 +63,12 @@ public class TrendingSketchesBolt extends  GenericBolt {
 
 	@Override
 	public void intialize(Map stormConf, TopologyContext context) {
+		double errorLimit = ConfigUtility.getDouble(stormConf, "sketches.error.lim", 0.05);
+		double errorProbLimit =ConfigUtility.getDouble(stormConf, "sketches.error.prob.limit", 0.95);
+		int mostFrequentCount = ConfigUtility.getInt(stormConf, "sketches.most.freq.count", 3);
+		int freqCountLimitPercent = ConfigUtility.getInt(stormConf, "sketches.freq.count.lim.percent", 20);
+		sketches = new CountMinSketchesFrequent(errorLimit, errorProbLimit, mostFrequentCount, freqCountLimitPercent);
+		
 		debugOn = ConfigUtility.getBoolean(stormConf,"debug.on", false);
 		if (debugOn) {
 			LOG.setLevel(Level.INFO);;
@@ -69,10 +81,11 @@ public class TrendingSketchesBolt extends  GenericBolt {
 		boolean status = true;
 		  if (isTickTuple(input)) {
 			  LOG.info("got tick tuple ");
+			  List<BoundedSortedObjects.SortableObject> topHitters = sketches.get();
 		  } else {
 			  String itemID = input.getStringByField(RecommenderBolt.ITEM_ID);
-			  int eventID = input.getIntegerByField(RecommenderBolt.EVENT_ID);
 			  LOG.info("got message tuple ");
+			  sketches.add(itemID);
 		  }
 		return status;
 	}

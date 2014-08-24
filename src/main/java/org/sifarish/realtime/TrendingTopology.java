@@ -50,11 +50,19 @@ public class TrendingTopology {
         
         //sketches bolt
         int tickFrequencyInSeconds = ConfigUtility.getInt(conf, "tick.freq.sec", 1);
-        TrendingSketchesBolt bolt = new TrendingSketchesBolt(tickFrequencyInSeconds);
+        TrendingSketchesBolt sketchesBolt = new TrendingSketchesBolt(tickFrequencyInSeconds);
+        sketchesBolt.withTupleFields(TrendingSketchesBolt.BOLT_ID, TrendingSketchesBolt.FREQ_COUNTS);
         int boltThreads = ConfigUtility.getInt(conf, "sketches.bolt.threads", 1);
         builder.
-        	setBolt("trendingSketchesBolt", bolt, boltThreads).
+        	setBolt("trendingSketchesBolt", sketchesBolt, boltThreads).
         	shuffleGrouping("trendingRedisSpout");
+        
+        //trending aggregation bolt
+        TrendingAggregateBolt  aggrBolt = new TrendingAggregateBolt();
+        boltThreads = ConfigUtility.getInt(conf, "aggr.bolt.threads", 1);
+        builder.
+    		setBolt("trendingAggrBolt", aggrBolt, boltThreads).
+    		shuffleGrouping("trendingSketchesBolt");
         
         //submit
         RealtimeUtil.submitStormTopology(topologyName, conf,  builder);
