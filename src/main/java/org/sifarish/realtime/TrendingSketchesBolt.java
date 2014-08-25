@@ -27,18 +27,21 @@ import org.chombo.storm.MessageHolder;
 import org.chombo.util.ConfigUtility;
 import org.hoidla.stream.CountMinSketchesFrequent;
 import org.hoidla.util.BoundedSortedObjects;
+import org.hoidla.util.Utility;
 
 import backtype.storm.Config;
 import backtype.storm.task.TopologyContext;
 import backtype.storm.tuple.Tuple;
+import backtype.storm.tuple.Values;
 
 /**
  * @author pranab
  *
  */
 public class TrendingSketchesBolt extends  GenericBolt {
-	 private int tickFrequencyInSeconds;
-	 private CountMinSketchesFrequent sketches;
+	private int tickFrequencyInSeconds;
+	private CountMinSketchesFrequent sketches;
+	private MessageHolder msg = new MessageHolder();
 	public static final String BOLT_ID = "boltID";
 	public static final String FREQ_COUNTS = "freqCounts";
 	 
@@ -78,10 +81,16 @@ public class TrendingSketchesBolt extends  GenericBolt {
 
 	@Override
 	public boolean process(Tuple input) {
-		boolean status = true;
-		  if (isTickTuple(input)) {
-			  LOG.info("got tick tuple ");
-			  List<BoundedSortedObjects.SortableObject> topHitters = sketches.get();
+			boolean status = true;
+			outputMessages.clear();
+			if (isTickTuple(input)) {
+				LOG.info("got tick tuple ");
+				List<BoundedSortedObjects.SortableObject> topHitters = sketches.get();
+				if (!topHitters.isEmpty()) {
+					String serFreqCounts = Utility.join(topHitters, ":");
+					msg.setMessage( new Values(getID(), serFreqCounts));
+					outputMessages.add(msg);
+				}
 		  } else {
 			  String itemID = input.getStringByField(RecommenderBolt.ITEM_ID);
 			  LOG.info("got message tuple ");
@@ -92,9 +101,7 @@ public class TrendingSketchesBolt extends  GenericBolt {
 
 	@Override
 	public List<MessageHolder> getOutput() {
-		// TODO Auto-generated method stub
-		return null;
+		return outputMessages;
 	}
-
 
 }
