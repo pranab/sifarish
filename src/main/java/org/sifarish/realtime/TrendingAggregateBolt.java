@@ -28,6 +28,8 @@ import org.apache.log4j.Logger;
 import org.chombo.storm.GenericBolt;
 import org.chombo.storm.MessageHolder;
 import org.chombo.util.ConfigUtility;
+import org.hoidla.util.BoundedSortedObjects;
+import org.hoidla.util.BoundedSortedObjects.SortableObject;
 
 import backtype.storm.task.TopologyContext;
 import backtype.storm.tuple.Tuple;
@@ -41,6 +43,7 @@ public class TrendingAggregateBolt extends  GenericBolt {
 	private Set<String> sketchedBolts = new HashSet<String>();
 	private Map<String, Integer> frequentItems = new HashMap<String, Integer>();
 	private int numSkethesBolt;
+	private BoundedSortedObjects sortedObjects;
 	
 	private static final Logger LOG = Logger.getLogger(TrendingAggregateBolt.class);
 	private static final long serialVersionUID = 8275719621097842135L;
@@ -54,6 +57,8 @@ public class TrendingAggregateBolt extends  GenericBolt {
 	@Override
 	public void intialize(Map stormConf, TopologyContext context) {
 		numSkethesBolt = ConfigUtility.getInt(stormConf, "sketches.bolt.threads", 1);		
+		int mostFrequentCount = ConfigUtility.getInt(stormConf, "sketches.most.freq.count", 3);
+		sortedObjects  = new  BoundedSortedObjects(mostFrequentCount);
 		debugOn = ConfigUtility.getBoolean(stormConf,"debug.on", false);
 		if (debugOn) {
 			LOG.setLevel(Level.INFO);;
@@ -64,6 +69,7 @@ public class TrendingAggregateBolt extends  GenericBolt {
 
 	@Override
 	public boolean process(Tuple input) {
+		boolean status = true;
 		  String sketchesBoltID = input.getStringByField(TrendingSketchesBolt.BOLT_ID);
 		  if (sketchedBolts.contains(sketchesBoltID)) {
 			  //all bolts have not reported for current epoch
@@ -89,14 +95,21 @@ public class TrendingAggregateBolt extends  GenericBolt {
 		  //all bolts have joined
 		  if (sketchedBolts.size() == numSkethesBolt) {
 			  LOG.info("**Frequent item stats");
+			  sortedObjects.clear();
 			  for (String itemID :  frequentItems.keySet()) {
 				  LOG.info("item:" + itemID + " count:" + frequentItems.get(itemID));
+				  sortedObjects.add(itemID, frequentItems.get(itemID));
 			  }
+			  sortedObjects.truncate();
+			  List<SortableObject> topHitters = sortedObjects.get();
+			  
+			  //write to Redis
+			  
 			  frequentItems.clear();
 			  sketchedBolts.clear();
 		  }
 		  
-		  return false;
+		  return status;
 	}
 
 	@Override

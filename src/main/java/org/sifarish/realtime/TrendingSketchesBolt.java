@@ -27,6 +27,7 @@ import org.chombo.storm.MessageHolder;
 import org.chombo.util.ConfigUtility;
 import org.hoidla.stream.CountMinSketchesFrequent;
 import org.hoidla.util.BoundedSortedObjects;
+import org.hoidla.util.Expirer;
 import org.hoidla.util.Utility;
 
 import backtype.storm.Config;
@@ -45,6 +46,14 @@ public class TrendingSketchesBolt extends  GenericBolt {
 	public static final String BOLT_ID = "boltID";
 	public static final String FREQ_COUNTS = "freqCounts";
 	 
+	enum ExpiryPolicy {
+		None,
+		Epoch,
+		Tumble
+	}
+	private ExpiryPolicy expiryPolicy = ExpiryPolicy.None;
+	private int tumbleTimeHour;
+	
 	private static final Logger LOG = Logger.getLogger(TrendingSketchesBolt.class);
 	private static final long serialVersionUID = 8844719835097201335L;
 
@@ -66,11 +75,24 @@ public class TrendingSketchesBolt extends  GenericBolt {
 
 	@Override
 	public void intialize(Map stormConf, TopologyContext context) {
+		//sketches object
+		Expirer expirer = null;
 		double errorLimit = ConfigUtility.getDouble(stormConf, "sketches.error.lim", 0.05);
 		double errorProbLimit =ConfigUtility.getDouble(stormConf, "sketches.error.prob.limit", 0.95);
 		int mostFrequentCount = ConfigUtility.getInt(stormConf, "sketches.most.freq.count", 3);
 		int freqCountLimitPercent = ConfigUtility.getInt(stormConf, "sketches.freq.count.lim.percent", 20);
-		sketches = new CountMinSketchesFrequent(errorLimit, errorProbLimit, mostFrequentCount, freqCountLimitPercent);
+		String expiry = ConfigUtility.getString(stormConf, "sketches.expiry.policy", "none");
+		if (expiry.equals("epoch")) {
+			int maxEpoch = ConfigUtility.getInt(stormConf, "sketches.max.epoch", 5);
+			expirer = new Expirer(maxEpoch);
+			expiryPolicy = ExpiryPolicy.Epoch;
+		} else if (expiry.equals("tumble")) {
+			int tumbleTimeHour  = ConfigUtility.getInt(stormConf, "sketches.tumble.time.hour", 24);
+			expiryPolicy = ExpiryPolicy.Tumble;
+		}
+		sketches = expirer == null ? 
+				new CountMinSketchesFrequent(errorLimit, errorProbLimit, mostFrequentCount, freqCountLimitPercent) :
+				new CountMinSketchesFrequent(errorLimit, errorProbLimit, mostFrequentCount, freqCountLimitPercent, expirer);
 		
 		debugOn = ConfigUtility.getBoolean(stormConf,"debug.on", false);
 		if (debugOn) {
@@ -85,8 +107,16 @@ public class TrendingSketchesBolt extends  GenericBolt {
 			outputMessages.clear();
 			if (isTickTuple(input)) {
 				LOG.info("got tick tuple ");
+				if (expiryPolicy == ExpiryPolicy.Epoch) {
+					sketches.expire();
+					sketches.refreshCount();
+				} else if (expiryPolicy == ExpiryPolicy.Tumble) {
+					
+				}
+				
 				List<BoundedSortedObjects.SortableObject> topHitters = sketches.get();
 				if (!topHitters.isEmpty()) {
+					//send top hitters
 					String serFreqCounts = Utility.join(topHitters, ":");
 					msg.setMessage( new Values(getID(), serFreqCounts));
 					outputMessages.add(msg);
