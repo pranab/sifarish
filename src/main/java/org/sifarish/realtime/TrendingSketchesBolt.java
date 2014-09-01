@@ -27,6 +27,7 @@ import org.chombo.storm.MessageHolder;
 import org.chombo.util.ConfigUtility;
 import org.hoidla.stream.CountMinSketchesFrequent;
 import org.hoidla.util.BoundedSortedObjects;
+import org.hoidla.util.DailySchedule;
 import org.hoidla.util.Expirer;
 import org.hoidla.util.Utility;
 
@@ -36,12 +37,14 @@ import backtype.storm.tuple.Tuple;
 import backtype.storm.tuple.Values;
 
 /**
+ * Maintain a count min sketch
  * @author pranab
  *
  */
 public class TrendingSketchesBolt extends  GenericBolt {
 	private int tickFrequencyInSeconds;
 	private CountMinSketchesFrequent sketches;
+	private DailySchedule dailySchedule;
 	private MessageHolder msg = new MessageHolder();
 	public static final String BOLT_ID = "boltID";
 	public static final String FREQ_COUNTS = "freqCounts";
@@ -87,8 +90,9 @@ public class TrendingSketchesBolt extends  GenericBolt {
 			expirer = new Expirer(maxEpoch);
 			expiryPolicy = ExpiryPolicy.Epoch;
 		} else if (expiry.equals("tumble")) {
-			int tumbleTimeHour  = ConfigUtility.getInt(stormConf, "sketches.tumble.time.hour", 24);
+			int[] tumbleTimeMin  = ConfigUtility.getIntArray(stormConf, "sketches.tumble.time.min");
 			expiryPolicy = ExpiryPolicy.Tumble;
+			dailySchedule = new DailySchedule(2*tickFrequencyInSeconds, tumbleTimeMin);
 		}
 		sketches = expirer == null ? 
 				new CountMinSketchesFrequent(errorLimit, errorProbLimit, mostFrequentCount, freqCountLimitPercent) :
@@ -111,7 +115,9 @@ public class TrendingSketchesBolt extends  GenericBolt {
 					sketches.expire();
 					sketches.refreshCount();
 				} else if (expiryPolicy == ExpiryPolicy.Tumble) {
-					
+					if (dailySchedule.shouldTrigger()) {
+						sketches.intialize();
+					}
 				}
 				
 				List<BoundedSortedObjects.SortableObject> topHitters = sketches.get();
