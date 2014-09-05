@@ -94,14 +94,18 @@ public class TrendingAggregateBolt extends  GenericBolt {
 		  
 		  //all bolts have joined
 		  if (sketchedBolts.size() == numSkethesBolt) {
-			  LOG.info("**Frequent item stats");
+			  LOG.info("**Frequent item stats***");
 			  sortedObjects.clear();
 			  for (String itemID :  frequentItems.keySet()) {
 				  LOG.info("item:" + itemID + " count:" + frequentItems.get(itemID));
 				  sortedObjects.add(itemID, frequentItems.get(itemID));
 			  }
+			  LOG.info("after merge");
 			  sortedObjects.truncate();
 			  List<SortableObject> topHitters = sortedObjects.get();
+			  for (SortableObject topHitter : topHitters) {
+				  LOG.info("item:" +  topHitter.getItem() + " count:" +  topHitter.getRank());
+			  }
 			  
 			  //write to Redis
 			  
