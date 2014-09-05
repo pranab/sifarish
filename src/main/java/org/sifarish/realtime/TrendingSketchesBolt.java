@@ -56,6 +56,8 @@ public class TrendingSketchesBolt extends  GenericBolt {
 	}
 	private ExpiryPolicy expiryPolicy = ExpiryPolicy.None;
 	private int tumbleTimeHour;
+	private int ticksPerEpoch;
+	private long tickCount;
 	
 	private static final Logger LOG = Logger.getLogger(TrendingSketchesBolt.class);
 	private static final long serialVersionUID = 8844719835097201335L;
@@ -78,6 +80,10 @@ public class TrendingSketchesBolt extends  GenericBolt {
 
 	@Override
 	public void intialize(Map stormConf, TopologyContext context) {
+		if (debugOn) {
+			LOG.setLevel(Level.INFO);;
+			LOG.info("TrendingSketchesBolt intialized " );
+		}
 		//sketches object
 		Expirer expirer = null;
 		double errorLimit = ConfigUtility.getDouble(stormConf, "sketches.error.lim", 0.05);
@@ -89,6 +95,8 @@ public class TrendingSketchesBolt extends  GenericBolt {
 			int maxEpoch = ConfigUtility.getInt(stormConf, "sketches.max.epoch", 5);
 			expirer = new Expirer(maxEpoch);
 			expiryPolicy = ExpiryPolicy.Epoch;
+			ticksPerEpoch = ConfigUtility.getInt(stormConf, "sketches.epoch.size", 30) /  tickFrequencyInSeconds;
+			LOG.info("ticksPerEpoch:" + ticksPerEpoch);
 		} else if (expiry.equals("tumble")) {
 			int[] tumbleTimeMin  = ConfigUtility.getIntArray(stormConf, "sketches.tumble.time.min");
 			expiryPolicy = ExpiryPolicy.Tumble;
@@ -99,10 +107,6 @@ public class TrendingSketchesBolt extends  GenericBolt {
 				new CountMinSketchesFrequent(errorLimit, errorProbLimit, mostFrequentCount, freqCountLimitPercent, expirer);
 		
 		debugOn = ConfigUtility.getBoolean(stormConf,"debug.on", false);
-		if (debugOn) {
-			LOG.setLevel(Level.INFO);;
-			LOG.info("TrendingSketchesBolt intialized " );
-		}
 	}
 
 	@Override
@@ -111,9 +115,13 @@ public class TrendingSketchesBolt extends  GenericBolt {
 			outputMessages.clear();
 			if (isTickTuple(input)) {
 				LOG.info("got tick tuple ");
+				++tickCount;
 				if (expiryPolicy == ExpiryPolicy.Epoch) {
-					sketches.expire();
-					sketches.refreshCount();
+					if (tickCount % ticksPerEpoch == 0) {
+						LOG.info("going to expire sketches");
+						sketches.expire();
+						sketches.refreshCount();
+					}
 				} else if (expiryPolicy == ExpiryPolicy.Tumble) {
 					if (dailySchedule.shouldTrigger()) {
 						sketches.intialize();
@@ -123,6 +131,7 @@ public class TrendingSketchesBolt extends  GenericBolt {
 				List<BoundedSortedObjects.SortableObject> topHitters = sketches.get();
 				if (!topHitters.isEmpty()) {
 					//send top hitters
+					 LOG.info("sending top hitters to down stream bolt");
 					String serFreqCounts = Utility.join(topHitters, ":");
 					msg.setMessage( new Values(getID(), serFreqCounts));
 					outputMessages.add(msg);
