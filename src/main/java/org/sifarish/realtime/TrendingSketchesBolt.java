@@ -25,10 +25,13 @@ import org.apache.log4j.Logger;
 import org.chombo.storm.GenericBolt;
 import org.chombo.storm.MessageHolder;
 import org.chombo.util.ConfigUtility;
+import org.hoidla.stream.BaseCountSketch;
+import org.hoidla.stream.CountMinSketch;
 import org.hoidla.stream.CountMinSketchesFrequent;
 import org.hoidla.util.BoundedSortedObjects;
 import org.hoidla.util.DailySchedule;
 import org.hoidla.util.Expirer;
+import org.hoidla.util.SimpleObjectCounter;
 import org.hoidla.util.Utility;
 
 import backtype.storm.Config;
@@ -81,8 +84,11 @@ public class TrendingSketchesBolt extends  GenericBolt {
 	@Override
 	public void intialize(Map stormConf, TopologyContext context) {
 		if (debugOn) {
-			LOG.setLevel(Level.INFO);;
-			LOG.info("TrendingSketchesBolt intialized " );
+			LOG.setLevel(Level.INFO);
+			BaseCountSketch.enableLogging(Level.INFO);
+			CountMinSketch.enableLogging(Level.INFO);
+			SimpleObjectCounter.enableLogging(Level.INFO);
+			LOG.info("TrendingSketchesBolt intialization " );
 		}
 		//sketches object
 		Expirer expirer = null;
