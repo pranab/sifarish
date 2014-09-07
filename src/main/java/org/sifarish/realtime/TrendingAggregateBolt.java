@@ -29,7 +29,10 @@ import org.chombo.storm.GenericBolt;
 import org.chombo.storm.MessageHolder;
 import org.chombo.util.ConfigUtility;
 import org.hoidla.util.BoundedSortedObjects;
+import org.hoidla.util.Utility;
 import org.hoidla.util.BoundedSortedObjects.SortableObject;
+
+import redis.clients.jedis.Jedis;
 
 import backtype.storm.task.TopologyContext;
 import backtype.storm.tuple.Tuple;
@@ -44,6 +47,8 @@ public class TrendingAggregateBolt extends  GenericBolt {
 	private Map<String, Integer> frequentItems = new HashMap<String, Integer>();
 	private int numSkethesBolt;
 	private BoundedSortedObjects sortedObjects;
+	private Jedis jedis;
+	private String topHittersQueue;
 	
 	private static final Logger LOG = Logger.getLogger(TrendingAggregateBolt.class);
 	private static final long serialVersionUID = 8275719621097842135L;
@@ -60,6 +65,10 @@ public class TrendingAggregateBolt extends  GenericBolt {
 		int mostFrequentCount = ConfigUtility.getInt(stormConf, "sketches.most.freq.count", 3);
 		sortedObjects  = new  BoundedSortedObjects(mostFrequentCount);
 		debugOn = ConfigUtility.getBoolean(stormConf,"debug.on", false);
+		
+		jedis = RealtimeUtil.buildRedisClient(stormConf);
+		topHittersQueue = ConfigUtility.getString(stormConf, "redis.top.hitters.queue");
+
 		if (debugOn) {
 			LOG.setLevel(Level.INFO);;
 			LOG.info("TrendingAggregateBolt intialized " );
@@ -108,6 +117,8 @@ public class TrendingAggregateBolt extends  GenericBolt {
 			  }
 			  
 			  //write to Redis
+			  String serFreqCounts = Utility.join(topHitters, ":");
+			  jedis.lpush(topHittersQueue, serFreqCounts);
 			  
 			  frequentItems.clear();
 			  sketchedBolts.clear();

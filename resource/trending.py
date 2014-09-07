@@ -38,14 +38,14 @@ def genEngageEvents(threadName, users, items, trendingItems, maxEvent, events):
 	#choose user
 	user = selectRandomFromList(users)
 	print "starting %s with max event %d for user %s" %(threadName, maxEvent, user)
-	numItemsForThisUser = randint(5, 20)
+	numItemsForThisUser = randint(10, 20)
 	itemsForThisUser = selectRandomSubListFromList(items, numItemsForThisUser)
 	 
 	#sessionID
 	session = uuid.uuid1()
 
 	for i in range(maxEvent):
-		if (randint(0,9) < 7):
+		if (randint(0,9) < 6):
 			item = selectRandomFromList(itemsForThisUser)
 		else:
 			item = selectRandomFromList(trendingItems)
@@ -56,6 +56,13 @@ def genEngageEvents(threadName, users, items, trendingItems, maxEvent, events):
 		print eventRec
 		time.sleep(randint(2,6))
 
+def showTopHittersQueue():
+	while True:
+		line = rc.rpop("topHittersQueue")
+		if line is not None:
+			print line
+		else:
+			break
 
 ########################### command processing #########################	
 op = sys.argv[1]
@@ -88,9 +95,12 @@ if (op == "genEvents"):
 			maxEvent = randint(eventCountMin, eventCountMax)
    			t = threading.Thread(target=genEngageEvents, args=(threadName,users,items,trendingItems,maxEvent,events, ))
    			t.start()
-			time.sleep(randint(2,4))
+			time.sleep(randint(6,12))
 
 	except:
    		print "Error: unable to start thread"
+   		
+elif (op == "showTopHittersQueue"):
+	showTopHittersQueue()
 
 

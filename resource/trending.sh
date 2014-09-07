@@ -42,6 +42,11 @@ case "$1" in
 	$STORM_HOME/bin/storm  kill  trending
 	;;
 
+"showTopHittersQueue")  
+	echo  "reading top hitters from redis queue"
+	./trending.py showTopHittersQueue
+    ;;
+
 *) 
 	echo "unknown operation $1"
 	;;
