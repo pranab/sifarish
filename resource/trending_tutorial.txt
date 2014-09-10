@@ -1,0 +1,35 @@
+This tutorial is for finding trending items or heavy hitters using a sorm based 
+implementation and count min skteches algorithm
+
+Build all projects
+==================
+mvn install chombo
+mvn install hoidla
+mvn install sifarish
+
+Build uber jar
+==============
+./trending.sh buildJar
+
+Start Storm
+===========
+./trending.sh startStorm
+
+Deploy topology
+===============
+./trending.sh deployTopology  
+
+Push data to Redis Queue
+========================
+./trending.sh genEvents <num users> <num items> <num sessions>
+
+Browse trending items
+=====================
+/trending.sh showTopHittersQueue
+
+Kill topology
+===============
+./trending.sh killTopology  
+
+
+
