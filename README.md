@@ -11,9 +11,9 @@ and collaborative filtering based recommendation using social rating data are av
 * Extremely configurable with tons of configuration knobs
 
 ## Getting Started
-Please read ../resource/GentleIntroductionToSifarish.docx for a hight level introduction
+Please read ../resource/GentleIntroductionToSifarish.docx for a high level introduction
 and overview. The various tutorial documents in the resource directory are useful for
-running f=different example use cases.
+running different example use cases.
 
 ## Blogs
 The following blogs of mine are good source of details of sifarish. These are the only source
