@@ -85,9 +85,6 @@ public class TrendingSketchesBolt extends  GenericBolt {
 	public void intialize(Map stormConf, TopologyContext context) {
 		if (debugOn) {
 			LOG.setLevel(Level.INFO);
-			BaseCountSketch.enableLogging(Level.INFO);
-			CountMinSketch.enableLogging(Level.INFO);
-			SimpleObjectCounter.enableLogging(Level.INFO);
 			LOG.info("TrendingSketchesBolt intialization " );
 		}
 		//sketches object
