@@ -9,9 +9,20 @@ Dependency Jars
 ===============
 Please refer to resource/jar_dpendency.txt
 
+Input
+=====
+Input is field delimiter separated text, where each line is a record. The delimiter can 
+be configured as shown later under the configuration section.
 
-Text Tokenization
+Meta Data
+=========
+The meta data needs to be defined in JSON file and the file needs to be place in an HDFS 
+directory. For our example, it's in prod.json.
+
+
+Text Tokenization (Optional)
 =================
+This MR is needed if you text attributes. It normalizes text using apache lucene. 
 Here is the script to run TextAnalyzer
 
 JAR_NAME=/home/pranab/Projects/sifarish/target/sifarish-1.0.jar
@@ -61,19 +72,10 @@ hadoop jar $JAR_NAME  $CLASS_NAME  -Dconf.path=/home/pranab/Projects/bin/sifaris
 
 Configuration
 =============
-Here is a sample prod.properties
+Please take a look at  prod.properties. We have set inter.set.matching to false because we 
+are finding pairwise distance between between all records. If it was set to true, we had to set 
+base.set.split.prefix to the prefix of files belonging to one set.
 
-field.delim.regex=,
-field.delim=,
-num.reducer=1
-consolidate.field=false
-text.field.ordinals=4
-raw.schema.file.path=/pranab/meta/prod/prod.json
-bucket.count=1000
-same.schema.file.path=/pranab/meta/prod/prod.json
-knn.classify=false
-nearest.by.count=true
-top.match.count=10
 
 
 
