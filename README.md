@@ -10,6 +10,10 @@ and collaborative filtering based recommendation using social rating data are av
 * Metadata defined in simple JSON file
 * Extremely configurable with tons of configuration knobs
 
+## Getting Started
+Please read ../resource/GentleIntroductionToSifarish.docx for a hight level introduction
+and overview. The various tutorial documents in the resource directory are useful for
+running f=different example use cases.
 
 ## Blogs
 The following blogs of mine are good source of details of sifarish. These are the only source
@@ -27,6 +31,8 @@ of detail documentation
 * http://pkghosh.wordpress.com/2014/04/14/making-recommendations-in-real-time/
 * http://pkghosh.wordpress.com/2014/05/26/popularity-shaken/
 * http://pkghosh.wordpress.com/2014/06/23/novelty-in-personalization/
+* http://pkghosh.wordpress.com/2014/09/10/realtime-trending-analysis-with-approximate-algorithms/
+
 
 ## Content Similarity Based Recommendation
 In the absence of social rating data, the only options is a feature similarity 
@@ -44,11 +50,16 @@ Attribute meta data is defined in a json file. Both entities need not have the
 same set of attributes. Mapping between attributes values from one entity to 
 the other can be defined in the config file.
 
-The data type supported are numerical (integer), categorical, text. The distance algorithms 
-can be chosed to be euclidian, manhattan or minkowski. The default algorithm is euclidian. 
+The data type supported are numerical (integer), categorical, text, geo location, time. The 
+distance algorithms  can be chosed to be euclidian, manhattan or minkowski. The default algorithm 
+is euclidian. 
+
 The distancs between different atrributes of different types are combined to find distance between 
 two entity instances. Different weights can be assigned to the attributes to control the relative 
 importance of different attributes.
+
+The tutorial ../resource/product_similarity_tutorial.txt is a good starting point. The relevant
+blogs are useful to understand the inner workings.
 
 
 ## Social Interaction Data Based Recommendation
@@ -59,6 +70,9 @@ User behavior data is defined in terms of some explicit rating by user
 or it's derived from user  behavior in the site. The essential  input to all these algorithms 
 is a matrix of user and items. The value for a cell could be the ratingas an integer. It could 
 also be boolean,  if the user's interest in an item is expressed as a boolean
+
+The tutorial ../resource/tutorial.txt is a good starting point. The relevant blogs are useful 
+to understand the inner workings.
 
 
 ## Cold Starting Recommenders

@@ -1,14 +1,28 @@
 Dependent jars
 ==============
+sifarish depends on the following jar libraries. Most of them are third party except for
+chombo and hoidla. For these two you could either checkout the jars and place them in your
+local maven repo or you could build them.
 
-sifarish depends on the following thirt party libraries. Some of them are needed
-only when using some special features, as indicated by the text in parenthesis
+Some of them are needed only when using some special features, as indicated by the text in 
+parenthesis
 
-jackson-core-lgpl-1.6.3.jar
-jackson-mapper-lgpl-1.6.3.jar
+jackson-core-lgpl-1.6.3.jar (always needed)
+jackson-mapper-lgpl-1.6.3.jar (always needed)
 lucene-core-3.5.0.jar (text matching features)
-chombo-1.0.jar
+chombo-1.0.jar (my project, always needed)
+hoidla-1.0.jar (my project, neede for real time features)
 jena-arq-2.9.4.jar (semantic feature)
+
+Building dependent jars
+=======================
+Follow these steps if you have decided to build the jars for chombo and hoidla
+
+Checkout project chombo and run
+mvn clean install
+
+Checkout project hoidla and run
+mvn clean install
 
 Handling dependency
 ===================
@@ -41,4 +55,6 @@ be added to the build element in pom.xml
 .......
 </build>
 
-3. Copy all jars to hadoop lib directory in all nodes 
+3. Use ant to package all dependent jars. You could use ../resource/build_hadoop.xml as an example
+
+4. Copy all jars to hadoop lib directory in all nodes 

@@ -3,7 +3,7 @@
     <echo>Packaging sifarish into a single uber JAR</echo>
 	<jar destfile="uber-sifarish-1.0.jar">
 		<zipgroupfileset dir="/home/pranab/Projects/lib" 
-			includes="jedis-2.1.0.jar,commons-pool-1.5.5.jar,guava-12.0.jar,jackson-core-asl-1.5.2.jar,jackson-mapper-asl-1.5.2.jar" /> 
+			includes="commons-pool-1.5.5.jar,guava-12.0.jar,jackson-core-asl-1.5.2.jar,jackson-mapper-asl-1.5.2.jar,lucene-core-3.5.0.jar,commons-lang3-3.1.jar" /> 
 		<zipgroupfileset dir="/home/pranab/Projects/sifarish/target" 
 			includes="sifarish-1.0.jar, " /> 
 		<zipgroupfileset dir="/home/pranab/Projects/chombo/target" 
