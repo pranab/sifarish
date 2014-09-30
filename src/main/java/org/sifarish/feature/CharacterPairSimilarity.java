@@ -23,18 +23,26 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+/**
+ * Finds distance with matching character pair algorithms
+ * @author pranab
+ *
+ */
 public class CharacterPairSimilarity extends DynamicAttrSimilarityStrategy {
 
+	/* (non-Javadoc)
+	 * @see org.sifarish.feature.DynamicAttrSimilarityStrategy#findDistance(java.lang.String, java.lang.String)
+	 */
 	public double findDistance(String src, String target) throws IOException {
 		double dist = 0;
-		Set<String> intersection = new HashSet<String>();
-		
 		String[] srcTerms = src.split(fieldDelimRegex);
-		List<String> srcPairs = getCharacterPairs(srcTerms, intersection);
+		List<String> srcPairs = getCharacterPairs(srcTerms);
 		String[] trgTerms = target.split(fieldDelimRegex);
-		List<String> trgPairs = getCharacterPairs(trgTerms, intersection);
+		List<String> trgPairs = getCharacterPairs(trgTerms);
 		
-		double sim = (2.0 * intersection.size()) / (srcPairs.size() + trgPairs.size());
+		int union = srcPairs.size() + trgPairs.size();
+		int intersection = findIntersection(srcPairs, trgPairs);
+		double sim = (2.0 * intersection) / union;
 		dist = 1.0 -sim;
 		return dist;
 	}
@@ -44,15 +52,37 @@ public class CharacterPairSimilarity extends DynamicAttrSimilarityStrategy {
 	 * @param terms
 	 * @return
 	 */
-	private List<String> getCharacterPairs(String[] terms, Set<String> intersection) {
+	private List<String> getCharacterPairs(String[] terms) {
 		List<String> pairs = new ArrayList<String>();
 		for (String term : terms) {
 			for (int i = 0; i < term.length() - 1; ++i) {
 				String pair = term.substring(i, i+2); 
 				pairs.add(pair);
-				intersection.add(pair);
 			}
 		}
 		return pairs;
+	}
+	
+	/**
+	 * @param srcPairs
+	 * @param trgPairs
+	 * @return
+	 */
+	private int findIntersection(List<String> srcPairs, List<String> trgPairs) {
+		int intersection = 0;
+		Set<Integer> matchedTrg = new HashSet<Integer>();
+		for (int i = 0; i < srcPairs.size(); ++i) {
+			String srcPair = srcPairs.get(i);
+			for (int j = 0; i < trgPairs.size(); ++j) {
+				String trgPair = trgPairs.get(j);
+				if (srcPair.equals(trgPair) && !matchedTrg.contains(j)) {
+					++intersection;
+					matchedTrg.add(j);
+					break;
+				}
+				
+			}
+		}
+		return intersection;
 	}
 }
