@@ -127,6 +127,8 @@ public abstract class DynamicAttrSimilarityStrategy {
 			double srcNonMatchingTermWeight = (Double)params.get("srcNonMatchingTermWeight");
 			double trgNonMatchingTermWeight = (Double)params.get("trgNonMatchingTermWeight");
 			simStrategy = new JaccardSimilarity(srcNonMatchingTermWeight, trgNonMatchingTermWeight);
+		}else if (algorithm.equals("dice")){
+			simStrategy = new DiceSimilarity();
 		} else if (algorithm.equals("cosine")){
 			simStrategy = new CosineSimilarity();
 		} else if (algorithm.equals("semantic")){
