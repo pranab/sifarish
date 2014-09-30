@@ -90,7 +90,7 @@ public class TrendingSketchesBolt extends  GenericBolt {
 		//sketches object
 		Expirer expirer = null;
 		double errorLimit = ConfigUtility.getDouble(stormConf, "sketches.error.lim", 0.05);
-		double errorProbLimit =ConfigUtility.getDouble(stormConf, "sketches.error.prob.limit", 0.95);
+		double errorProbLimit =ConfigUtility.getDouble(stormConf, "sketches.error.prob.limit", 0.02);
 		int mostFrequentCount = ConfigUtility.getInt(stormConf, "sketches.most.freq.count", 3);
 		int freqCountLimitPercent = ConfigUtility.getInt(stormConf, "sketches.freq.count.lim.percent", 20);
 		String expiry = ConfigUtility.getString(stormConf, "sketches.expiry.policy", "none");
@@ -108,7 +108,8 @@ public class TrendingSketchesBolt extends  GenericBolt {
 		sketches = expirer == null ? 
 				new CountMinSketchesFrequent(errorLimit, errorProbLimit, mostFrequentCount, freqCountLimitPercent) :
 				new CountMinSketchesFrequent(errorLimit, errorProbLimit, mostFrequentCount, freqCountLimitPercent, expirer);
-		
+		boolean globalTotalCount = ConfigUtility.getBoolean(stormConf, "sketches.global.total.count", false);
+		sketches.withGlobalTotalCount(globalTotalCount);
 		debugOn = ConfigUtility.getBoolean(stormConf,"debug.on", false);
 	}
 
