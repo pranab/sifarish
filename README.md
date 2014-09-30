@@ -110,10 +110,17 @@ Recommendations can be made real time based on user's current behavior in a pre 
 window. The solution is based on Storm, although Hadoop gets used to compute item correlation
 matrix from historical user behavior data.
 
+## Text Attribute
+For content based recommendation being able to find match between text field is an important
+factor. Text attributes are stemmed or normalized with Apache Lucene. Various languages, in addition
+to default of english are supported. They are german, french, italian, spanish, polish and brazilian
+portuguese. Text matching algorithms supported are cosine, jaccard and semantic. For semantic matching,
+RDF semantic graph is used 
+
 ## Complex Attributes
-There is  suppoort for structured fields e.g., Location, Time Window, Categorized Item, Product etc. 
-These provide contextual dimensions to recommendation. They are particularly relevant for recommendation
-in the mobile space
+For content based recommendation, There is  support for structured fields e.g., Location, Time Window, 
+Event, Categorized Item etc. Many of these  provide contextual dimensions to recommendation. They 
+are particularly relevant for recommendation in the mobile space
 
 ## Novelty 
 Novelty for an item can be computed at individual user level or the whole user community as a
@@ -131,7 +138,6 @@ For content based recommendation, faceted match is supported as faceted search i
 Faceted fields are specified through a configuration parameter
 
 ## Dithering
-
 Dithering effectively handles the problem users usually not browsing the first few items
 in a list. The dithering process shuffles the list little bit, every time recommended items 
 are presented to the user.

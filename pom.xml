@@ -114,7 +114,8 @@ xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/ma
   			<groupId>org.apache.lucene</groupId>
   			<artifactId>lucene-analyzers-morfologik</artifactId>
   			<version>4.4.0</version>
-		</dependency>	    
+		</dependency>	   
+		 
         <dependency>
             <groupId>mawazo</groupId>
             <artifactId>chombo</artifactId>
