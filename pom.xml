@@ -97,13 +97,24 @@ xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/ma
         </dependency>
         
 		<dependency>
-	       <artifactId>lucene-core</artifactId>
 	       <groupId>org.apache.lucene</groupId>
-	       <version>3.5.0</version>
+	       <artifactId>lucene-core</artifactId>
+	       <version>4.4.0</version>
 	       <type>jar</type>
-	       <scope>compile</scope>
 	    </dependency>
 	    
+		<dependency>
+			<groupId>org.apache.lucene</groupId>
+			<artifactId>lucene-analyzers-common</artifactId>
+			<version>4.4.0</version>
+	       <type>jar</type>
+		</dependency>
+
+		<dependency>
+  			<groupId>org.apache.lucene</groupId>
+  			<artifactId>lucene-analyzers-morfologik</artifactId>
+  			<version>4.4.0</version>
+		</dependency>	    
         <dependency>
             <groupId>mawazo</groupId>
             <artifactId>chombo</artifactId>

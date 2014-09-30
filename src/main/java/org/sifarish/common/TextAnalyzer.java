@@ -43,9 +43,16 @@ import org.apache.hadoop.util.Tool;
 import org.apache.hadoop.util.ToolRunner;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.standard.StandardAnalyzer;
+import org.apache.lucene.analysis.br.BrazilianAnalyzer;
+import org.apache.lucene.analysis.de.GermanAnalyzer;
+import org.apache.lucene.analysis.en.EnglishAnalyzer;
+import org.apache.lucene.analysis.es.SpanishAnalyzer;
+import org.apache.lucene.analysis.fr.FrenchAnalyzer;
+import org.apache.lucene.analysis.it.ItalianAnalyzer;
+import org.apache.lucene.analysis.ru.RussianAnalyzer;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.util.Version;
+import org.apache.lucene.analysis.morfologik.MorfologikAnalyzer;
 import org.codehaus.jackson.map.ObjectMapper;
 import org.sifarish.feature.SingleTypeSchema;
 import org.sifarish.util.Field;
@@ -99,19 +106,23 @@ public class TextAnalyzer extends Configured implements Tool{
          * @see org.apache.hadoop.mapreduce.Mapper#setup(org.apache.hadoop.mapreduce.Mapper.Context)
          */
         protected void setup(Context context) throws IOException, InterruptedException {
-        	fieldDelim = context.getConfiguration().get("field.delim", "[]");
-        	fieldDelimRegex = context.getConfiguration().get("field.delim.regex", "\\[\\]");
-        	consolidateFields = context.getConfiguration().getBoolean("consolidate.field", false);
-        	String textFields = context.getConfiguration().get("text.field.ordinals", "");
+        	Configuration config = context.getConfiguration();
+        	fieldDelim = config.get("field.delim", "[]");
+        	fieldDelimRegex = config.get("field.delim.regex", "\\[\\]");
+        	consolidateFields = config.getBoolean("consolidate.field", false);
+        	String textFields = config.get("text.field.ordinals", "");
             String[] items  =  textFields.toString().split(",");
             for (int i = 0; i < items.length; ++i){
             	textFieldOrdinals.add(Integer.parseInt(items[i]));
             }
-            analyzer = new StandardAnalyzer(Version.LUCENE_35);
             
-			Configuration conf = context.getConfiguration();
-            String filePath = conf.get("raw.schema.file.path");
-            FileSystem dfs = FileSystem.get(conf);
+            //language specific analyzer
+            String lang = config.get("text.language", "en");
+            createAnalyzer(lang);
+            
+            //load schema
+            String filePath = config.get("raw.schema.file.path");
+            FileSystem dfs = FileSystem.get(config);
             Path src = new Path(filePath);
             FSDataInputStream fs = dfs.open(src);
             ObjectMapper mapper = new ObjectMapper();
@@ -122,6 +133,32 @@ public class TextAnalyzer extends Configured implements Tool{
     		}
            
        }
+        
+        /**
+         * creates language specific analyzers
+         * @param lang
+         */
+        private void createAnalyzer(String lang) {
+        	if (lang.equals("en")) {
+        		analyzer = new EnglishAnalyzer(Version.LUCENE_44);
+        	} else if (lang.equals("de")) {
+        		analyzer = new GermanAnalyzer(Version.LUCENE_44);
+        	} else if (lang.equals("es")) {
+        		analyzer = new SpanishAnalyzer(Version.LUCENE_44);
+    		} else if (lang.equals("fr")) {
+        		analyzer = new FrenchAnalyzer(Version.LUCENE_44);
+    		} else if (lang.equals("it")) {
+        		analyzer = new ItalianAnalyzer(Version.LUCENE_44);
+    		} else if (lang.equals("br")) {
+        		analyzer = new BrazilianAnalyzer(Version.LUCENE_44);
+    		} else if (lang.equals("ru")) {
+        		analyzer = new RussianAnalyzer(Version.LUCENE_44);
+    		} else if (lang.equals("pl")) {
+        		analyzer = new MorfologikAnalyzer(Version.LUCENE_44);
+    		} else {
+    			throw new IllegalArgumentException("unsupported language:" + lang);
+    		} 
+        }
 
         /* (non-Javadoc)
          * @see org.apache.hadoop.mapreduce.Mapper#cleanup(org.apache.hadoop.mapreduce.Mapper.Context)
