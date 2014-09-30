@@ -127,15 +127,19 @@ public abstract class DynamicAttrSimilarityStrategy {
 			double srcNonMatchingTermWeight = (Double)params.get("srcNonMatchingTermWeight");
 			double trgNonMatchingTermWeight = (Double)params.get("trgNonMatchingTermWeight");
 			simStrategy = new JaccardSimilarity(srcNonMatchingTermWeight, trgNonMatchingTermWeight);
-		}else if (algorithm.equals("dice")){
+		} else if (algorithm.equals("dice")){
 			simStrategy = new DiceSimilarity();
+		} else if (algorithm.equals("charPair")){
+			simStrategy = new CharacterPairSimilarity();
 		} else if (algorithm.equals("cosine")){
 			simStrategy = new CosineSimilarity();
 		} else if (algorithm.equals("semantic")){
 			String matcherClass =(String) params.get("matcherClass");
 			int  topMatchCount =(Integer) params.get("topMatchCount");
 			simStrategy = new SemanticSimilarity(matcherClass, topMatchCount, params);
-		} 
+		} else {
+			throw new IllegalArgumentException("invalid text similarity algorithms:" + algorithm);
+		}
 		return simStrategy;
 	}	
 	
