@@ -255,12 +255,14 @@ public class TextAnalyzer extends Configured implements Tool{
             TokenStream stream = analyzer.tokenStream("contents", new StringReader(text));
             StringBuilder stBld = new StringBuilder();
 
+            stream.reset();
             CharTermAttribute termAttribute = (CharTermAttribute)stream.getAttribute(CharTermAttribute.class);
             while (stream.incrementToken()) {
         		String token = termAttribute.toString();
         		stBld.append(token).append(" ");
         	} 
-        	
+        	stream.end();
+        	stream.close();
         	return stBld.toString();
         }
     }    
