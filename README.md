@@ -147,6 +147,9 @@ Please use the tutorial.txt file in the resource directory for batch mode recomm
 processing. For real time recommendation please use the tutorial document there is a separate
 tutorial document realtime\_recommendation\_tutorial.txt
 
+## Configuration
+Please refer to the wiki page for a detailed list of all configuration parameters
+
 ## Help
 Please feel free to email me at pkghosh99@gmail.com
 
