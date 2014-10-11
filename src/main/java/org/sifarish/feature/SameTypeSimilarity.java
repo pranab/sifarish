@@ -236,7 +236,7 @@ public class SameTypeSimilarity  extends Configured implements Tool {
         private int firstBucketSize;
         private int secondBucketSize;
         private boolean mixedInSets;
-        private int  extraOutputField;
+        private int[]  extraOutputFields;
         private static final Logger LOG = Logger.getLogger(SimilarityReducer.class);
         
         
@@ -271,26 +271,28 @@ public class SameTypeSimilarity  extends Configured implements Tool {
         	//faceted fields
         	String facetedFieldValues =  conf.get("faceted.field.ordinal");
         	if (!StringUtils.isBlank(facetedFieldValues)) {
-        		String[] items = facetedFieldValues.split(",");
-        		facetedFields = new int[items.length];
-        		for (int i = 0; i < items.length; ++i) {
-        			facetedFields[i] = Integer.parseInt(items[i]);
-        		}
+        		facetedFields = org.chombo.util.Utility.intArrayFromString(facetedFieldValues);
         	}
         	
-        	//carry along passive fields in output
+        	//carry along all passive fields in output
         	includePassiveFields = conf.getBoolean("include.passive.fields", false);
         	
         	//distance threshold for output
         	distThreshold = conf.getInt("dist.threshold", scale);
         	
         	//output ID first
-        	 outputIdFirst =   conf.getBoolean("output.id.first", true);      	
+        	outputIdFirst =   conf.getBoolean("output.id.first", true);      	
 
-        	 //inter set matching
+        	//inter set matching
         	mixedInSets = conf.getBoolean("mixed.in.sets",  false);
         	setIdSize = conf.getInt("set.ID.size",  0);
-         	extraOutputField = conf.getInt("extra.output.field", -1);
+        	
+        	//extra selected passive fields to be output
+        	String extraOutputFieldList = conf.get("extra.output.field");
+        	if (!StringUtils.isBlank(extraOutputFieldList)) {
+        		extraOutputFields = org.chombo.util.Utility.intArrayFromString(extraOutputFieldList);
+        		
+        	}        	
         	 
              if (conf.getBoolean("debug.on", false)) {
              	LOG.setLevel(Level.DEBUG);
@@ -541,7 +543,7 @@ public class SameTypeSimilarity  extends Configured implements Tool {
         		stBld.append(firstId).append(fieldDelim).append(secondId).append(fieldDelim);
         	}
         	stBld.append(dist);
-        	if (extraOutputField != -1) {
+        	if (null != extraOutputFields) {
         		appendExtraField(firstItems, stBld);
         		appendExtraField(secondItems, stBld);
         	}
@@ -553,10 +555,13 @@ public class SameTypeSimilarity  extends Configured implements Tool {
          * @param stBld
          */
         private void appendExtraField(String[] items, StringBuilder stBld) {
-    		if (extraOutputField < items.length) {
-    			stBld.append(fieldDelim).append(items[extraOutputField]);
-    		}
+        	for (int extraOutputField : extraOutputFields) {
+        		if (extraOutputField < items.length) {
+        			stBld.append(fieldDelim).append(items[extraOutputField]);
+        		}
+        	}
         }
+        
         /**
          * @param field
          * @param firstAttr
