@@ -149,6 +149,7 @@ tutorial document realtime\_recommendation\_tutorial.txt
 
 ## Configuration
 Please refer to the wiki page for a detailed list of all configuration parameters
+https://github.com/pranab/sifarish/wiki/Configuration
 
 ## Help
 Please feel free to email me at pkghosh99@gmail.com

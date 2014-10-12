@@ -3,9 +3,8 @@ implementation and count min skteches algorithm
 
 Build all projects
 ==================
-mvn install chombo
-mvn install hoidla
-mvn install sifarish
+Buiild the projects in the order of hoidla, chombo and sifarish
+mvn clean install sh
 
 Build uber jar
 ==============
