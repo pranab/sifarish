@@ -124,6 +124,8 @@ public class SameTypeSimilarity  extends Configured implements Tool {
    	 	private boolean interSetMatching;
    	 	private  boolean  isBaseSetSplit;
    	 	private static final int hashMultiplier = 1000;
+   	 	private boolean autoGenerateId;
+   	 	private String record;
         private static final Logger LOG = Logger.getLogger(SimilarityMapper.class);
  
         /* (non-Javadoc)
@@ -133,6 +135,7 @@ public class SameTypeSimilarity  extends Configured implements Tool {
         	bucketCount = context.getConfiguration().getInt("bucket.count", 1000);
         	fieldDelimRegex = context.getConfiguration().get("field.delim.regex", "\\[\\]");
             
+        	//data schema
 			Configuration conf = context.getConfiguration();
             String filePath = conf.get("same.schema.file.path");
             FileSystem dfs = FileSystem.get(conf);
@@ -140,15 +143,28 @@ public class SameTypeSimilarity  extends Configured implements Tool {
             FSDataInputStream fs = dfs.open(src);
             ObjectMapper mapper = new ObjectMapper();
             schema = mapper.readValue(fs, SingleTypeSchema.class);
+            
+            //ordinal for partition field which partitons data
             partitonOrdinal = schema.getPartitioningColumn();
+            
+            //ordinal of Id field
             idOrdinal = schema.getEntity().getIdField().getOrdinal();
+            
             if (conf.getBoolean("debug.on", false)) {
             	LOG.setLevel(Level.DEBUG);
             }
         	LOG.debug("bucketCount: " + bucketCount + "partitonOrdinal: " + partitonOrdinal  + "idOrdinal:" + idOrdinal );
+        	
+        	//inter set matching
        	 	interSetMatching = conf.getBoolean("inter.set.matching",  false);
        	 	String baseSetSplitPrefix = conf.get("base.set.split.prefix", "base");
        	 	isBaseSetSplit = ((FileSplit)context.getInputSplit()).getPath().getName().startsWith(baseSetSplitPrefix);
+       	 	
+       	 	//generate record Id as the first field
+       	 	autoGenerateId = conf.getBoolean("auto.generate.id", false);
+       	 	if (autoGenerateId && idOrdinal != 0) {
+       	 		throw new IllegalArgumentException("when record  Id is auto generated, it should be the first field");
+       	 	}
        }
 
         /* (non-Javadoc)
@@ -157,8 +173,12 @@ public class SameTypeSimilarity  extends Configured implements Tool {
         @Override
         protected void map(LongWritable key, Text value, Context context)
             throws IOException, InterruptedException {
-            String[] items  =  value.toString().split(fieldDelimRegex);
-            String partition = partitonOrdinal >= 0 ? items[partitonOrdinal] :  "none";
+        	record = value.toString();
+        	if (autoGenerateId) {
+        		record = org.chombo.util.Utility.generateId() + fieldDelimRegex + record;
+        	} 
+            String[] items  =  record.split(fieldDelimRegex);
+            String partition = partitonOrdinal >= 0 ? items[partitonOrdinal] :  "N";
        		hashCode = items[idOrdinal].hashCode();
        		if (hashCode < 0) {
        			hashCode = - hashCode;
@@ -214,7 +234,7 @@ public class SameTypeSimilarity  extends Configured implements Tool {
         private List<String> valueList = new ArrayList<String>();
         private Set<String> valueSet = new HashSet<String>();
         private SingleTypeSchema schema;
-       private String firstId;
+        private String firstId;
         private String  secondId;
         private int dist;
         private int idOrdinal;
@@ -237,6 +257,7 @@ public class SameTypeSimilarity  extends Configured implements Tool {
         private int secondBucketSize;
         private boolean mixedInSets;
         private int[]  extraOutputFields;
+        private boolean outputRecord;
         private static final Logger LOG = Logger.getLogger(SimilarityReducer.class);
         
         
@@ -245,6 +266,8 @@ public class SameTypeSimilarity  extends Configured implements Tool {
     	 */
     	protected void setup(Context context) throws IOException, InterruptedException {
 			Configuration conf = context.getConfiguration();
+        	fieldDelimRegex = conf.get("field.delim.regex", ",");
+        	fieldDelim = context.getConfiguration().get("field.delim", ",");
 			
 			//schema
             String filePath = conf.get("same.schema.file.path");
@@ -257,8 +280,6 @@ public class SameTypeSimilarity  extends Configured implements Tool {
             schema.setConf(conf);
         	
             idOrdinal = schema.getEntity().getIdField().getOrdinal();
-        	fieldDelimRegex = conf.get("field.delim.regex", ",");
-        	fieldDelim = context.getConfiguration().get("field.delim", ",");
         	scale = conf.getInt("distance.scale", 1000);
         	subFieldDelim = conf.get("sub.field.delim.regex", "::");
         	
@@ -293,10 +314,13 @@ public class SameTypeSimilarity  extends Configured implements Tool {
         		extraOutputFields = org.chombo.util.Utility.intArrayFromString(extraOutputFieldList);
         		
         	}        	
-        	 
-             if (conf.getBoolean("debug.on", false)) {
+        	
+        	//output whole record
+        	outputRecord =  conf.getBoolean("output.record", false);     
+        	
+            if (conf.getBoolean("debug.on", false)) {
              	LOG.setLevel(Level.DEBUG);
-             }
+            }
       }
         
         /* (non-Javadoc)
@@ -546,11 +570,15 @@ public class SameTypeSimilarity  extends Configured implements Tool {
         	if (null != extraOutputFields) {
         		appendExtraField(firstItems, stBld);
         		appendExtraField(secondItems, stBld);
+        	} else if (outputRecord) {
+        		appendRecord(first, stBld);
+        		appendRecord(second, stBld);
         	}
         	return stBld.toString();
         }
 
         /**
+         * adds selected fields in the output
          * @param value
          * @param stBld
          */
@@ -560,6 +588,15 @@ public class SameTypeSimilarity  extends Configured implements Tool {
         			stBld.append(fieldDelim).append(items[extraOutputField]);
         		}
         	}
+        }
+        
+        /**
+         * appends whole record
+         * @param record
+         * @param stBld
+         */
+        private void appendRecord(String record, StringBuilder stBld) {
+        	stBld.append(fieldDelim).append(record);
         }
         
         /**
