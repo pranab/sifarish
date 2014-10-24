@@ -63,6 +63,15 @@ public class Field {
 	public static final String DATA_TYPE_LOCATION = "location";
 	public static final String DATA_TYPE_GEO_LOCATION = "geoLocation";
 	public static final String DATA_TYPE_EVENT = "event";
+
+	public static final String TEXT_TYPE_PERSON_NAME = "personName";
+	public static final String TEXT_TYPE_STREET_ADDRESS = "streetAddress";
+	public static final String TEXT_TYPE_CITY = "city";
+	public static final String TEXT_TYPE_STATE = "state";
+	public static final String TEXT_TYPE_ZIP = "zip";
+	public static final String TEXT_TYPE_PHONE_NUM = "phoneNum";
+	public static final String TEXT_TYPE_EMAIL_ADDR = "emailAddress";
+	
 	
 	
 	public boolean isType() {

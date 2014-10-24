@@ -20,10 +20,9 @@ package org.sifarish.etl;
 import java.io.IOException;
 import java.io.StringReader;
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 
+import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.conf.Configured;
 import org.apache.hadoop.fs.FSDataInputStream;
@@ -164,8 +163,26 @@ public class StructuredTextAnalyzer extends Configured implements Tool{
             	Field field = schema.getEntity().getFieldByOrdinal(i);
             	
             	if (null != field && field.getDataType().equals(Field.DATA_TYPE_TEXT)) {
-	            	//if text field analyze
-	            	item = tokenize(item);
+            		if (field.getDataType().equals(Field.TEXT_TYPE_PERSON_NAME)) {
+            			
+            		} else if (field.getDataType().equals(Field.TEXT_TYPE_PERSON_NAME)) {
+            			item = caseFormat(item, field.getTextDataSubTypeFormat());
+            		} else if (field.getDataType().equals(Field.TEXT_TYPE_STREET_ADDRESS)) {
+            			item = caseFormat(item, field.getTextDataSubTypeFormat());
+            		} else if (field.getDataType().equals(Field.TEXT_TYPE_CITY)) {
+            			item = caseFormat(item, field.getTextDataSubTypeFormat());
+            		} else if (field.getDataType().equals(Field.TEXT_TYPE_STATE)) {
+            			
+            		} else if (field.getDataType().equals(Field.TEXT_TYPE_ZIP)) {
+            			
+            		} else if (field.getDataType().equals(Field.TEXT_TYPE_EMAIL_ADDR)) {
+            			item = caseFormat(item, field.getTextDataSubTypeFormat());
+            		} else if (field.getDataType().equals(Field.TEXT_TYPE_PHONE_NUM)) {
+            			item = phoneNumFormat(item, field.getTextDataSubTypeFormat());
+            		} else {
+            			//if text field analyze
+            			item = tokenize(item);
+            		}
             	}
     			itemList.add(item);
             }
@@ -185,7 +202,46 @@ public class StructuredTextAnalyzer extends Configured implements Tool{
 			context.write(NullWritable.get(), valueHolder);
        }     
         
+        /**
+         * @param item
+         * @param format
+         * @return
+         */
+        private String caseFormat(String item, String format) {
+        	String[] tokens = item.split("\\s+");
+        	for (int i = 0; i < tokens.length; ++i) {
+        		if (format.equals("lowerCase")) {
+        			tokens[i] = tokens[i].toLowerCase(); 
+        		} else if (format.equals("upperCase")) {
+        			tokens[i] = tokens[i].toUpperCase(); 
+        		} else if (format.equals("capitalize")) {
+        			tokens[i] = StringUtils.capitalize(tokens[i]);
+        		} else {
+        			throw new IllegalArgumentException("invalid case format");
+        		}
+        	}
+        	
+        	return org.chombo.util.Utility.join(tokens, "");
+        }
 
+        /**
+         * @param item
+         * @param format
+         * @return
+         */
+        private String phoneNumFormat(String item, String format) {
+    		item = item.replaceAll("^\\d", "");
+        	if (format.equals("compact")) {
+        	} else if (format.equals("areaCodeParen")) {
+        		item = "(" + item.substring(0, 3) + ")" + item.substring(3);
+        	} else if (format.equals("spaceSep")) {
+        		item = item.substring(0, 3) + " " + item.substring(3,6) + " " + item.substring(6);
+        	} else {
+    			throw new IllegalArgumentException("invalid phone number format");
+    		}
+        	return item;
+        }
+        
         /**
          * @param text
          * @return
