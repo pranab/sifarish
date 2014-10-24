@@ -31,6 +31,8 @@ public class Field {
 	private boolean id;
 	private boolean classAttribute;
 	private String dataType;
+	private String dataSubType = "none";
+	private String textDataSubTypeFormat;
 	private int min;
 	private int max;
 	private String unit = "";
@@ -50,7 +52,18 @@ public class Field {
 	private double functionThreshold = 0.5;
 	private double implodeThreshold = -0.1;
 	private double explodeThreshold = 1.1;
-
+	
+	public static final String DATA_TYPE_STRING = "string";
+	public static final String DATA_TYPE_CATEGORICAL = "categorical";
+	public static final String DATA_TYPE_INT = "int";
+	public static final String DATA_TYPE_DOUBLE = "double";
+	public static final String DATA_TYPE_TEXT = "text";
+	public static final String DATA_TYPE_TIME_WINDOW = "timeWindow";
+	public static final String DATA_TYPE_HOUR_WINDOW = "hourWindow";
+	public static final String DATA_TYPE_LOCATION = "location";
+	public static final String DATA_TYPE_GEO_LOCATION = "geoLocation";
+	public static final String DATA_TYPE_EVENT = "event";
+	
 	
 	public boolean isType() {
 		return type;
@@ -88,6 +101,18 @@ public class Field {
 	}
 	public void setDataType(String dataType) {
 		this.dataType = dataType;
+	}
+	public String getDataSubType() {
+		return dataSubType;
+	}
+	public void setDataSubType(String dataSubType) {
+		this.dataSubType = dataSubType;
+	}
+	public String getTextDataSubTypeFormat() {
+		return textDataSubTypeFormat;
+	}
+	public void setTextDataSubTypeFormat(String textDataSubTypeFormat) {
+		this.textDataSubTypeFormat = textDataSubTypeFormat;
 	}
 	public int getMatchingOrdinal() {
 		return matchingOrdinal;

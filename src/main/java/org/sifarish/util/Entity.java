@@ -34,46 +34,85 @@ public class Entity {
 	private List<FieldExtractor> fieldExtractors = new ArrayList<FieldExtractor>();
 	
 	
+	/**
+	 * @return
+	 */
 	public String getName() {
 		return name;
 	}
+	/**
+	 * @param name
+	 */
 	public void setName(String name) {
 		this.name = name;
 	}
+	/**
+	 * @return
+	 */
 	public int getType() {
 		return type;
 	}
+	/**
+	 * @param type
+	 */
 	public void setType(int type) {
 		this.type = type;
 	}
+	/**
+	 * @return
+	 */
 	public int getFieldCount() {
 		return fieldCount;
 	}
+	/**
+	 * @param fieldCount
+	 */
 	public void setFieldCount(int fieldCount) {
 		this.fieldCount = fieldCount;
 	}
 
+	/**
+	 * @return
+	 */
 	public String getFilePrefix() {
 		return filePrefix;
 	}
+	/**
+	 * @param filePrefix
+	 */
 	public void setFilePrefix(String filePrefix) {
 		this.filePrefix = filePrefix;
 	}
+	/**
+	 * @return
+	 */
 	public List<Field> getFields() {
 		return fields;
 	}
 
+	/**
+	 * @param fields
+	 */
 	public void setFields(List<Field> fields) {
 		this.fields = fields;
 	}
 	
+	/**
+	 * @return
+	 */
 	public List<FieldExtractor> getFieldExtractors() {
 		return fieldExtractors;
 	}
+	/**
+	 * @param fieldExtractors
+	 */
 	public void setFieldExtractors(List<FieldExtractor> fieldExtractors) {
 		this.fieldExtractors = fieldExtractors;
 	}
 
+	/**
+	 * @return
+	 */
 	public Field getIdField() {
 		Field field = null;
 		for (Field thisField : fields) {
@@ -85,6 +124,9 @@ public class Entity {
 		return field;
 	}
 	
+	/**
+	 * @return
+	 */
 	public Field getClassAttributeField() {
 		Field field = null;
 		for (Field thisField : fields) {
@@ -96,6 +138,10 @@ public class Entity {
 		return field;
 	}
 	
+	/**
+	 * @param ordinal
+	 * @return
+	 */
 	public List<FieldExtractor> getExtractorsForField(int ordinal){
 		List<FieldExtractor> extractors =  new ArrayList<FieldExtractor>();
 		
@@ -108,6 +154,10 @@ public class Entity {
 		return extractors;
 	}
 	
+	/**
+	 * @param ordinal
+	 * @return
+	 */
 	public boolean isRetainedField(int ordinal){
 		boolean retained = false;
 		for (Field field : fields){
@@ -119,5 +169,19 @@ public class Entity {
 		return retained;
 	}
 	
+	/**
+	 * @param ordinal
+	 * @return
+	 */
+	public Field getFieldByOrdinal(int ordinal) {
+		Field field = null;
+		for (Field thisField : fields){
+			if (thisField.getOrdinal() == ordinal){
+				field = thisField;
+				break;
+			}
+		}
+		return field;
+	}
 	
 }

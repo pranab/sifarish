@@ -144,7 +144,7 @@ public class SameTypeSimilarity  extends Configured implements Tool {
             ObjectMapper mapper = new ObjectMapper();
             schema = mapper.readValue(fs, SingleTypeSchema.class);
             
-            //ordinal for partition field which partitons data
+            //ordinal for partition field which partitions data
             partitonOrdinal = schema.getPartitioningColumn();
             
             //ordinal of Id field
@@ -475,31 +475,31 @@ public class SameTypeSimilarity  extends Configured implements Tool {
     				}
     			} else {
     				dist = 0;
-	    			if (field.getDataType().equals("categorical")) {
+	    			if (field.getDataType().equals(Field.DATA_TYPE_CATEGORICAL)) {
 	    				//categorical
 	    				dist = field.findDistance(firstAttr, secondAttr);
-	    			} else if (field.getDataType().equals("int")) {
+	    			} else if (field.getDataType().equals(Field.DATA_TYPE_INT)) {
 	    				//int
 	    				dist = numericDistance(field,  firstAttr,  secondAttr,  true, context);
-	    			} else if (field.getDataType().equals("double")) {
+	    			} else if (field.getDataType().equals(Field.DATA_TYPE_DOUBLE)) {
 	    				//double
 	    				dist =  numericDistance( field,  firstAttr,  secondAttr, false, context);
-	    			} else if (field.getDataType().equals("text")) { 
+	    			} else if (field.getDataType().equals(Field.DATA_TYPE_TEXT)) { 
 	    				//text
 	    				dist = textSimStrategy.findDistance(firstAttr, secondAttr);	    				
-	    			} else if (field.getDataType().equals("timeWindow")) {
+	    			} else if (field.getDataType().equals(Field.DATA_TYPE_TIME_WINDOW)) {
 	    				//time window
 	    				dist = timeWindowDistance(field, firstAttr,  secondAttr, context);
-	    			} else if (field.getDataType().equals("hourWindow")) {
+	    			} else if (field.getDataType().equals(Field.DATA_TYPE_HOUR_WINDOW)) {
 	    				//hour window
 	    				dist = hourWindowDistance(field, firstAttr,  secondAttr, context);
-	    			}   else if (field.getDataType().equals("location")) {
+	    			}   else if (field.getDataType().equals(Field.DATA_TYPE_LOCATION)) {
 	    				//location
 	    				dist = locationDistance(field, firstAttr,  secondAttr, context);
-	    			} else if (field.getDataType().equals("geoLocation")) {
+	    			} else if (field.getDataType().equals(Field.DATA_TYPE_GEO_LOCATION)) {
 	    				//geo location
 	    				dist = geoLocationDistance(field, firstAttr,  secondAttr, context);
-	    			}  else if (field.getDataType().equals("event")) {
+	    			}  else if (field.getDataType().equals(Field.DATA_TYPE_EVENT)) {
 	    				//event
 	    				dist = eventDistance(field, firstAttr,  secondAttr, context);
 	    			}
