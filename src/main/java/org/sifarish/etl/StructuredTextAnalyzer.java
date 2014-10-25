@@ -20,7 +20,9 @@ package org.sifarish.etl;
 import java.io.IOException;
 import java.io.StringReader;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.conf.Configuration;
@@ -39,14 +41,7 @@ import org.apache.hadoop.util.Tool;
 import org.apache.hadoop.util.ToolRunner;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.br.BrazilianAnalyzer;
-import org.apache.lucene.analysis.de.GermanAnalyzer;
 import org.apache.lucene.analysis.en.EnglishAnalyzer;
-import org.apache.lucene.analysis.es.SpanishAnalyzer;
-import org.apache.lucene.analysis.fr.FrenchAnalyzer;
-import org.apache.lucene.analysis.it.ItalianAnalyzer;
-import org.apache.lucene.analysis.morfologik.MorfologikAnalyzer;
-import org.apache.lucene.analysis.ru.RussianAnalyzer;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.util.Version;
 import org.codehaus.jackson.map.ObjectMapper;
@@ -55,7 +50,8 @@ import org.sifarish.util.Field;
 import org.sifarish.util.Utility;
 
 /**
- * Analyzer for structured text field e.g. street address, phone etc
+ * Analyzer for structured text field e.g. street address, phone etc. Currently 
+ * supports only US formats
  * @author pranab
  *
  */
@@ -93,6 +89,8 @@ public class StructuredTextAnalyzer extends Configured implements Tool{
         private Analyzer analyzer;
         private List<String> itemList = new ArrayList<String>();
         private SingleTypeSchema schema;
+        private CountryStandardFormat countryFormat;
+        private Map<String, String> stateCodes = new HashMap<String, String>();
         	
         /* (non-Javadoc)
          * @see org.apache.hadoop.mapreduce.Mapper#setup(org.apache.hadoop.mapreduce.Mapper.Context)
@@ -101,6 +99,11 @@ public class StructuredTextAnalyzer extends Configured implements Tool{
         	Configuration config = context.getConfiguration();
         	fieldDelim = config.get("field.delim", "[]");
         	fieldDelimRegex = config.get("field.delim.regex", "\\[\\]");
+        	
+        	//country specific format
+            String country = config.get("text.country", "United States");
+            countryFormat = CountryStandardFormat.createCountryStandardFormat(country);
+        	
             
             //language specific analyzer
             String lang = config.get("text.language", "en");
@@ -113,6 +116,8 @@ public class StructuredTextAnalyzer extends Configured implements Tool{
             FSDataInputStream fs = dfs.open(src);
             ObjectMapper mapper = new ObjectMapper();
             schema = mapper.readValue(fs, SingleTypeSchema.class);
+            
+            //intializeStateCodes();
        }
         
         /**
@@ -122,21 +127,7 @@ public class StructuredTextAnalyzer extends Configured implements Tool{
         private void createAnalyzer(String lang) {
         	if (lang.equals("en")) {
         		analyzer = new EnglishAnalyzer(Version.LUCENE_44);
-        	} else if (lang.equals("de")) {
-        		analyzer = new GermanAnalyzer(Version.LUCENE_44);
-        	} else if (lang.equals("es")) {
-        		analyzer = new SpanishAnalyzer(Version.LUCENE_44);
-    		} else if (lang.equals("fr")) {
-        		analyzer = new FrenchAnalyzer(Version.LUCENE_44);
-    		} else if (lang.equals("it")) {
-        		analyzer = new ItalianAnalyzer(Version.LUCENE_44);
-    		} else if (lang.equals("br")) {
-        		analyzer = new BrazilianAnalyzer(Version.LUCENE_44);
-    		} else if (lang.equals("ru")) {
-        		analyzer = new RussianAnalyzer(Version.LUCENE_44);
-    		} else if (lang.equals("pl")) {
-        		analyzer = new MorfologikAnalyzer(Version.LUCENE_44);
-    		} else {
+        	}  else {
     			throw new IllegalArgumentException("unsupported language:" + lang);
     		} 
         }
@@ -155,7 +146,6 @@ public class StructuredTextAnalyzer extends Configured implements Tool{
         protected void map(LongWritable key, Text value, Context context)
             throws IOException, InterruptedException {
         	String[] items  =  value.toString().split(fieldDelimRegex);
-            StringBuilder stBld = new StringBuilder();
             itemList.clear();
             
             for (int i = 0;i < items.length; ++i) {
@@ -166,19 +156,19 @@ public class StructuredTextAnalyzer extends Configured implements Tool{
             		if (field.getDataType().equals(Field.TEXT_TYPE_PERSON_NAME)) {
             			
             		} else if (field.getDataType().equals(Field.TEXT_TYPE_PERSON_NAME)) {
-            			item = caseFormat(item, field.getTextDataSubTypeFormat());
+            			item = countryFormat.caseFormat(item, field.getTextDataSubTypeFormat());
             		} else if (field.getDataType().equals(Field.TEXT_TYPE_STREET_ADDRESS)) {
-            			item = caseFormat(item, field.getTextDataSubTypeFormat());
+            			item = countryFormat.caseFormat(item, field.getTextDataSubTypeFormat());
             		} else if (field.getDataType().equals(Field.TEXT_TYPE_CITY)) {
-            			item = caseFormat(item, field.getTextDataSubTypeFormat());
+            			item = countryFormat.caseFormat(item, field.getTextDataSubTypeFormat());
             		} else if (field.getDataType().equals(Field.TEXT_TYPE_STATE)) {
-            			
+            			item = countryFormat.stateFormat(item);
             		} else if (field.getDataType().equals(Field.TEXT_TYPE_ZIP)) {
             			
             		} else if (field.getDataType().equals(Field.TEXT_TYPE_EMAIL_ADDR)) {
-            			item = caseFormat(item, field.getTextDataSubTypeFormat());
+            			item = countryFormat.caseFormat(item, field.getTextDataSubTypeFormat());
             		} else if (field.getDataType().equals(Field.TEXT_TYPE_PHONE_NUM)) {
-            			item = phoneNumFormat(item, field.getTextDataSubTypeFormat());
+            			item = countryFormat.phoneNumFormat(item, field.getTextDataSubTypeFormat());
             		} else {
             			//if text field analyze
             			item = tokenize(item);
@@ -188,59 +178,9 @@ public class StructuredTextAnalyzer extends Configured implements Tool{
             }
             
             //build value string
-            boolean first = true;
-            for (String item : itemList){
-            	if (first){
-            		stBld.append(item);
-            		first = false;
-            	} else {
-            		stBld.append(fieldDelim).append(item);
-            	}
-            }
-            
-            valueHolder.set(stBld.toString());
+            valueHolder.set(org.chombo.util.Utility.join(itemList, fieldDelim));
 			context.write(NullWritable.get(), valueHolder);
-       }     
-        
-        /**
-         * @param item
-         * @param format
-         * @return
-         */
-        private String caseFormat(String item, String format) {
-        	String[] tokens = item.split("\\s+");
-        	for (int i = 0; i < tokens.length; ++i) {
-        		if (format.equals("lowerCase")) {
-        			tokens[i] = tokens[i].toLowerCase(); 
-        		} else if (format.equals("upperCase")) {
-        			tokens[i] = tokens[i].toUpperCase(); 
-        		} else if (format.equals("capitalize")) {
-        			tokens[i] = StringUtils.capitalize(tokens[i]);
-        		} else {
-        			throw new IllegalArgumentException("invalid case format");
-        		}
-        	}
-        	
-        	return org.chombo.util.Utility.join(tokens, "");
-        }
-
-        /**
-         * @param item
-         * @param format
-         * @return
-         */
-        private String phoneNumFormat(String item, String format) {
-    		item = item.replaceAll("^\\d", "");
-        	if (format.equals("compact")) {
-        	} else if (format.equals("areaCodeParen")) {
-        		item = "(" + item.substring(0, 3) + ")" + item.substring(3);
-        	} else if (format.equals("spaceSep")) {
-        		item = item.substring(0, 3) + " " + item.substring(3,6) + " " + item.substring(6);
-        	} else {
-    			throw new IllegalArgumentException("invalid phone number format");
-    		}
-        	return item;
-        }
+       }  
         
         /**
          * @param text
