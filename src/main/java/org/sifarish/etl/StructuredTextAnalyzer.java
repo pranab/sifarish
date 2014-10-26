@@ -90,7 +90,6 @@ public class StructuredTextAnalyzer extends Configured implements Tool{
         private List<String> itemList = new ArrayList<String>();
         private SingleTypeSchema schema;
         private CountryStandardFormat countryFormat;
-        private Map<String, String> stateCodes = new HashMap<String, String>();
         	
         /* (non-Javadoc)
          * @see org.apache.hadoop.mapreduce.Mapper#setup(org.apache.hadoop.mapreduce.Mapper.Context)
@@ -103,7 +102,6 @@ public class StructuredTextAnalyzer extends Configured implements Tool{
         	//country specific format
             String country = config.get("text.country", "United States");
             countryFormat = CountryStandardFormat.createCountryStandardFormat(country);
-        	
             
             //language specific analyzer
             String lang = config.get("text.language", "en");
@@ -117,7 +115,6 @@ public class StructuredTextAnalyzer extends Configured implements Tool{
             ObjectMapper mapper = new ObjectMapper();
             schema = mapper.readValue(fs, SingleTypeSchema.class);
             
-            //intializeStateCodes();
        }
         
         /**

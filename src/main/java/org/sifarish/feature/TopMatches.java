@@ -18,7 +18,10 @@
 package org.sifarish.feature;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
+import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.conf.Configured;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.LongWritable;
@@ -84,13 +87,26 @@ public class TopMatches extends Configured implements Tool {
 		private Text outVal = new Text();
         private String fieldDelimRegex;
         private String fieldDelim;
+        private int distOrdinal;
+        private boolean recordInOutput;
+        private int recLength = -1;
+        private String srcRec;
+        private String trgRec;
+        private int srcRecBeg;
+        private int srcRecEnd;
+        private int trgRecBeg;
+        private int trgRecEnd;
 
         /* (non-Javadoc)
          * @see org.apache.hadoop.mapreduce.Mapper#setup(org.apache.hadoop.mapreduce.Mapper.Context)
          */
         protected void setup(Context context) throws IOException, InterruptedException {
-           	fieldDelim = context.getConfiguration().get("field.delim", ",");
-            fieldDelimRegex = context.getConfiguration().get("field.delim.regex", ",");
+			Configuration conf = context.getConfiguration();
+           	fieldDelim = conf.get("field.delim", ",");
+            fieldDelimRegex = conf.get("field.delim.regex", ",");
+            distOrdinal = conf.getInt("distance.ordinal", -1);
+        	recordInOutput =  conf.getBoolean("record.in.output", false);     
+
         }    
 
         /* (non-Javadoc)
@@ -104,9 +120,25 @@ public class TopMatches extends Configured implements Tool {
             srcEntityId = items[0];
             trgEntityId = items[1];
             rank = Integer.parseInt(items[items.length - 1]);
+            
             outKey.initialize();
-            outKey.add(srcEntityId, rank);
- 	        outVal.set(trgEntityId + fieldDelim + items[items.length - 1]);
+            if (recordInOutput) {
+            	//include source and taraget record
+            	if (recLength == -1) {
+            		recLength = (items.length - 3) / 2;
+            		srcRecBeg = 2;
+            		srcRecEnd =  trgRecBeg = 2 + recLength;
+            		trgRecEnd = trgRecBeg + recLength;
+            	}
+            	srcRec = org.chombo.util.Utility.join(items, srcRecBeg, srcRecEnd, fieldDelim);
+            	trgRec = org.chombo.util.Utility.join(items, trgRecBeg, trgRecEnd, fieldDelim);
+            	outKey.add(srcEntityId, srcRec, rank);
+            	outVal.set(trgEntityId +  fieldDelim + trgRec + fieldDelim + items[items.length - 1]);            	
+            } else {
+            	//only target entity id and distance
+            	outKey.add(srcEntityId, rank);
+            	outVal.set(trgEntityId + fieldDelim + items[items.length - 1]);
+            }
  			context.write(outKey, outVal);
         }
 	}
@@ -168,6 +200,7 @@ public class TopMatches extends Configured implements Tool {
      */
     public static class TopMatchesReducer extends Reducer<Tuple, Text, NullWritable, Text> {
     	private boolean nearestByCount;
+    	private boolean nearestByDistance;
     	private int topMatchCount;
     	private int topMatchDistance;
 		private String srcEntityId;
@@ -175,18 +208,25 @@ public class TopMatches extends Configured implements Tool {
 		private int distance;
 		private Text outVal = new Text();
         private String fieldDelim;
+        private boolean recordInOutput;
+        private boolean compactOutput;
+        private List<String> valueList = new ArrayList<String>();
     	
         /* (non-Javadoc)
          * @see org.apache.hadoop.mapreduce.Reducer#setup(org.apache.hadoop.mapreduce.Reducer.Context)
          */
         protected void setup(Context context) throws IOException, InterruptedException {
-           	fieldDelim = context.getConfiguration().get("field.delim", ",");
-        	nearestByCount = context.getConfiguration().getBoolean("nearest.by.count", true);
+			Configuration conf = context.getConfiguration();
+           	fieldDelim = conf.get("field.delim", ",");
+        	nearestByCount = conf.getBoolean("nearest.by.count", true);
+        	nearestByDistance = conf.getBoolean("nearest.by.distance", false);
         	if (nearestByCount) {
-        		topMatchCount = context.getConfiguration().getInt("top.match.count", 10);
+        		topMatchCount = conf.getInt("top.match.count", 10);
         	} else {
-        		topMatchDistance = context.getConfiguration().getInt("top.match.distance", 200);
+        		topMatchDistance = conf.getInt("top.match.distance", 200);
         	}
+        	recordInOutput =  conf.getBoolean("record.in.output", false);     
+        	compactOutput =  conf.getBoolean("compact.output", false);     
         }
     	
     	/* (non-Javadoc)
@@ -196,24 +236,60 @@ public class TopMatches extends Configured implements Tool {
         	throws IOException, InterruptedException {
     		srcEntityId  = key.getString(0);
     		count = 0;
+    		boolean doEmit = false;
+    		valueList.clear();
         	for (Text value : values){
+        		doEmit = false;
         		//count based neighbor
 				if (nearestByCount) {
-					outVal.set(srcEntityId +fieldDelim + value.toString());
-					context.write(NullWritable.get(), outVal);
-	        		if (++count == topMatchCount){
-	        			break;
+					doEmit = true;
+	        		if (++count >= topMatchCount){
+	        			doEmit = false;
 	        		}
-				} else {
+				} 
+				
+				//distance based neighbors
+				if (nearestByDistance) {
 					//distance based neighbor
-					distance =Integer.parseInt( value.toString().split(fieldDelim)[1]);
+					String[] items = value.toString().split(fieldDelim);
+					distance = Integer.parseInt(items[items.length - 1]);
 					if (distance  <=  topMatchDistance ) {
-							outVal.set(srcEntityId + "," + value.toString());
-							context.write(NullWritable.get(), outVal);
+						if (!nearestByCount) {
+							doEmit = true;
+						}
 					} else {
-						break;
+						doEmit = false;
 					}
 				}
+				
+				if (doEmit) {
+					//along with neighbors
+					if (compactOutput) {
+						valueList.add(value.toString());
+					} else {
+						outVal.set(srcEntityId + fieldDelim + value.toString());
+						context.write(NullWritable.get(), outVal);
+					}
+				} else {
+					//only source entity
+					if (!compactOutput) {
+						outVal.set(srcEntityId);
+						context.write(NullWritable.get(), outVal);
+					}
+				}
+        	}
+        	
+        	//emit in compact format
+        	if (compactOutput) {
+        		String srcRec = recordInOutput ? key.getString(1) : "";
+        		if (valueList.isEmpty()) {
+					outVal.set(recordInOutput ? srcEntityId + fieldDelim + srcRec : srcEntityId);
+        		} else {
+        			String targetValues = org.chombo.util.Utility.join(valueList, fieldDelim);
+					outVal.set(recordInOutput ? srcEntityId + fieldDelim + srcRec + targetValues : 
+						srcEntityId + fieldDelim + srcRec);
+        		}
+				context.write(NullWritable.get(), outVal);
         	}
     	}
     	
