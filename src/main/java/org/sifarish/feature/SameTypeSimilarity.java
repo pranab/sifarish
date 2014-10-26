@@ -532,7 +532,7 @@ public class SameTypeSimilarity  extends Configured implements Tool {
         private void intializePassiveFieldOrdinal(List<Integer> activeFields, int numFields) {
         	int len = numFields - activeFields.size();
         	if (len > 0) {
-        		//all fields that are not active
+        		//all fields that are not active i.e not defined in schema
 	        	passiveFields = new int[len];
 	        	for (int i = 0,j=0; i < numFields; ++i) {
 	        		if (!activeFields.contains(i) ) {
@@ -566,7 +566,6 @@ public class SameTypeSimilarity  extends Configured implements Tool {
         	if (!outputIdFirst) {
         		stBld.append(firstId).append(fieldDelim).append(secondId).append(fieldDelim);
         	}
-        	stBld.append(dist);
         	if (null != extraOutputFields) {
         		appendExtraField(firstItems, stBld);
         		appendExtraField(secondItems, stBld);
@@ -574,6 +573,7 @@ public class SameTypeSimilarity  extends Configured implements Tool {
         		appendRecord(first, stBld);
         		appendRecord(second, stBld);
         	}
+        	stBld.append(dist);
         	return stBld.toString();
         }
 
