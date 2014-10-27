@@ -236,15 +236,15 @@ public class TopMatches extends Configured implements Tool {
         	throws IOException, InterruptedException {
     		srcEntityId  = key.getString(0);
     		count = 0;
-    		boolean doEmit = false;
+    		boolean doEmitNeighbor = false;
     		valueList.clear();
         	for (Text value : values){
-        		doEmit = false;
+        		doEmitNeighbor = false;
         		//count based neighbor
 				if (nearestByCount) {
-					doEmit = true;
+					doEmitNeighbor = true;
 	        		if (++count >= topMatchCount){
-	        			doEmit = false;
+	        			doEmitNeighbor = false;
 	        		}
 				} 
 				
@@ -255,14 +255,14 @@ public class TopMatches extends Configured implements Tool {
 					distance = Integer.parseInt(items[items.length - 1]);
 					if (distance  <=  topMatchDistance ) {
 						if (!nearestByCount) {
-							doEmit = true;
+							doEmitNeighbor = true;
 						}
 					} else {
-						doEmit = false;
+						doEmitNeighbor = false;
 					}
 				}
 				
-				if (doEmit) {
+				if (doEmitNeighbor) {
 					//along with neighbors
 					if (compactOutput) {
 						valueList.add(value.toString());
@@ -282,11 +282,13 @@ public class TopMatches extends Configured implements Tool {
         	//emit in compact format
         	if (compactOutput) {
         		String srcRec = recordInOutput ? key.getString(1) : "";
-        		if (valueList.isEmpty()) {
-					outVal.set(recordInOutput ? srcEntityId + fieldDelim + srcRec : srcEntityId);
+        		int numNeighbor = valueList.size();
+        		if (0 == numNeighbor) {
+					outVal.set(recordInOutput ? srcEntityId + fieldDelim + srcRec + fieldDelim +  numNeighbor: 
+						srcEntityId);
         		} else {
         			String targetValues = org.chombo.util.Utility.join(valueList, fieldDelim);
-					outVal.set(recordInOutput ? srcEntityId + fieldDelim + srcRec + targetValues : 
+					outVal.set(recordInOutput ? srcEntityId + fieldDelim + srcRec + fieldDelim +  numNeighbor + targetValues : 
 						srcEntityId + fieldDelim + srcRec);
         		}
 				context.write(NullWritable.get(), outVal);
