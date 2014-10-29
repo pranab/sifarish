@@ -19,7 +19,7 @@ xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/ma
             <properties>
                 <log4j.version>1.2.16</log4j.version>
                 <hadoop.version>0.20.2-cdh3u2</hadoop.version>
-                <jackson.version>1.6.3</jackson.version>
+                <jackson.version>1.9.13</jackson.version>
                 <jdk.level>1.6</jdk.level>
             </properties>
         </profile>
@@ -86,13 +86,13 @@ xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/ma
 
         <dependency>
             <groupId>org.codehaus.jackson</groupId>
-            <artifactId>jackson-core-lgpl </artifactId>
+            <artifactId>jackson-core-asl</artifactId>
             <version>${jackson.version}</version>
         </dependency>
 
         <dependency>
             <groupId>org.codehaus.jackson</groupId>
-            <artifactId>jackson-mapper-lgpl </artifactId>
+            <artifactId>jackson-mapper-asl</artifactId>
             <version>${jackson.version}</version>
         </dependency>
         
