@@ -25,12 +25,13 @@ import java.util.concurrent.TimeUnit;
 
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
+import org.chombo.storm.Cache;
 import org.chombo.storm.GenericBolt;
 import org.chombo.storm.MessageHolder;
+import org.chombo.storm.MessageQueue;
 import org.chombo.util.ConfigUtility;
 import org.chombo.util.MathUtility;
 
-import redis.clients.jedis.Jedis;
 import backtype.storm.task.TopologyContext;
 import backtype.storm.tuple.Tuple;
 
@@ -43,7 +44,9 @@ import com.google.common.cache.LoadingCache;
  *
  */
 public class DitheringBolt extends  GenericBolt {
-	private Jedis jedis;
+	private MessageQueue recQueue;
+	private Cache recCache;
+	private Cache ratingCache;
 	private Map stormConf;
 	private boolean writeRecommendationToQueue;
 	private String recommendationQueue;
@@ -63,12 +66,13 @@ public class DitheringBolt extends  GenericBolt {
 
 	@Override
 	public void intialize(Map stormConf, TopologyContext context) {
-		jedis = RealtimeUtil.buildRedisClient(stormConf);
 		writeRecommendationToQueue = ConfigUtility.getBoolean(stormConf,"write.dithered.recomm.to.queue");
 		if (writeRecommendationToQueue) {
 			recommendationQueue = ConfigUtility.getString(stormConf, "redis.dithered.recomm.queue");
+			recQueue = MessageQueue.createMessageQueue(stormConf, recommendationQueue);
 		}else {
 			recommendationCache = ConfigUtility.getString(stormConf, "redis.dithered.recomm.cache");
+			recCache = Cache.createCache(stormConf, recommendationCache);
 		}
 		if (debugOn) {
 			LOG.setLevel(Level.INFO);;
@@ -78,13 +82,15 @@ public class DitheringBolt extends  GenericBolt {
 		//initialize rating cache
 		ratingScale = ConfigUtility.getInt(stormConf,"rating.scale", 100);
 		itemRatingKey = ConfigUtility.getString(stormConf, "redis.item.rating.key");
+		ratingCache = Cache.createCache(stormConf, itemRatingKey);
+		
 		int ratingCacheSize = ConfigUtility.getInt(stormConf,"rating.cache.size");
 		int ratingCacheExpiryTimeSec = ConfigUtility.getInt(stormConf,"rating.cache.expiry.time.sec");
 		if (null == itemRatingCache) {
 			itemRatingCache = CacheBuilder.newBuilder()
 					.maximumSize(ratingCacheSize)
 				    .expireAfterAccess(ratingCacheExpiryTimeSec, TimeUnit.SECONDS)
-				    .build(new ItemRatingLoader(jedis, itemRatingKey, ratingScale, debugOn));
+				    .build(new ItemRatingLoader(ratingCache, ratingScale, debugOn));
 		}
 		
 		ditherStdDev = ConfigUtility.getDouble(stormConf,"dither.std.dev");
@@ -110,9 +116,9 @@ public class DitheringBolt extends  GenericBolt {
 
 			//write to queue or cache
 			if (writeRecommendationToQueue) {
-				jedis.lpush(recommendationQueue, itemRatings);
+				recQueue.send(itemRatings);
 			} else {
-				jedis.hset(recommendationCache, user, itemRatings);
+				recCache.set(user, itemRatings);
 			}
 		} catch (ExecutionException e) {
 			LOG.info("got error  " + e);
@@ -171,8 +177,7 @@ public class DitheringBolt extends  GenericBolt {
 	 *
 	 */
 	private static class ItemRatingLoader extends CacheLoader<String, List<UserItemRatings.ItemRating>> {
-		private String itemRatingKey;
-		private Jedis jedis;
+		private Cache ratingCache;
 		private boolean debugOn;
 		private static final Logger LOG = Logger.getLogger(ItemRatingLoader.class);
 		private int ratingScale;
@@ -183,9 +188,8 @@ public class DitheringBolt extends  GenericBolt {
 		 * @param ratingScale
 		 * @param debugOn
 		 */
-		public ItemRatingLoader(Jedis jedis, String itemRatingKey, int ratingScale, boolean debugOn) {
-			this.jedis = jedis;
-			this.itemRatingKey = itemRatingKey;
+		public ItemRatingLoader(Cache ratingCache, int ratingScale, boolean debugOn) {
+			this.ratingCache = ratingCache;
 			this.debugOn = debugOn;
 			this.ratingScale = ratingScale;
 			if (debugOn) 
@@ -195,7 +199,7 @@ public class DitheringBolt extends  GenericBolt {
 		@Override
 		public List<UserItemRatings.ItemRating> load(String user) throws Exception {
 			List<UserItemRatings.ItemRating> itemRatingList = new ArrayList<UserItemRatings.ItemRating>();
-			String ratings = jedis.hget(itemRatingKey, user);
+			String ratings = ratingCache.get(user);
 			ratings = ratings.trim();
 			if (debugOn)
 				LOG.info("user:" + user + " rating:" +ratings);
