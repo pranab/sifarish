@@ -23,10 +23,10 @@ import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 import org.chombo.storm.GenericSpout;
 import org.chombo.storm.MessageHolder;
+import org.chombo.storm.MessageQueue;
 import org.chombo.util.ConfigUtility;
 
 import redis.clients.jedis.Jedis;
-
 import backtype.storm.task.TopologyContext;
 import backtype.storm.tuple.Values;
 
@@ -37,7 +37,7 @@ import backtype.storm.tuple.Values;
  */
 public class RedisSpout  extends GenericSpout {
 	private String eventQueue;
-	private Jedis jedis;
+	private MessageQueue msgQueue;
 	private static final String NIL = "nil";
 	private static final Logger LOG = Logger.getLogger(RedisSpout.class);
 
@@ -71,8 +71,9 @@ public class RedisSpout  extends GenericSpout {
 	public void intialize(Map stormConf, TopologyContext context) {
 		String redisHost = ConfigUtility.getString(stormConf, "redis.server.host");
 		int redisPort = ConfigUtility.getInt(stormConf,"redis.server.port");
-		jedis = new Jedis(redisHost, redisPort);
 		eventQueue = ConfigUtility.getString(stormConf, "redis.event.queue");
+		msgQueue = MessageQueue.createMessageQueue(stormConf, eventQueue);
+
 		debugOn = ConfigUtility.getBoolean(stormConf,"debug.on", false);
 		if (debugOn) {
 			LOG.setLevel(Level.INFO);;
@@ -83,7 +84,7 @@ public class RedisSpout  extends GenericSpout {
 	@Override
 	public MessageHolder nextSpoutMessage() {
 		MessageHolder msgHolder = null;
-		String message  = jedis.rpop(eventQueue);		
+		String message  = msgQueue.receive();		
 		if(null != message  && !message.equals(NIL)) {
 			//message in event queue
 			String[] items = message.split(",");
@@ -102,7 +103,6 @@ public class RedisSpout  extends GenericSpout {
 	@Override
 	public void handleFailedMessage(Values tuple) {
 		// TODO Auto-generated method stub
-		
 	}
 
 }
