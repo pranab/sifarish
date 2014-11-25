@@ -29,6 +29,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
+import org.chombo.storm.Cache;
 import org.chombo.util.ConfigUtility;
 import org.chombo.util.Pair;
 import org.codehaus.jackson.JsonParseException;
@@ -55,7 +56,6 @@ public class UserItemRatings {
 	private int topItemsCount;
 	private String itemCorrelationKey;
 	private EngagementToPreferenceMapper engaementMapper;
-	private Jedis jedis;
 	private String eventExpirePolicy;
 	private long timedExpireWindowSec;
 	private int countExpireLimit;
@@ -74,12 +74,12 @@ public class UserItemRatings {
 	 * @throws JsonMappingException 
 	 * @throws JsonParseException 
 	 */
-	public UserItemRatings(String userID, String sessionID, Jedis jedis, Map config) 
+	public UserItemRatings(String userID, String sessionID, Cache cache, Map config) 
 			throws Exception {
 		super();
 		this.userID = userID;
 		this.sessionID = sessionID;
-		this.jedis = jedis;
+		//this.jedis = jedis;
 		
 		//config
 		int correlationCacheSize = ConfigUtility.getInt(config,"correlation.cache.size");
@@ -93,7 +93,7 @@ public class UserItemRatings {
 				
 				
 		//event mapping metadata
-		String eventMappingMetadata = jedis.get(eventMappingMetadataKey);		
+		String eventMappingMetadata = cache.get(eventMappingMetadataKey);		
 		ObjectMapper mapper = new ObjectMapper();
 		engaementMapper = mapper.readValue(eventMappingMetadata, EngagementToPreferenceMapper.class);
 
@@ -102,10 +102,11 @@ public class UserItemRatings {
 		
 		//initialize correlation cache
 		if (null == itemCorrelationCache) {
+			Cache corrCache = Cache.createCache(config, itemCorrelationKey);
 			itemCorrelationCache = CacheBuilder.newBuilder()
 					.maximumSize(correlationCacheSize)
 				    .expireAfterAccess(correlationCacheExpiryTimeSec, TimeUnit.SECONDS)
-				    .build(new ItemCorrelationLoader(jedis, itemCorrelationKey, debugOn));
+				    .build(new ItemCorrelationLoader(corrCache, itemCorrelationKey, debugOn));
 		}
 		
 		if (debugOn) {
@@ -243,14 +244,12 @@ public class UserItemRatings {
 	 *
 	 */
 	private static class ItemCorrelationLoader extends CacheLoader<String, List<ItemCorrelation>> {
-		private String itemCorrelationKey;
-		private Jedis jedis;
+		private Cache corrCache;
 		private boolean debugOn;
 		private static final Logger LOG = Logger.getLogger(ItemCorrelationLoader.class);
 		
-		public ItemCorrelationLoader(Jedis jedis, String itemCorrelationKey, boolean debugOn) {
-			this.jedis = jedis;
-			this.itemCorrelationKey = itemCorrelationKey;
+		public ItemCorrelationLoader(Cache corrCache, String itemCorrelationKey, boolean debugOn) {
+			this.corrCache = corrCache;
 			this.debugOn = debugOn;
 			if (debugOn) 
 				LOG.setLevel(Level.INFO);
@@ -260,7 +259,7 @@ public class UserItemRatings {
 		@Override
 		public List<ItemCorrelation> load(String item) throws Exception {
 			List<ItemCorrelation> itemCorrList = new ArrayList<ItemCorrelation>();
-			String correlation = jedis.hget(itemCorrelationKey, item);
+			String correlation = corrCache.get(item);
 			correlation = correlation.trim();
 			if (debugOn)
 				LOG.info("item:" + item + " correlation:" +correlation);

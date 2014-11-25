@@ -23,8 +23,10 @@ import java.util.Map;
 
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
+import org.chombo.storm.Cache;
 import org.chombo.storm.GenericBolt;
 import org.chombo.storm.MessageHolder;
+import org.chombo.storm.MessageQueue;
 import org.chombo.util.ConfigUtility;
 
 import redis.clients.jedis.Jedis;
@@ -37,12 +39,13 @@ import backtype.storm.tuple.Tuple;
  *
  */
 public class RecommenderBolt extends GenericBolt {
-	private Jedis jedis;
 	private Map<String, UserItemRatings> userItemRatings = new HashMap<String, UserItemRatings>();
 	private Map stormConf;
 	private boolean writeRecommendationToQueue;
 	private String recommendationQueue;
 	private String recommendationCache;
+	private MessageQueue recQueue;
+	private Cache recCache;
 	
 	public static final String USER_ID = "userID";
 	public static final String SESSION_ID = "sessionID";
@@ -64,15 +67,14 @@ public class RecommenderBolt extends GenericBolt {
 
 	@Override
 	public void intialize(Map stormConf, TopologyContext context) {
-		String redisHost = ConfigUtility.getString(stormConf, "redis.server.host");
-		int redisPort = ConfigUtility.getInt(stormConf,"redis.server.port");
-		jedis = new Jedis(redisHost, redisPort);
 		this.stormConf = stormConf;
 		writeRecommendationToQueue = ConfigUtility.getBoolean(stormConf,"write.recommendation.to.queue");
 		if (writeRecommendationToQueue) {
 			recommendationQueue = ConfigUtility.getString(stormConf, "redis.recommendation.queue");
+			recQueue = MessageQueue.createMessageQueue(stormConf, recommendationQueue);
 		}else {
 			recommendationCache = ConfigUtility.getString(stormConf, "redis.recommendation.cache");
+			recCache = Cache.createCache(stormConf, recommendationCache);
 		}
 		debugOn = ConfigUtility.getBoolean(stormConf,"debug.on", false);
 		if (debugOn) {
@@ -92,11 +94,11 @@ public class RecommenderBolt extends GenericBolt {
 		long timeStamp = input.getLongByField(TS_ID);
 		if (debugOn) 
 			LOG.info("got tuple:" + userID + " " + sessionID + " " + itemID + " " + eventID + " " + timeStamp);
-		
 		try {
 			UserItemRatings itemRatings = userItemRatings.get(userID);
 			if (null == itemRatings) {
-				itemRatings = new UserItemRatings(userID, sessionID, jedis, stormConf);
+				Cache cache = Cache.createCache(stormConf, null);
+				itemRatings = new UserItemRatings(userID, sessionID, cache, stormConf);
 				userItemRatings.put(userID, itemRatings);
 			}
 			
@@ -115,12 +117,14 @@ public class RecommenderBolt extends GenericBolt {
 			}
 			String itemRatingList  = stBld.toString();
 			if (writeRecommendationToQueue) {
-				jedis.lpush(recommendationQueue, itemRatingList);
+				//jedis.lpush(recommendationQueue, itemRatingList);
+				recQueue.send(itemRatingList);
 				if (debugOn) {
 					LOG.info("wrote to recommendation queue");
 				}
 			} else {
-				jedis.hset(recommendationCache, userID, itemRatingList);
+				//jedis.hset(recommendationCache, userID, itemRatingList);
+				recCache.set(userID, itemRatingList);
 			}
 			
 		} catch (Exception e) {
