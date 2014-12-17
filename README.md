@@ -149,7 +149,12 @@ tutorial document realtime\_recommendation\_tutorial.txt
 
 ## Configuration
 Please refer to the wiki page for a detailed list of all configuration parameters
-https://github.com/pranab/sifarish/wiki/Configuration
+https://github.com/pranab/sifarish/wiki/Configuration. Going through the tutorial documents
+in the resource directory, you can find sample configuration for various use cases.
+
+## Build
+It has dependencies on two of my other open source projects, chombo and hoidla. They
+need to be built first before building sifarish
 
 ## Help
 Please feel free to email me at pkghosh99@gmail.com
