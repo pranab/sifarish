@@ -152,10 +152,10 @@ If you use Apache mahout or some thing else for recommendation, you can
 bring your basic recommendation output (userID, itemID, predictedRating) to
 sifarish for additional postprocessing to improve the quality of the output. Some
 examples are
-### Business goal injection
-### Adding novelty
-### Adding diversity
-### Dithering
+Business goal injection
+Adding novelty
+Adding diversity
+Dithering
 
 ## Configuration
 Please refer to the wiki page for a detailed list of all configuration parameters
