@@ -79,7 +79,7 @@ public class ItemRatingAttributeAggregator  extends Configured implements Tool{
      *
      */
     public static class ItemAggregatorMapper extends Mapper<LongWritable, Text, Tuple, Tuple> {
-    	private String fieldDelim;
+    	private String fieldDelimRegex;
     	private Tuple keyOut = new Tuple();
     	private Tuple valOut = new Tuple();
     	private boolean isMetaDataFileSplit;
@@ -91,26 +91,26 @@ public class ItemRatingAttributeAggregator  extends Configured implements Tool{
          */
         protected void setup(Context context) throws IOException, InterruptedException {
         	Configuration config = context.getConfiguration();
-
-           	fieldDelim = context.getConfiguration().get("field.delim", ",");
+        	fieldDelimRegex = config.get("field.delim.regex", ",");
         	String metaDataFilePrefix = config.get("item.metadta.file.prefix", "meta");
         	isMetaDataFileSplit = ((FileSplit)context.getInputSplit()).getPath().getName().startsWith(metaDataFilePrefix);
         	attrOrdinals = Utility.intArrayFromString(config.get("attr.ordinals"));
         }
+        
         /* (non-Javadoc)
          * @see org.apache.hadoop.mapreduce.Mapper#map(KEYIN, VALUEIN, org.apache.hadoop.mapreduce.Mapper.Context)
          */
         @Override
         protected void map(LongWritable key, Text value, Context context)
             throws IOException, InterruptedException {
-           	String[] items = value.toString().split(fieldDelim);
+           	String[] items = value.toString().split(fieldDelimRegex);
            	keyOut.initialize();
            	valOut.initialize();
            	if (isMetaDataFileSplit) {
            		//items attributes
            		itemID = items[0];
            		keyOut.add(itemID, 1);
-           		valOut.append(0);
+           		valOut.append(1);
            		for (int ordinal :  attrOrdinals) {
            			valOut.append(items[ordinal]);
            		}
@@ -119,7 +119,7 @@ public class ItemRatingAttributeAggregator  extends Configured implements Tool{
            		//predicted rating
            		itemID = items[1];
            		keyOut.add(itemID, 0);
-           		valOut.add(1,items[0], items[2]);
+           		valOut.add(0,items[0], items[2]);
            	}
            	context.write(keyOut, valOut);
 
