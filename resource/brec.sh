@@ -15,11 +15,6 @@ HDFS_META_BASE_DIR=/user/pranab/meta/imra
 
 case "$1" in
 
-"createDirs"
-     hadoop fs -mkdir $HDFS_BASE_DIR/rate
-    ;;
-
-
 "genExplicitRating")  
 	echo "generating explicit rating data"
 	ruby ratings.rb $2 $3 $4  > $5
@@ -95,10 +90,9 @@ case "$1" in
     ;;
 
 "ratingStat")
-	# 2nd arg is either rate (explicitly generated rating) or crat (implicitly generated data
 	echo "running MR to generate stating stats"
 	CLASS_NAME=org.sifarish.social.ItemRatingStat
-	IN_PATH=$HDFS_BASE_DIR/$2
+	IN_PATH=$HDFS_BASE_DIR/crat
 	OUT_PATH=$HDFS_BASE_DIR/stat
 	echo "input $IN_PATH output $OUT_PATH"
 	hadoop fs -rmr $OUT_PATH
@@ -123,7 +117,12 @@ case "$1" in
 "ratingPred")
 	echo "running MR for rating predictor"
 	CLASS_NAME=org.sifarish.common.UtilityPredictor
-	IN_PATH=$HDFS_BASE_DIR/crat,$HDFS_BASE_DIR/stat,$HDFS_BASE_DIR/simi
+	if [ "$2" = "withStat" ]
+	then
+		IN_PATH=$HDFS_BASE_DIR/crat,$HDFS_BASE_DIR/stat,$HDFS_BASE_DIR/simi
+	else
+		IN_PATH=$HDFS_BASE_DIR/crat,$HDFS_BASE_DIR/simi
+	fi
 	OUT_PATH=$HDFS_BASE_DIR/utpr
 	echo "input $IN_PATH output $OUT_PATH"
 	hadoop fs -rmr $OUT_PATH
@@ -131,6 +130,7 @@ case "$1" in
 	hadoop jar $JAR_NAME  $CLASS_NAME -Dconf.path=$PROP_FILE  $IN_PATH  $OUT_PATH
 	hadoop fs -rmr $HDFS_BASE_DIR/utpr/_logs
 	hadoop fs -rmr $HDFS_BASE_DIR/utpr/_SUCCESS	
+	hadoop fs -ls $HDFS_BASE_DIR/utpr
 	;;
 
 "ratingAggr")	
@@ -144,18 +144,19 @@ case "$1" in
 	hadoop jar $JAR_NAME  $CLASS_NAME -Dconf.path=$PROP_FILE  $IN_PATH  $OUT_PATH
 	hadoop fs -rmr $HDFS_BASE_DIR/utag/_logs
 	hadoop fs -rmr $HDFS_BASE_DIR/utag/_SUCCESS	
+	hadoop fs -ls $HDFS_BASE_DIR/utag
 	;;
 
-"expBizData")  
-	echo "exporting biz data to HDFS"
-	hadoop fs -put $2 $HDFS_BASE_DIR/utag
-	hadoop fs -ls $HDFS_BASE_DIR/utag
+"storeBizData")  
+	echo "exporting biz data to HDFS bizg"
+	hadoop fs -put $2 $HDFS_BASE_DIR/bizg/$3
+	hadoop fs -ls $HDFS_BASE_DIR/bizg
     ;;
 
 "injectBizGoal")	
 	CLASS_NAME=org.sifarish.common.BusinessGoalInjector
 	echo "running MR to inject business goal to recommendation score"
-	IN_PATH=$HDFS_BASE_DIR/utag
+	IN_PATH=$HDFS_BASE_DIR/utag,$HDFS_BASE_DIR/bizg
 	OUT_PATH=$HDFS_BASE_DIR/bigo
 	echo "input $IN_PATH output $OUT_PATH"
 	hadoop fs -rmr $OUT_PATH
@@ -198,34 +199,31 @@ case "$1" in
 
 "joinRatingNovelty")	
 	CLASS_NAME=org.chombo.mr.Joiner
-	JAR_NAME=/home/pranab/Projects/chombo/target/chombo-1.0.jar
 	echo "running MR to join predicted rating with novelty"
 	IN_PATH=$HDFS_BASE_DIR/utag,$HDFS_BASE_DIR/novl
 	OUT_PATH=$HDFS_BASE_DIR/rano
 	echo "input $IN_PATH output $OUT_PATH"
 	hadoop fs -rmr $OUT_PATH
 	echo "removed output dir $OUT_PATH"
-	hadoop jar $JAR_NAME  $CLASS_NAME -Dconf.path=$PROP_FILE  $IN_PATH  $OUT_PATH
+	hadoop jar $CHOMBO_JAR_NAME  $CLASS_NAME -Dconf.path=$PROP_FILE  $IN_PATH  $OUT_PATH
 	hadoop fs -rmr $HDFS_BASE_DIR/rano/_logs
 	hadoop fs -rmr $HDFS_BASE_DIR/rano/_SUCCESS	
 	;;
 
 "injectItemNovelty")	
 	CLASS_NAME=org.chombo.mr.WeightedAverage
-	JAR_NAME=/home/pranab/Projects/chombo/target/chombo-1.0.jar
 	echo "running MR to generate per user item novelty from implicit rating"
 	IN_PATH=$HDFS_BASE_DIR/rano
 	OUT_PATH=$HDFS_BASE_DIR/utno
 	echo "input $IN_PATH output $OUT_PATH"
 	hadoop fs -rmr $OUT_PATH
 	echo "removed output dir $OUT_PATH"
-	hadoop jar $JAR_NAME  $CLASS_NAME -Dconf.path=$PROP_FILE  $IN_PATH  $OUT_PATH
+	hadoop jar $CHOMBO_JAR_NAME  $CLASS_NAME -Dconf.path=$PROP_FILE  $IN_PATH  $OUT_PATH
 	hadoop fs -rmr $HDFS_BASE_DIR/utno/_logs
 	hadoop fs -rmr $HDFS_BASE_DIR/utno/_SUCCESS	
 	;;
 
 "sortByUser")	
-	JAR_NAME=/home/pranab/Projects/chombo/target/chombo-1.0.jar
 	CLASS_NAME=org.chombo.mr.TextSorter
 	echo "running TextSorter mr ro sort by userID"
 	IN_PATH=/user/pranab/reco/$2
@@ -233,7 +231,7 @@ case "$1" in
 	echo "input $IN_PATH output $OUT_PATH"
 	hadoop fs -rmr $OUT_PATH
 	echo "removed output dir $OUT_PATH"
-	hadoop jar $JAR_NAME  $CLASS_NAME -Dconf.path=$PROP_FILE  $IN_PATH  $OUT_PATH
+	hadoop jar $CHOMBO_JAR_NAME  $CLASS_NAME -Dconf.path=$PROP_FILE  $IN_PATH  $OUT_PATH
 	hadoop fs -rmr $HDFS_BASE_DIR/usso/_logs
 	hadoop fs -rmr $HDFS_BASE_DIR/usso/_SUCCESS	
 	;;
@@ -251,7 +249,28 @@ case "$1" in
 	hadoop fs -rmr $HDFS_BASE_DIR/popu/_logs
 	hadoop fs -rmr $HDFS_BASE_DIR/popu/_SUCCESS	
 	;;
+
+"renameRating")
+	echo "renaming rating data file"
+	hadoop fs -mv $HDFS_BASE_DIR/rate/$2 $HDFS_BASE_DIR/rate/$3  
+	hadoop fs -ls $HDFS_BASE_DIR/rate
+	;;
+
+"posFeedbackReorder") 
+	CLASS_NAME=org.sifarish.common.PositiveFeedbackBasedRankReorderer
+	echo "running MR for positive feedback driven rank reordering"
+	IN_PATH=$HDFS_BASE_DIR/utag,$HDFS_BASE_DIR/rate
+	OUT_PATH=$HDFS_BASE_DIR/pfrr
+	echo "input $IN_PATH output $OUT_PATH"
+	hadoop fs -rmr $OUT_PATH
+	echo "removed output dir $OUT_PATH"
+	hadoop jar $JAR_NAME  $CLASS_NAME -Dconf.path=$PROP_FILE  $IN_PATH  $OUT_PATH
+	hadoop fs -rmr $HDFS_BASE_DIR/pfrr/_logs
+	hadoop fs -rmr $HDFS_BASE_DIR/pfrr/_SUCCESS	
+	hadoop fs -ls $HDFS_BASE_DIR/pfrr
+    ;;
 	
+
 *) 
 	echo "unknown operation $1"
 	;;

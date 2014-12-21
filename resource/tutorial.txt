@@ -98,13 +98,14 @@ as defined by  the config param rating.file.prefix (prRating here). It should
 be repeated if there are multiple reducer output files
 ./brec.sh renameRatingFile part-r-00000 prRating0.txt 
 
-2. The rating file should be renamed so that it has the same prefix   
+2. The rating stat file should be renamed so that it has the same prefix   
 as defined by  the config param rating.stat.file.prefix. It should 
 be repeated if there are multiple reducer output files
 ./brec.sh renameRatingStat
 
 3. Run MR as follows
-./brec.sh ratingPred
+./brec.sh ratingPred [withStat]
+The last argument is necessary if rating stats data is used
 
 Aggregate Rating Predictor
 ==========================
@@ -119,7 +120,10 @@ This is an optional MR, that combines scores of various business goals with reco
 using relative weighting to come up with the final score. In our example, we are not using it.
 
 1. Copy business score data
-./brec.sh expBizData
+./brec.sh storeBizData <local_biz_data_file_name> <hdfs_biz_data_file_name>
+
+hdfs_biz_data_file_name should have the the prefix as defined by the config param 
+biz.goal.file.prefix
 
 2. Run MR
 ./brec.sh injectBizGoal
@@ -163,6 +167,19 @@ average of various rating stats
 
 1. Run MR
 ./brec.sh itemPopularity
+
+Postive feedback driven rank reordering
+=======================================
+The actual implicit rating based on user engagement data is used together with
+predicted rating to generated modified ratings
+
+1. Rename rating data file
+./brec.sh renameRating part-r-00000 <rating_file_name>
+
+rating_file_name should the prefix defined by the config param actual.rating.file.prefix
+
+2. Modify rating
+./brec.sh posFeedbackReorder
 
 Configuration
 =============

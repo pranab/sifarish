@@ -50,7 +50,7 @@ public class PositiveFeedbackBasedRankReorderer  extends Configured implements T
         
         job.setJarByClass(PositiveFeedbackBasedRankReorderer.class);
         
-        FileInputFormat.addInputPath(job, new Path(args[0]));
+        FileInputFormat.addInputPaths(job, args[0]);
         FileOutputFormat.setOutputPath(job, new Path(args[1]));
 
         job.setMapperClass(PositiveFeedbackBasedRankReorderer.PositiveFeedbackMapper.class);
@@ -117,9 +117,10 @@ public class PositiveFeedbackBasedRankReorderer  extends Configured implements T
  		private StringBuilder stBld =  new StringBuilder();
  		private Integer actualRating;
  		private Integer predictedRating;
- 		private int finalRating;
+ 		private Integer finalRating;
  		private String ratingAggrStrategy;
  		private int actualRatingWt;
+ 		private int maxRating;
  		
     	/* (non-Javadoc)
          * @see org.apache.hadoop.mapreduce.Reducer#setup(org.apache.hadoop.mapreduce.Reducer.Context)
@@ -131,6 +132,7 @@ public class PositiveFeedbackBasedRankReorderer  extends Configured implements T
         	if (ratingAggrStrategy.equals("weightedAverage")) {
         		actualRatingWt = config.getInt("actual.rating.weight", 50);
         	}
+        	maxRating =  config.getInt("max.rating", 100);
         }
         
         /* (non-Javadoc)
@@ -141,6 +143,7 @@ public class PositiveFeedbackBasedRankReorderer  extends Configured implements T
        		stBld.delete(0, stBld.length());
        		actualRating = null;
        		predictedRating = null;
+       		finalRating = null;
         	for(Tuple value : values) {
         		if (value.getInt(0) == 0) {
         			actualRating = value.getInt(1);
@@ -150,27 +153,31 @@ public class PositiveFeedbackBasedRankReorderer  extends Configured implements T
         	}
         	
         	//final rating 
-            if (null == actualRating) {
+            if (null != actualRating && actualRating == maxRating) {
+        		context.getCounter("Rating", "Actual max and converted").increment(1);
+            } else if (null == actualRating) {
             	finalRating = predictedRating;
-	    		context.getCounter("Rating", "Actual").increment(1);
+	    		context.getCounter("Rating", "Predicted").increment(1);
             } else if(null == predictedRating) {
             	finalRating = actualRating;
-	    		context.getCounter("Rating", "Predicted").increment(1);
+            	context.getCounter("Rating", "Actual").increment(1);
             } else {
 	    		context.getCounter("Rating", "Both").increment(1);
             	if (ratingAggrStrategy.equals("max")) {
-            		finalRating = Math.max(actualRating, predictedRating);
+                	finalRating = Math.max(actualRating, predictedRating);
             	} else if (ratingAggrStrategy.equals("weightedAverage")) {
-            		finalRating =( actualRatingWt * actualRating + (100 - actualRatingWt) * predictedRating) / 100;
+                	finalRating =( actualRatingWt * actualRating + (100 - actualRatingWt) * predictedRating) / 100;
             	} else {
             		throw new IllegalArgumentException("Invalid rating aggregation strategy");
             	}
             }
             
     		//userID, itemID, rating
-            stBld.append(key.get(0)).append(fieldDelim).append(key.get(1)).append(fieldDelim).append(finalRating);
-			valOut.set(stBld.toString());
-			context.write(NullWritable.get(), valOut);
+            if (null != finalRating) {
+            	stBld.append(key.get(0)).append(fieldDelim).append(key.get(1)).append(fieldDelim).append(finalRating);
+            	valOut.set(stBld.toString());
+            	context.write(NullWritable.get(), valOut);
+            }
         }
         
     }
