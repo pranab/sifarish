@@ -18,8 +18,6 @@
 package org.sifarish.common;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.conf.Configured;
@@ -35,29 +33,28 @@ import org.apache.hadoop.mapreduce.lib.input.FileSplit;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 import org.apache.hadoop.util.Tool;
 import org.apache.hadoop.util.ToolRunner;
-import org.chombo.util.SecondarySort;
 import org.chombo.util.Tuple;
 import org.chombo.util.Utility;
 
 /**
- * Aggregates item predicted rating and attribute aggregator. Used by attribute bases diversifier
+ * Reorders recommender ranks based user explicit positive feedback on items
  * @author pranab
  *
  */
-public class ItemRatingAttributeAggregator  extends Configured implements Tool{
+public class PositiveFeedbackBasedRankReorderer  extends Configured implements Tool{
     @Override
     public int run(String[] args) throws Exception   {
         Job job = new Job(getConf());
-        String jobName = "Item predicted rating and attribute aggregator MR";
+        String jobName = "Positive feedback based rank reordering MR";
         job.setJobName(jobName);
         
-        job.setJarByClass(ItemRatingAttributeAggregator.class);
+        job.setJarByClass(PositiveFeedbackBasedRankReorderer.class);
         
         FileInputFormat.addInputPath(job, new Path(args[0]));
         FileOutputFormat.setOutputPath(job, new Path(args[1]));
 
-        job.setMapperClass(ItemRatingAttributeAggregator.ItemAggregatorMapper.class);
-        job.setReducerClass(ItemRatingAttributeAggregator.ItemAggregatorReducer.class);
+        job.setMapperClass(PositiveFeedbackBasedRankReorderer.PositiveFeedbackMapper.class);
+        job.setReducerClass(PositiveFeedbackBasedRankReorderer.PositiveFeedbackReducer.class);
         
         job.setMapOutputKeyClass(Tuple.class);
         job.setMapOutputValueClass(Tuple.class);
@@ -65,26 +62,21 @@ public class ItemRatingAttributeAggregator  extends Configured implements Tool{
         job.setOutputKeyClass(NullWritable.class);
         job.setOutputValueClass(Text.class);
  
-        job.setGroupingComparatorClass(SecondarySort.TuplePairGroupComprator.class);
-        job.setPartitionerClass(SecondarySort.TuplePairPartitioner.class);
-
         Utility.setConfiguration(job.getConfiguration());
         job.setNumReduceTasks(job.getConfiguration().getInt("num.reducer", 1));
         int status =  job.waitForCompletion(true) ? 0 : 1;
         return status;
     }
-    
+
     /**
      * @author pranab
      *
      */
-    public static class ItemAggregatorMapper extends Mapper<LongWritable, Text, Tuple, Tuple> {
+    public static class PositiveFeedbackMapper extends Mapper<LongWritable, Text, Tuple, Tuple> {
     	private String fieldDelimRegex;
     	private Tuple keyOut = new Tuple();
     	private Tuple valOut = new Tuple();
-    	private boolean isMetaDataFileSplit;
-    	private String itemID;
-    	private int[] attrOrdinals;
+    	private boolean isActualRatingFileSplit;
     	
         /* (non-Javadoc)
          * @see org.apache.hadoop.mapreduce.Mapper#setup(org.apache.hadoop.mapreduce.Mapper.Context)
@@ -92,9 +84,8 @@ public class ItemRatingAttributeAggregator  extends Configured implements Tool{
         protected void setup(Context context) throws IOException, InterruptedException {
         	Configuration config = context.getConfiguration();
         	fieldDelimRegex = config.get("field.delim.regex", ",");
-        	String metaDataFilePrefix = config.get("item.metadta.file.prefix", "meta");
-        	isMetaDataFileSplit = ((FileSplit)context.getInputSplit()).getPath().getName().startsWith(metaDataFilePrefix);
-        	attrOrdinals = Utility.intArrayFromString(config.get("attr.ordinals"));
+        	String actualRatingFilePrefix = config.get("actual.rating.file.prefix", "actual");
+        	isActualRatingFileSplit = ((FileSplit)context.getInputSplit()).getPath().getName().startsWith(actualRatingFilePrefix);
         }
         
         /* (non-Javadoc)
@@ -106,23 +97,13 @@ public class ItemRatingAttributeAggregator  extends Configured implements Tool{
            	String[] items = value.toString().split(fieldDelimRegex);
            	keyOut.initialize();
            	valOut.initialize();
-           	if (isMetaDataFileSplit) {
-           		//items attributes
-           		itemID = items[0];
-           		keyOut.add(itemID, 1);
-           		valOut.append(1);
-           		for (int ordinal :  attrOrdinals) {
-           			valOut.append(items[ordinal]);
-           		}
-           		
+       		keyOut.add(items[0], items[1]);
+           	if (isActualRatingFileSplit) {
+           		valOut.add(0,  Integer.parseInt(items[2]));
            	} else {
-           		//predicted rating
-           		itemID = items[1];
-           		keyOut.add(itemID, 0);
-           		valOut.add(0,items[0], items[2]);
+           		valOut.add(1,  Integer.parseInt(items[2]));
            	}
            	context.write(keyOut, valOut);
-
         }
     }
 
@@ -130,19 +111,26 @@ public class ItemRatingAttributeAggregator  extends Configured implements Tool{
      * @author pranab
      *
      */
-    public static class ItemAggregatorReducer extends Reducer<Tuple, Tuple, NullWritable, Text> {
+    public static class PositiveFeedbackReducer extends Reducer<Tuple, Tuple, NullWritable, Text> {
     	private String fieldDelim;
     	private Text valOut = new Text();
-    	private List<String> users = new ArrayList<String>();
-    	private String itemID;
-		private StringBuilder stBld =  new StringBuilder();
-
+ 		private StringBuilder stBld =  new StringBuilder();
+ 		private Integer actualRating;
+ 		private Integer predictedRating;
+ 		private int finalRating;
+ 		private String ratingAggrStrategy;
+ 		private int actualRatingWt;
+ 		
     	/* (non-Javadoc)
          * @see org.apache.hadoop.mapreduce.Reducer#setup(org.apache.hadoop.mapreduce.Reducer.Context)
          */
         protected void setup(Context context) throws IOException, InterruptedException {
         	Configuration config = context.getConfiguration();
         	fieldDelim = config.get("field.delim", ",");
+        	ratingAggrStrategy = config.get("rating.aggr.strategy", "max");
+        	if (ratingAggrStrategy.equals("weightedAverage")) {
+        		actualRatingWt = config.getInt("actual.rating.weight", 50);
+        	}
         }
         
         /* (non-Javadoc)
@@ -150,26 +138,41 @@ public class ItemRatingAttributeAggregator  extends Configured implements Tool{
          */
         protected void reduce(Tuple  key, Iterable<Tuple> values, Context context)
         throws IOException, InterruptedException {
-        	users.clear();
        		stBld.delete(0, stBld.length());
-        	itemID = key.getString(0);
+       		actualRating = null;
+       		predictedRating = null;
         	for(Tuple value : values) {
-        		int type = value.getInt(0);
-        		if (0 == type) {
-        			//predicted ratings
-        			users.add(value.getString(1));
+        		if (value.getInt(0) == 0) {
+        			actualRating = value.getInt(1);
         		} else {
-        			//item attributes
-        			String attrs = value.toString(1);
-        			for (String user : users) {
-        				stBld.append(user).append(fieldDelim).append(itemID).append(fieldDelim).append(attrs);
-        				valOut.set(stBld.toString());
-        			}
+        			predictedRating = value.getInt(1);
         		}
-        		//userID, itemID, item attribute, ...,..
-				context.write(NullWritable.get(), valOut);
         	}
-        }       
+        	
+        	//final rating 
+            if (null == actualRating) {
+            	finalRating = predictedRating;
+	    		context.getCounter("Rating", "Actual").increment(1);
+            } else if(null == predictedRating) {
+            	finalRating = actualRating;
+	    		context.getCounter("Rating", "Predicted").increment(1);
+            } else {
+	    		context.getCounter("Rating", "Both").increment(1);
+            	if (ratingAggrStrategy.equals("max")) {
+            		finalRating = Math.max(actualRating, predictedRating);
+            	} else if (ratingAggrStrategy.equals("weightedAverage")) {
+            		finalRating =( actualRatingWt * actualRating + (100 - actualRatingWt) * predictedRating) / 100;
+            	} else {
+            		throw new IllegalArgumentException("Invalid rating aggregation strategy");
+            	}
+            }
+            
+    		//userID, itemID, rating
+            stBld.append(key.get(0)).append(fieldDelim).append(key.get(1)).append(fieldDelim).append(finalRating);
+			valOut.set(stBld.toString());
+			context.write(NullWritable.get(), valOut);
+        }
+        
     }
     
     /**
@@ -177,8 +180,8 @@ public class ItemRatingAttributeAggregator  extends Configured implements Tool{
      * @throws Exception
      */
     public static void main(String[] args) throws Exception {
-        int exitCode = ToolRunner.run(new ItemRatingAttributeAggregator(), args);
+        int exitCode = ToolRunner.run(new PositiveFeedbackBasedRankReorderer(), args);
         System.exit(exitCode);
     }
-    
+   
 }

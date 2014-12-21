@@ -49,7 +49,7 @@ public class AttributeBasedDiversifier   extends Configured implements Tool{
         String jobName = "Attribute based diversifer for ranked and  recommended items  MR";
         job.setJobName(jobName);
         
-        job.setJarByClass(BusinessGoalInjector.class);
+        job.setJarByClass(AttributeBasedDiversifier.class);
         
         FileInputFormat.addInputPath(job, new Path(args[0]));
         FileOutputFormat.setOutputPath(job, new Path(args[1]));
