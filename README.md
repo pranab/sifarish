@@ -32,7 +32,7 @@ of detail documentation
 * http://pkghosh.wordpress.com/2014/05/26/popularity-shaken/
 * http://pkghosh.wordpress.com/2014/06/23/novelty-in-personalization/
 * http://pkghosh.wordpress.com/2014/09/10/realtime-trending-analysis-with-approximate-algorithms/
-
+* http://pkghosh.wordpress.com/2014/12/22/positive-feedback-driven-recommendation-rank-reordering/
 
 ## Content Similarity Based Recommendation
 In the absence of social rating data, the only options is a feature similarity 
@@ -150,10 +150,19 @@ tutorial document realtime\_recommendation\_tutorial.txt
 ## Integration with other recommndation systems
 If you use Apache mahout or some thing else for recommendation, you can
 bring your basic recommendation output (userID, itemID, predictedRating) to
-sifarish for additional postprocessing to improve the quality of the output. Some
-post processing examples are (1)Business goal injection (2)Adding novelty 
-(3)Adding diversity (4)Rank reordering for explicit positive feedback 
-(5)Rank reordering for implicit negative feedback (5)Dithering
+sifarish for additional postprocessing to improve the quality of the output. They are
+listed in the next section.
+
+## Post processing plugins
+Just accuracy from the CF algorithm is not enough for a good recommender. There
+are various post processing plugins are essential. They improve the quality of results. 
+Here is the list. Sifarsh supports most them. Some are under development.
+(1)Business goal injection 
+(2)Adding novelty 
+(3)Adding diversity 
+(4)Rank reordering for explicit positive feedback 
+(5)Rank reordering for implicit negative feedback 
+(6)Dithering
 
 ## Configuration
 Please refer to the wiki page for a detailed list of all configuration parameters
