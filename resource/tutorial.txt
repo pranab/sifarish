@@ -20,8 +20,8 @@ Uou have to generate rating data explicitly or implicit ly
 Explicit  Rating Data Generation (optional)
 ===========================================
 You could generate rating data directly, by following the steps here. If not 
-you could generate implicit rating data as described below. The format of rating data 
-generated is as follows. Each line has rating by all  users for a given item
+you could generate implicit rating data as described in the next section. The format 
+of rating data  generated is as follows. Each line has rating by all  users for a given item
 
 item1,user1:3,user2:4,..
 item2,user2:5,user4:2,...
@@ -48,12 +48,15 @@ This MR task is optional. You want to run this MR if you want to generate rating
 from user engaement click stream data. If you have generated rating data directly from script
 then skip this.
 
-1.Export user engaement schema to HDFS
+1.Export user engaement schema to HDFS. You can use engaementEvent.json as an example schema file
 ./brec.sh expSchema <schema_file>
 
 2.Generate user engagement data as follows
 ./brec.sh genHistEvent <item_count> <user_count> <average_event_count_per_user>
 average_event_count_per_user = number of events per customer (a reasonable number is around 10)
+
+The data generated has the following fields
+user ID,session ID,item ID,event type,time of event
 
 3.Copy the input data file to  HDFS input directory. This is the script to run MR
 ./brec.sh expEvent 

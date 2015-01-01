@@ -53,7 +53,7 @@ public class ItemRatingAttributeAggregator  extends Configured implements Tool{
         
         job.setJarByClass(ItemRatingAttributeAggregator.class);
         
-        FileInputFormat.addInputPath(job, new Path(args[0]));
+        FileInputFormat.addInputPaths(job, args[0]);
         FileOutputFormat.setOutputPath(job, new Path(args[1]));
 
         job.setMapperClass(ItemRatingAttributeAggregator.ItemAggregatorMapper.class);
@@ -94,7 +94,7 @@ public class ItemRatingAttributeAggregator  extends Configured implements Tool{
         	fieldDelimRegex = config.get("field.delim.regex", ",");
         	String metaDataFilePrefix = config.get("item.metadta.file.prefix", "meta");
         	isMetaDataFileSplit = ((FileSplit)context.getInputSplit()).getPath().getName().startsWith(metaDataFilePrefix);
-        	attrOrdinals = Utility.intArrayFromString(config.get("attr.ordinals"));
+        	attrOrdinals = Utility.intArrayFromString(config.get("item.attr.ordinals"));
         }
         
         /* (non-Javadoc)
@@ -156,18 +156,20 @@ public class ItemRatingAttributeAggregator  extends Configured implements Tool{
         	for(Tuple value : values) {
         		int type = value.getInt(0);
         		if (0 == type) {
-        			//predicted ratings
+        			//users for which this item has predicted ratings
         			users.add(value.getString(1));
         		} else {
         			//item attributes
         			String attrs = value.toString(1);
         			for (String user : users) {
+        				stBld.delete(0, stBld.length());
         				stBld.append(user).append(fieldDelim).append(itemID).append(fieldDelim).append(attrs);
         				valOut.set(stBld.toString());
+        				
+                		//userID, itemID, item attribute, ...,..
+        				context.write(NullWritable.get(), valOut);
         			}
         		}
-        		//userID, itemID, item attribute, ...,..
-				context.write(NullWritable.get(), valOut);
         	}
         }       
     }

@@ -269,7 +269,26 @@ case "$1" in
 	hadoop fs -rmr $HDFS_BASE_DIR/pfrr/_SUCCESS	
 	hadoop fs -ls $HDFS_BASE_DIR/pfrr
     ;;
-	
+
+"storeItemAttrData")  
+	echo "exporting item attribute data to HDFS dir itat"
+	hadoop fs -put $2 $HDFS_BASE_DIR/itat/$3
+	hadoop fs -ls $HDFS_BASE_DIR/itat
+    ;;
+    	
+"userItemAttrAggr") 
+	CLASS_NAME=org.sifarish.common.ItemRatingAttributeAggregator
+	echo "running MR for Item predicted rating and attribute aggregation"
+	IN_PATH=$HDFS_BASE_DIR/utag,$HDFS_BASE_DIR/itat
+	OUT_PATH=$HDFS_BASE_DIR/iraa
+	echo "input $IN_PATH output $OUT_PATH"
+	hadoop fs -rmr $OUT_PATH
+	echo "removed output dir $OUT_PATH"
+	hadoop jar $JAR_NAME  $CLASS_NAME -Dconf.path=$PROP_FILE  $IN_PATH  $OUT_PATH
+	hadoop fs -rmr $HDFS_BASE_DIR/iraa/_logs
+	hadoop fs -rmr $HDFS_BASE_DIR/iraa/_SUCCESS	
+	hadoop fs -ls $HDFS_BASE_DIR/iraa
+    ;;
 
 *) 
 	echo "unknown operation $1"
