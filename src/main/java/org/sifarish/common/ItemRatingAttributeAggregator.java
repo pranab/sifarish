@@ -151,7 +151,6 @@ public class ItemRatingAttributeAggregator  extends Configured implements Tool{
         protected void reduce(Tuple  key, Iterable<Tuple> values, Context context)
         throws IOException, InterruptedException {
         	users.clear();
-       		stBld.delete(0, stBld.length());
         	itemID = key.getString(0);
         	for(Tuple value : values) {
         		int type = value.getInt(0);

@@ -290,6 +290,26 @@ case "$1" in
 	hadoop fs -ls $HDFS_BASE_DIR/iraa
     ;;
 
+"renameUserItemAttrData")  
+	echo "renaming user item attribute data"
+	hadoop fs -mv $HDFS_BASE_DIR/iraa/$2 $HDFS_BASE_DIR/iraa/$3
+	hadoop fs -ls $HDFS_BASE_DIR/iraa
+    ;;
+
+"diversifyWithAttr") 
+	CLASS_NAME=org.sifarish.common.AttributeBasedDiversifier
+	echo "running MR for attribute based diversifier"
+	IN_PATH=$HDFS_BASE_DIR/utag,$HDFS_BASE_DIR/iraa
+	OUT_PATH=$HDFS_BASE_DIR/abdi
+	echo "input $IN_PATH output $OUT_PATH"
+	hadoop fs -rmr $OUT_PATH
+	echo "removed output dir $OUT_PATH"
+	hadoop jar $JAR_NAME  $CLASS_NAME -Dconf.path=$PROP_FILE  $IN_PATH  $OUT_PATH
+	hadoop fs -rmr $HDFS_BASE_DIR/abdi/_logs
+	hadoop fs -rmr $HDFS_BASE_DIR/abdi/_SUCCESS	
+	hadoop fs -ls $HDFS_BASE_DIR/abdi
+    ;;
+
 *) 
 	echo "unknown operation $1"
 	;;

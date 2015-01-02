@@ -24,6 +24,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.commons.lang3.ArrayUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.conf.Configured;
 import org.apache.hadoop.fs.Path;
@@ -38,10 +39,17 @@ import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
 import org.apache.hadoop.mapreduce.lib.input.FileSplit;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 import org.apache.hadoop.util.Tool;
+import org.apache.hadoop.util.ToolRunner;
 import org.chombo.util.SecondarySort;
 import org.chombo.util.Tuple;
 import org.chombo.util.Utility;
 
+/**
+ * Diversifies ranked recommendation list by maintaining a minimum rank distance between
+ * items with same set of attributes
+ * @author pranab
+ *
+ */
 public class AttributeBasedDiversifier   extends Configured implements Tool{
     @Override
     public int run(String[] args) throws Exception   {
@@ -51,11 +59,11 @@ public class AttributeBasedDiversifier   extends Configured implements Tool{
         
         job.setJarByClass(AttributeBasedDiversifier.class);
         
-        FileInputFormat.addInputPath(job, new Path(args[0]));
+        FileInputFormat.addInputPaths(job, args[0]);
         FileOutputFormat.setOutputPath(job, new Path(args[1]));
 
-        job.setMapperClass(ItemRatingAttributeAggregator.ItemAggregatorMapper.class);
-        job.setReducerClass(ItemRatingAttributeAggregator.ItemAggregatorReducer.class);
+        job.setMapperClass(AttributeBasedDiversifier.AttributeDiversifierMapper.class);
+        job.setReducerClass(AttributeBasedDiversifier.AttributeDiversifierReducer.class);
         
         job.setMapOutputKeyClass(Tuple.class);
         job.setMapOutputValueClass(Tuple.class);
@@ -82,7 +90,6 @@ public class AttributeBasedDiversifier   extends Configured implements Tool{
     	private Tuple valOut = new Tuple();
     	private boolean isMetaDataFileSplit;
     	private String userD;
-    	private int[] attrOrdinals;
     	
         /* (non-Javadoc)
          * @see org.apache.hadoop.mapreduce.Mapper#setup(org.apache.hadoop.mapreduce.Mapper.Context)
@@ -90,9 +97,8 @@ public class AttributeBasedDiversifier   extends Configured implements Tool{
         protected void setup(Context context) throws IOException, InterruptedException {
         	Configuration config = context.getConfiguration();
         	fieldDelimRegex = config.get("field.delim.regex", ",");
-        	String metaDataFilePrefix = config.get("item.metadta.file.prefix", "meta");
+        	String metaDataFilePrefix = config.get("user.item.metadta.file.prefix", "meta");
         	isMetaDataFileSplit = ((FileSplit)context.getInputSplit()).getPath().getName().startsWith(metaDataFilePrefix);
-        	attrOrdinals = Utility.intArrayFromString(config.get("attr.ordinals"));
         }
 
         /* (non-Javadoc)
@@ -108,18 +114,20 @@ public class AttributeBasedDiversifier   extends Configured implements Tool{
           	if (isMetaDataFileSplit) {
            		//items attributes
             	keyOut.add(userD, 1);
-           		valOut.append(1);
-           		for (int i = 1;  i < items.length;  ++i) {
+           		valOut.add(1, items[1]);
+           		
+           		for (int i = 2;  i < items.length;  ++i) {
+           			//attributes
            			valOut.append(items[i]);
            		}
-           		
            	} else {
            		//predicted rating
            		keyOut.add(userD, 0);
+           		
+           		//item ID and predicted rating
            		valOut.add(0,items[1], Integer.parseInt(items[2]));
            	}
            	context.write(keyOut, valOut);
-
         }
 
     }
@@ -175,6 +183,8 @@ public class AttributeBasedDiversifier   extends Configured implements Tool{
         			//item attributes
         			itemID = value.getString(1);
         			String attrs = value.toString(2);
+        			
+        			//rate items for each unique attribute combination
         			ratedItemList = attrPartitionedRatedItems.get(attrs);
         			if (null == ratedItems) {
         				ratedItemList = new ArrayList<RatedItem>();
@@ -230,7 +240,9 @@ public class AttributeBasedDiversifier   extends Configured implements Tool{
 		               	int maxRankDist = 0;
 		               	RatedItemWithAttributes rateItemAttrWithMaxRankDist = null;
 		               	for (RatedItemWithAttributes rateItemAttr :  topRatedWithDiffAttributes) {
+		               		//last index in raned list of item this attribute
 		               		Integer index = itemRankIndex.get(rateItemAttr.getAttributes());
+		               		
 		               		if (null == index) {
 		               			//no item with same attribute yet
 		               			selectedRateItemAttr = rateItemAttr;
@@ -238,14 +250,14 @@ public class AttributeBasedDiversifier   extends Configured implements Tool{
 		               		} else {
 		               			int rankDist = reorderedRatedItemList.size() - index;
 		               			
-		               			//keep tract of item with max rank distance
 		               			if (rankDist > maxRankDist) {
+			               			//item with max rank distance irrespective of rating
 		               				maxRankDist = rankDist;
 		               				rateItemAttrWithMaxRankDist = rateItemAttr;
 		               			}
 		               			
 		               			if (rankDist >= minRankDistance) {
-		               				//min rank distance requirement  met
+		               				//min rank distance requirement  met for highest rated item
 			               			selectedRateItemAttr = rateItemAttr;
 			               			break;
 		               			}
@@ -270,4 +282,14 @@ public class AttributeBasedDiversifier   extends Configured implements Tool{
         }
         
     }
+    
+    /**
+     * @param args
+     * @throws Exception
+     */
+    public static void main(String[] args) throws Exception {
+        int exitCode = ToolRunner.run(new AttributeBasedDiversifier(), args);
+        System.exit(exitCode);
+    }
+    
 }
