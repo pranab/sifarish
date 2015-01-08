@@ -18,7 +18,7 @@ xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/ma
             </activation>
             <properties>
                 <log4j.version>1.2.16</log4j.version>
-                <hadoop.version>0.20.2-cdh3u2</hadoop.version>
+                <hadoop.version>2.5.0-mr1-cdh5.2.0</hadoop.version>
                 <jackson.version>1.9.13</jackson.version>
                 <jdk.level>1.6</jdk.level>
             </properties>
@@ -76,6 +76,12 @@ xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/ma
             <version>${hadoop.version}</version>
         </dependency>
         
+        <dependency>
+            <groupId>org.apache.hadoop</groupId>
+            <artifactId>hadoop-client</artifactId>
+            <version>${hadoop.version}</version>
+        </dependency>
+
         <dependency>
             <groupId>org.testng</groupId>
             <artifactId>testng</artifactId>
