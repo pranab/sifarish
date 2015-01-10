@@ -171,7 +171,11 @@ in the resource directory, you can find sample configuration for various use cas
 
 ## Build
 It has dependencies on two of my other open source projects, chombo and hoidla. They
-need to be built first before building sifarish
+need to be built first before building sifarish. 
+
+## Hadoop2
+If you are using Hadoop2, please change the hadoop dependency in build.xml
+and rebuild. Code change is not necessary.
 
 ## Help
 Please feel free to email me at pkghosh99@gmail.com

@@ -7,9 +7,11 @@ local maven repo or you could build them.
 Some of them are needed only when using some special features, as indicated by the text in 
 parenthesis
 
-jackson-core-lgpl-1.6.3.jar (always needed)
-jackson-mapper-lgpl-1.6.3.jar (always needed)
-lucene-core-3.5.0.jar (text matching features)
+jackson-core-asl-1.9.13.jar (always needed)
+jackson-mapper-asl-1.9.13.jar (always needed)
+lucene-core-4.4.0.jar (text matching features)
+lucene-analyzers-common-4.4.0.jar (text matching features, other language analyzers)
+lucene-analyzers-morfologik-4.4.0.jar (text matching features, polish language analyzer)
 chombo-1.0.jar (my project, always needed)
 hoidla-1.0.jar (my project, neede for real time features)
 jena-arq-2.9.4.jar (semantic feature)
