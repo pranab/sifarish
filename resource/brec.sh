@@ -270,6 +270,12 @@ case "$1" in
 	hadoop fs -ls $HDFS_BASE_DIR/pfrr
     ;;
 
+"genItemAttrData")  
+	echo "generating item attribute data"
+	echo "usage: ./item_cat_brand.py <event_file>"
+	./item_cat_brand.py $2
+    ;;
+
 "storeItemAttrData")  
 	echo "exporting item attribute data to HDFS dir itat"
 	hadoop fs -put $2 $HDFS_BASE_DIR/itat/$3

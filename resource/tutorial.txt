@@ -199,7 +199,34 @@ rating_file_name should the prefix defined by the config param actual.rating.fil
 12.2 Modify rating
 ./brec.sh posFeedbackReorder
 
-13. Configuration
+13. Attribute diffusion based diversification
+=============================================
+It makes the recommendation result more diverse by manitaining a minimum rank
+distance between items with same attribute values
+
+13.1 Generate item attribute data
+./brec.sh genItemAttrData <event_data_file>
+It generates data with with itemID and two attributes (category and brand)
+
+13.2 Store item attribute data in HDFS
+./brec.sh storeItemAttrData <local_file_name> <hdfs_file_name>
+local_file_name = file name from step 13.1
+hdfs_file_name = file name in hdfs with prefix as set in item.metadta.file.prefix
+
+13.3 Run user, item attribute aggregation MR
+./brec.sh userItemAttrAggr
+
+13.4 Rename user, item attribute  data file
+./brec.sh renameUserItemAttrData <mr_generated_file_name> <new_file_name>
+
+mr_generated_file_name = MR generated file name from step 13.3
+new_file_name = new file name with prefix as set through item.metadta.file.prefix
+
+13.5 Run attribute diffusion based diversifier
+./brec.sh diversifyWithAttr
+
+
+Configuration
 =================
 it's in reco.properties
 

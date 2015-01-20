@@ -38,6 +38,8 @@ import org.apache.hadoop.mapreduce.lib.input.FileSplit;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 import org.apache.hadoop.util.Tool;
 import org.apache.hadoop.util.ToolRunner;
+import org.apache.log4j.Level;
+import org.apache.log4j.Logger;
 import org.chombo.util.SecondarySort;
 import org.chombo.util.Tuple;
 import org.chombo.util.Utility;
@@ -146,13 +148,18 @@ public class AttributeBasedDiversifier   extends Configured implements Tool{
 		private List<RatedItem> reorderedRatedItemList = new ArrayList<RatedItem>();
 		private List<RatedItemWithAttributes> topRatedWithDiffAttributes = new ArrayList<RatedItemWithAttributes>();
 		private Map<String, Integer> itemRankIndex = new HashMap<String, Integer>();
-		
+		 private static final Logger LOG = Logger.getLogger(AttributeBasedDiversifier.AttributeDiversifierReducer.class);
 		
     	/* (non-Javadoc)
          * @see org.apache.hadoop.mapreduce.Reducer#setup(org.apache.hadoop.mapreduce.Reducer.Context)
          */
         protected void setup(Context context) throws IOException, InterruptedException {
         	Configuration config = context.getConfiguration();
+            if (config.getBoolean("debug.on", false)) {
+             	LOG.setLevel(Level.DEBUG);
+             	System.out.println("in debug mode");
+            }
+
         	fieldDelim = config.get("field.delim", ",");
         	minRankDistance = config.getInt("min.rank.distance",  5);
         }
@@ -189,18 +196,29 @@ public class AttributeBasedDiversifier   extends Configured implements Tool{
         			ratedItemList.add(ratedItems.get(itemID));
         		}
         		
-        		//reorder
-        		reorderByRankDiatance(context);
-        		
-        		//emit
-        		for (RatedItem ratedItem :   reorderedRatedItemList) {
-               		stBld.delete(0, stBld.length());
-               		stBld.append(userID).append(fieldDelim).append(ratedItem.getLeft()).append(fieldDelim).
-               			append(ratedItem.getRight());
-               		valOut.set(stBld.toString());
-               		context.write(NullWritable.get(), valOut);
-        		}
         	}
+        	
+        	//sanity check
+    		int attrPartitionedItemsCount = 0;
+        	for (String attrs : attrPartitionedRatedItems.keySet())  {
+    			ratedItemList = attrPartitionedRatedItems.get(attrs);
+    			attrPartitionedItemsCount += ratedItemList.size();
+        	}        		
+        	LOG.debug("ratedItems size:" + ratedItems.size() + " attrPartitionedItemsCount:" + attrPartitionedItemsCount);
+    		
+    		//reorder
+    		reorderByRankDiatance(context);
+    		LOG.debug("reorderedRatedItemList size:" + reorderedRatedItemList.size());
+    		
+    		//emit
+    		for (RatedItem ratedItem :   reorderedRatedItemList) {
+           		stBld.delete(0, stBld.length());
+           		stBld.append(userID).append(fieldDelim).append(ratedItem.getLeft()).append(fieldDelim).
+           			append(ratedItem.getRight());
+           		valOut.set(stBld.toString());
+           		context.write(NullWritable.get(), valOut);
+    		}
+        	
         }    
         
         /**
