@@ -8,9 +8,24 @@ Dependency Jars
 ===============
 Please refer to resource/jar_dpendency.txt
 
-Create HDFS directories
-=======================
-./brec.sh createDirs
+Shell script
+============
+Please modify the following variables in brec.sh to suit your environment
+JAR_NAME
+CHOMBO_JAR_NAME
+HDFS_BASE_DIR
+PROP_FILE
+HDFS_META_BASE_DIR
+
+
+Creating HDFS directories
+=========================
+Please create various HDFS directories  as you need them manually as below
+
+hadoop fs -mkdir .....
+
+You should create the directory defined by HDFS_BASE_DIR and various sub directories
+under it
 
 Rating Data
 ===========
