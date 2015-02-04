@@ -57,7 +57,7 @@ from the visitante project at the following location
 https://github.com/pranab/visitante/tree/master/script/ruby
 
 1.1 generate explicit rating data
-./brec.sh genExplicitRating <item_count> <user_count> <user_per_items_multipler>  > <rating_file>
+./brec.sh genExplicitRating <item_count> <user_count> <user_per_items_multipler> <rating_file>
 
 In the output, average number of users rating for an item will be 
 item_count *  user_per_items_multipler / user_count. So choose the last argument 
