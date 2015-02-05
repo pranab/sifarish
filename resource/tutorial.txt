@@ -8,20 +8,45 @@ Dependency Jars
 ===============
 Please refer to resource/jar_dpendency.txt
 
-Create HDFS directories
-=======================
-./brec.sh createDirs
+Shell script
+============
+Please modify the following variables in brec.sh to suit your environment
+JAR_NAME
+CHOMBO_JAR_NAME
+HDFS_BASE_DIR
+PROP_FILE
+HDFS_META_BASE_DIR
+
+
+Creating HDFS directories
+=========================
+Please create various HDFS directories  as you need them manually as below
+
+hadoop fs -mkdir .....
+
+You should create the directory defined by HDFS_BASE_DIR and various sub directories
+under it
 
 Rating Data
 ===========
 Uou have to generate rating data explicitly or implicit ly
 
+Map reduce workflow
+===================
+There are some core MR jobs, that are manadatory. They constitute CF processing.
+The final output of this is obtained after executing step 7.
 
-Explicit  Rating Data Generation (optional)
-===========================================
+The output from step 7 can be used by one or more optional MR jobs for various post
+processing depernding on the need. The number of such optional MR jobs and the order
+in which they are executed depends on the requirement.
+
+
+1. Explicit  Rating Data Generation (optional)
+==============================================
 You could generate rating data directly, by following the steps here. If not 
 you could generate implicit rating data as described in the next section. The format 
-of rating data  generated is as follows. Each line has rating by all  users for a given item
+of rating data  generated is as follows. Each line has rating by all  users for a 
+given item
 
 item1,user1:3,user2:4,..
 item2,user2:5,user4:2,...
@@ -31,161 +56,193 @@ It requires util.rb to be in the ../lib directory. You can get util.rb
 from the visitante project at the following location
 https://github.com/pranab/visitante/tree/master/script/ruby
 
-1. generate explicit rating data
-./brec.sh genExplicitRating <item_count> <user_count> <user_per_items_multipler>  > <rating_file>
+1.1 generate explicit rating data
+./brec.sh genExplicitRating <item_count> <user_count> <user_per_items_multipler> <rating_file>
 
 In the output, average number of users rating for an item will be 
 item_count *  user_per_items_multipler / user_count. So choose the last argument 
 as per your need. User count should be an order of magnitude higher than item count. 
 The value of user_per_items_multipler should be 5 or more. A reasoable value is 10
 
-2. Copy rating data to HDFS
+1.2 Copy rating data to HDFS
 ./brec.sh expExplicitRating <rating_file>
 
-Implicit Rating Predictor (optional)
-=====================================
+2. Implicit Rating Predictor (optional)
+=======================================
 This MR task is optional. You want to run this MR if you want to generate rating data
-from user engaement click stream data. If you have generated rating data directly from script
-then skip this.
+from user engaement click stream data. If you have generated rating data directly 
+from script then skip this.
 
-1.Export user engaement schema to HDFS. You can use engaementEvent.json as an example schema file
+2.1 Export user engaement schema to HDFS. You can use engaementEvent.json as an 
+example schema file
 ./brec.sh expSchema <schema_file>
 
-2.Generate user engagement data as follows
+2.2 Generate user engagement data as follows
 ./brec.sh genHistEvent <item_count> <user_count> <average_event_count_per_user>
-average_event_count_per_user = number of events per customer (a reasonable number is around 10)
+average_event_count_per_user = number of events per customer (a reasonable 
+number is around 10)
 
 The data generated has the following fields
 user ID,session ID,item ID,event type,time of event
 
-3.Copy the input data file to  HDFS input directory. This is the script to run MR
+2.3 Copy the input data file to  HDFS input directory. This is the script to run MR
 ./brec.sh expEvent 
 
-4. Run MR
+2.4 Run MR
 ./brec.sh genRating  <event_data_file>
 
 
-Rating data formatter (optional)
-================================
+3. Rating data formatter (optional)
+===================================
 If you ran ImplicitRatingPredictor, it generated rating data in an exploded format as 
 userID, itemID, rating. However, Rating Correlation MR below expects data in a compact 
 format as  itemID, userID1:rating1, userId2:rating2
 
-1. Run MR
+3.1 Run MR
 ./brech.sh compactRating
 
 
-Rating Statistics (optional)
-============================
+4. Rating Statistics (optional)
+===============================
 If the parameter input.rating.stdDev.weighted.average is set to true for UtilityAggregator,
 then rating std dev calculation is necessary. In our example, we are not using it.
 
-1. Run MR
+4.1 Run MR
 ./brec.sh ratingStat <rating_dat
 
 
-Rating correlation
-==================
+5. Rating correlation
+=====================
 Correlation can be calculated in various ways. We will be using cosine similarity.
 
-1. Run MR
+5.1 Run MR
 ./brec.sh correlation
 
-Rating Predictor
-================
-The next step is to predict rating based on items already rated by user and the correlation
-calculated in the first MR
+6. Rating Predictor
+===================
+The next step is to predict rating based on items already rated by user and the 
+correlation calculated in the first MR
 
-1.The rating file should be renamed so that it has the same prefix   
+6.1 The rating file should be renamed so that it has the same prefix   
 as defined by  the config param rating.file.prefix (prRating here). It should 
 be repeated if there are multiple reducer output files
 ./brec.sh renameRatingFile part-r-00000 prRating0.txt 
 
-2. The rating stat file should be renamed so that it has the same prefix   
+6.2 The rating stat file should be renamed so that it has the same prefix   
 as defined by  the config param rating.stat.file.prefix. It should 
 be repeated if there are multiple reducer output files
 ./brec.sh renameRatingStat
 
-3. Run MR as follows
+6.3 Run MR as follows
 ./brec.sh ratingPred [withStat]
 The last argument is necessary if rating stats data is used
 
-Aggregate Rating Predictor
-==========================
-This predicts the final rating by aggregating contribution from all items rated by the user
+7. Aggregate Rating Predictor
+=============================
+This predicts the final rating by aggregating contribution from all items rated 
+by the user
 
-1. Run MR
+7.1 Run MR
 ./brec.sh ratingAggr
 
-Business Goal Injection (optional)
-==================================
-This is an optional MR, that combines scores of various business goals with recommendation score
-using relative weighting to come up with the final score. In our example, we are not using it.
+8. Business Goal Injection (optional)
+=====================================
+This is an optional MR, that combines scores of various business goals with 
+recommendation score using relative weighting to come up with the final score. 
+In our example, we are not using it.
 
-1. Copy business score data
+8.1 Copy business score data
 ./brec.sh storeBizData <local_biz_data_file_name> <hdfs_biz_data_file_name>
 
 hdfs_biz_data_file_name should have the the prefix as defined by the config param 
 biz.goal.file.prefix
 
-2. Run MR
+8.2 Run MR
 ./brec.sh injectBizGoal
 
 
-Order by User ID (optional)
-===========================
+9. Order by User ID (optional)
+==============================
 It orders the final result by userID, so that you get all recommendation for
 a given user together
 
-1. Run MR. Unsroted data dir name (not full path) needs to be specified, because
+9.1 Run MR. Unsroted data dir name (not full path) needs to be specified, because
 unsorted data location depends on post processing  done with predicted rating 
 (e.g., business goal injection) 
 ./brec.sh  sortByUser <unsorted_data_hdfs_dir>
 
 
-Individual Novelty (optional)
-=============================
+10. Individual Novelty (optional)
+=================================
 Novelty can blended in with predicted rating as follows
 
-1. Caculate user item engaement distribution
+10.1 Caculate user item engaement distribution
 ./brec.sh genEngageDistr
 
-2. Generate item novelty score
+10.2 Generate item novelty score
 ./brec.sh genItemNovelty
 
-3. Rename predicted rating file to have prefix as defined in config param first.type.prefix. 
-The command should be repeatedly executed  if there are multiple reducer output files
+10.3 Rename predicted rating file to have prefix as defined in config param 
+first.type.prefix. The command should be repeatedly executed  if there are multiple 
+reducer output files
 ./brec.sh renamePredRatingFile  part-r-00000 prRatings0.txt
 
-4. Join predicted rating and novelty
+10.4 Join predicted rating and novelty
 ./brec.sh joinRatingNovelty
 
-5. Weighted average of predicted rating and novelty
+10.5 Weighted average of predicted rating and novelty
 ./brec.sh injectItemNovelty
 
-Item popularity global (optional)
-=================================
-It can be used to solve cold start problem. Popularity is calculated by taking weighted 
-average of various rating stats
+11. Item popularity global (optional)
+=====================================
+It can be used to solve cold start problem. Popularity is calculated by taking 
+weighted  average of various rating stats
 
-1. Run MR
+11.1 Run MR
 ./brec.sh itemPopularity
 
-Postive feedback driven rank reordering
-=======================================
+12. Postive feedback driven rank reordering (optional)
+======================================================
 The actual implicit rating based on user engagement data is used together with
 predicted rating to generated modified ratings
 
-1. Rename rating data file
+12.1 Rename rating data file
 ./brec.sh renameRating part-r-00000 <rating_file_name>
 
 rating_file_name should the prefix defined by the config param actual.rating.file.prefix
 
-2. Modify rating
+12.2 Modify rating
 ./brec.sh posFeedbackReorder
 
+13. Attribute diffusion based diversification
+=============================================
+It makes the recommendation result more diverse by manitaining a minimum rank
+distance between items with same attribute values
+
+13.1 Generate item attribute data
+./brec.sh genItemAttrData <event_data_file>
+It generates data with with itemID and two attributes (category and brand)
+
+13.2 Store item attribute data in HDFS
+./brec.sh storeItemAttrData <local_file_name> <hdfs_file_name>
+local_file_name = file name from step 13.1
+hdfs_file_name = file name in hdfs with prefix as set in item.metadta.file.prefix
+
+13.3 Run user, item attribute aggregation MR
+./brec.sh userItemAttrAggr
+
+13.4 Rename user, item attribute  data file
+./brec.sh renameUserItemAttrData <mr_generated_file_name> <new_file_name>
+
+mr_generated_file_name = MR generated file name from step 13.3
+new_file_name = new file name with prefix as set through item.metadta.file.prefix
+
+13.5 Run attribute diffusion based diversifier
+./brec.sh diversifyWithAttr
+
+
 Configuration
-=============
+=================
 it's in reco.properties
 
  

@@ -24,7 +24,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.commons.lang3.ArrayUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.conf.Configured;
 import org.apache.hadoop.fs.Path;
@@ -34,12 +33,13 @@ import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.mapreduce.Mapper;
 import org.apache.hadoop.mapreduce.Reducer;
-import org.apache.hadoop.mapreduce.Mapper.Context;
 import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
 import org.apache.hadoop.mapreduce.lib.input.FileSplit;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 import org.apache.hadoop.util.Tool;
 import org.apache.hadoop.util.ToolRunner;
+import org.apache.log4j.Level;
+import org.apache.log4j.Logger;
 import org.chombo.util.SecondarySort;
 import org.chombo.util.Tuple;
 import org.chombo.util.Utility;
@@ -90,6 +90,7 @@ public class AttributeBasedDiversifier   extends Configured implements Tool{
     	private Tuple valOut = new Tuple();
     	private boolean isMetaDataFileSplit;
     	private String userD;
+    	private String attrs;
     	
         /* (non-Javadoc)
          * @see org.apache.hadoop.mapreduce.Mapper#setup(org.apache.hadoop.mapreduce.Mapper.Context)
@@ -115,11 +116,8 @@ public class AttributeBasedDiversifier   extends Configured implements Tool{
            		//items attributes
             	keyOut.add(userD, 1);
            		valOut.add(1, items[1]);
-           		
-           		for (int i = 2;  i < items.length;  ++i) {
-           			//attributes
-           			valOut.append(items[i]);
-           		}
+           		attrs = Utility.join(items, 2, items.length);
+       			valOut.append(attrs);
            	} else {
            		//predicted rating
            		keyOut.add(userD, 0);
@@ -150,13 +148,18 @@ public class AttributeBasedDiversifier   extends Configured implements Tool{
 		private List<RatedItem> reorderedRatedItemList = new ArrayList<RatedItem>();
 		private List<RatedItemWithAttributes> topRatedWithDiffAttributes = new ArrayList<RatedItemWithAttributes>();
 		private Map<String, Integer> itemRankIndex = new HashMap<String, Integer>();
-		
+		 private static final Logger LOG = Logger.getLogger(AttributeBasedDiversifier.AttributeDiversifierReducer.class);
 		
     	/* (non-Javadoc)
          * @see org.apache.hadoop.mapreduce.Reducer#setup(org.apache.hadoop.mapreduce.Reducer.Context)
          */
         protected void setup(Context context) throws IOException, InterruptedException {
         	Configuration config = context.getConfiguration();
+            if (config.getBoolean("debug.on", false)) {
+             	LOG.setLevel(Level.DEBUG);
+             	System.out.println("in debug mode");
+            }
+
         	fieldDelim = config.get("field.delim", ",");
         	minRankDistance = config.getInt("min.rank.distance",  5);
         }
@@ -180,37 +183,48 @@ public class AttributeBasedDiversifier   extends Configured implements Tool{
         			rating = value.getInt(2);
         			ratedItems.put(itemID, new RatedItem(itemID, rating));
         		} else {
-        			//item attributes
+        			//item attributes as  comma separated string
         			itemID = value.getString(1);
         			String attrs = value.toString(2);
         			
         			//rate items for each unique attribute combination
         			ratedItemList = attrPartitionedRatedItems.get(attrs);
-        			if (null == ratedItems) {
+        			if (null == ratedItemList) {
         				ratedItemList = new ArrayList<RatedItem>();
         				attrPartitionedRatedItems.put(attrs, ratedItemList);
         			}
         			ratedItemList.add(ratedItems.get(itemID));
         		}
         		
-        		//reorder
-        		reorderByRankDiatance();
-        		
-        		//emit
-        		for (RatedItem ratedItem :   reorderedRatedItemList) {
-               		stBld.delete(0, stBld.length());
-               		stBld.append(userID).append(fieldDelim).append(ratedItem.getLeft()).append(fieldDelim).
-               			append(ratedItem.getRight());
-               		valOut.set(stBld.toString());
-               		context.write(NullWritable.get(), valOut);
-        		}
         	}
+        	
+        	//sanity check
+    		int attrPartitionedItemsCount = 0;
+        	for (String attrs : attrPartitionedRatedItems.keySet())  {
+    			ratedItemList = attrPartitionedRatedItems.get(attrs);
+    			attrPartitionedItemsCount += ratedItemList.size();
+        	}        		
+        	LOG.debug("ratedItems size:" + ratedItems.size() + " attrPartitionedItemsCount:" + attrPartitionedItemsCount);
+    		
+    		//reorder
+    		reorderByRankDiatance(context);
+    		LOG.debug("reorderedRatedItemList size:" + reorderedRatedItemList.size());
+    		
+    		//emit
+    		for (RatedItem ratedItem :   reorderedRatedItemList) {
+           		stBld.delete(0, stBld.length());
+           		stBld.append(userID).append(fieldDelim).append(ratedItem.getLeft()).append(fieldDelim).
+           			append(ratedItem.getRight());
+           		valOut.set(stBld.toString());
+           		context.write(NullWritable.get(), valOut);
+    		}
+        	
         }    
         
         /**
          * reorders items taking min rank distance into consideration
          */
-        private void reorderByRankDiatance() {
+        private void reorderByRankDiatance(Context context) {
         	//sort rated items for each attribute set value
         	for (String attrs : attrPartitionedRatedItems.keySet())  {
     			ratedItemList = attrPartitionedRatedItems.get(attrs);
@@ -240,14 +254,16 @@ public class AttributeBasedDiversifier   extends Configured implements Tool{
 		               	int maxRankDist = 0;
 		               	RatedItemWithAttributes rateItemAttrWithMaxRankDist = null;
 		               	for (RatedItemWithAttributes rateItemAttr :  topRatedWithDiffAttributes) {
-		               		//last index in raned list of item this attribute
+		               		//last index in ranked list of item this attribute
 		               		Integer index = itemRankIndex.get(rateItemAttr.getAttributes());
 		               		
 		               		if (null == index) {
 		               			//no item with same attribute yet
 		               			selectedRateItemAttr = rateItemAttr;
+		               			context.getCounter("Reordering", "first occurence of this attr").increment(1);
 		               			break;
 		               		} else {
+		               			//items with same attributes already in ranked list
 		               			int rankDist = reorderedRatedItemList.size() - index;
 		               			
 		               			if (rankDist > maxRankDist) {
@@ -259,6 +275,7 @@ public class AttributeBasedDiversifier   extends Configured implements Tool{
 		               			if (rankDist >= minRankDistance) {
 		               				//min rank distance requirement  met for highest rated item
 			               			selectedRateItemAttr = rateItemAttr;
+			               			context.getCounter("Reordering", "min rank distance satisfied").increment(1);
 			               			break;
 		               			}
 		               		}
@@ -268,6 +285,7 @@ public class AttributeBasedDiversifier   extends Configured implements Tool{
 		               	if (null == selectedRateItemAttr) {
 		               		//use the item with max rank distance
 		               		selectedRateItemAttr = rateItemAttrWithMaxRankDist;
+	               			context.getCounter("Reordering", "min rank distance not satisfied").increment(1);
 		               	}
 		               	
 	               		//add to list and update index

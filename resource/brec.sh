@@ -48,10 +48,10 @@ case "$1" in
     ;;
 
 "genRating")  
-	echo "running MR to generate implicit rating from event data"
+	echo "running MR to generate implicit rating in excpanded format from event data"
 	CLASS_NAME=org.sifarish.common.ImplicitRatingEstimator
 	IN_PATH=$HDFS_BASE_DIR/enga
-	OUT_PATH=$HDFS_BASE_DIR/rate
+	OUT_PATH=$HDFS_BASE_DIR/erat
 	echo "input $IN_PATH output $OUT_PATH"
 	hadoop fs -rmr $OUT_PATH
 	echo "removed output dir $OUT_PATH"
@@ -64,21 +64,21 @@ case "$1" in
 "compactRating")  
 	echo "running MR to format rating to compact form"
 	CLASS_NAME=org.sifarish.common.CompactRatingFormatter
-	IN_PATH=$HDFS_BASE_DIR/rate
-	OUT_PATH=$HDFS_BASE_DIR/crat
+	IN_PATH=$HDFS_BASE_DIR/erat
+	OUT_PATH=$HDFS_BASE_DIR/rate
 	echo "input $IN_PATH output $OUT_PATH"
 	hadoop fs -rmr $OUT_PATH
 	echo "removed output dir $OUT_PATH"
 	hadoop jar $JAR_NAME  $CLASS_NAME -Dconf.path=$PROP_FILE  $IN_PATH  $OUT_PATH
-	hadoop fs -rmr $HDFS_BASE_DIR/crat/_logs
-	hadoop fs -rmr $HDFS_BASE_DIR/crat/_SUCCESS
-	hadoop fs -ls $HDFS_BASE_DIR/crat
+	hadoop fs -rmr $HDFS_BASE_DIR/rate/_logs
+	hadoop fs -rmr $HDFS_BASE_DIR/rate/_SUCCESS
+	hadoop fs -ls $HDFS_BASE_DIR/rate
     ;;
 
 "correlation")  
 	echo  "running MR to generate item correlation from rating data"
 	CLASS_NAME=org.sifarish.common.ItemDynamicAttributeSimilarity
-	IN_PATH=$HDFS_BASE_DIR/crat
+	IN_PATH=$HDFS_BASE_DIR/rate
 	OUT_PATH=$HDFS_BASE_DIR/simi
 	echo "input $IN_PATH output $OUT_PATH"
 	hadoop fs -rmr $OUT_PATH
@@ -92,7 +92,7 @@ case "$1" in
 "ratingStat")
 	echo "running MR to generate stating stats"
 	CLASS_NAME=org.sifarish.social.ItemRatingStat
-	IN_PATH=$HDFS_BASE_DIR/crat
+	IN_PATH=$HDFS_BASE_DIR/rate
 	OUT_PATH=$HDFS_BASE_DIR/stat
 	echo "input $IN_PATH output $OUT_PATH"
 	hadoop fs -rmr $OUT_PATH
@@ -110,8 +110,8 @@ case "$1" in
 
 "renameRatingFile")	
 	echo "renaming rating  file"
-	hadoop fs -mv $HDFS_BASE_DIR/crat/$2 $HDFS_BASE_DIR/crat/$3  
-	hadoop fs -ls $HDFS_BASE_DIR/crat
+	hadoop fs -mv $HDFS_BASE_DIR/rate/$2 $HDFS_BASE_DIR/rate/$3  
+	hadoop fs -ls $HDFS_BASE_DIR/rate
 	;;
 	
 "ratingPred")
@@ -119,9 +119,9 @@ case "$1" in
 	CLASS_NAME=org.sifarish.common.UtilityPredictor
 	if [ "$2" = "withStat" ]
 	then
-		IN_PATH=$HDFS_BASE_DIR/crat,$HDFS_BASE_DIR/stat,$HDFS_BASE_DIR/simi
+		IN_PATH=$HDFS_BASE_DIR/rate,$HDFS_BASE_DIR/stat,$HDFS_BASE_DIR/simi
 	else
-		IN_PATH=$HDFS_BASE_DIR/crat,$HDFS_BASE_DIR/simi
+		IN_PATH=$HDFS_BASE_DIR/rate,$HDFS_BASE_DIR/simi
 	fi
 	OUT_PATH=$HDFS_BASE_DIR/utpr
 	echo "input $IN_PATH output $OUT_PATH"
@@ -268,6 +268,12 @@ case "$1" in
 	hadoop fs -rmr $HDFS_BASE_DIR/pfrr/_logs
 	hadoop fs -rmr $HDFS_BASE_DIR/pfrr/_SUCCESS	
 	hadoop fs -ls $HDFS_BASE_DIR/pfrr
+    ;;
+
+"genItemAttrData")  
+	echo "generating item attribute data"
+	echo "usage: ./item_cat_brand.py <event_file>"
+	./item_cat_brand.py $2
     ;;
 
 "storeItemAttrData")  
