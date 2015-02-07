@@ -150,7 +150,10 @@ public class UtilityAggregator extends Configured implements Tool{
         	maxPredictedRating = 0;
         	outputAggregationCount = config.getBoolean("output.aggregation.count", true);
         	
-    	   	redisCache = RedisCache.createRedisCache(config, "si");
+        	boolean cacheMaxPredRating = config.getBoolean("cache.max.pred.rating", false);
+        	if (cacheMaxPredRating) {
+        		redisCache = RedisCache.createRedisCache(config, "si");
+        	}
         } 	
         
         /* (non-Javadoc)
@@ -162,7 +165,7 @@ public class UtilityAggregator extends Configured implements Tool{
         	if (null != redisCache) {
         		//default org
 				redisCache.put("maxPredRating" ,  "" + maxPredictedRating, true);
-      	} else {
+        	} else {
         		//mutiple org
         	}
         }
