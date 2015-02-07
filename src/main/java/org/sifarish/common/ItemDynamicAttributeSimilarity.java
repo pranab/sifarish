@@ -263,7 +263,7 @@ public class ItemDynamicAttributeSimilarity  extends Configured implements Tool{
         	//System.out.println("hashPair: " + firstPart);
         	if (firstPart / hashPairMult == firstPart % hashPairMult){
         		//same hash bucket
-    			context.getCounter("Reducer", "Same  Bucket Count").increment(1);
+    			//context.getCounter("Reducer", "Same  Bucket Count").increment(1);
     			//System.out.println("**same bucket");
     			
 	        	for (Text value : values){
@@ -299,17 +299,17 @@ public class ItemDynamicAttributeSimilarity  extends Configured implements Tool{
 	        				}
 	
 	        				valueHolder.set(stBld.toString());
-		   	    			context.getCounter("Reducer", "Emit").increment(1);
+		   	    			//context.getCounter("Reducer", "Emit").increment(1);
 		   					context.write(NullWritable.get(), valueHolder);
 		        			stBld.delete(0, stBld.length());
 	    				} else {
-		   	    			context.getCounter("Correlation Intersection", "Below threshold").increment(1);
+		   	    			//context.getCounter("Correlation Intersection", "Below threshold").increment(1);
 	    				} //if int length
 	        		}//for
 	        	}//for
         	} else {
         		//different hash bucket
-    			context.getCounter("Reducer", "Diff Bucket Count").increment(1);
+    			//context.getCounter("Reducer", "Diff Bucket Count").increment(1);
     			//System.out.println("**diff  bucket");
 	        	for (Text value : values){
 	        		String valSt = value.toString();
@@ -345,11 +345,11 @@ public class ItemDynamicAttributeSimilarity  extends Configured implements Tool{
 		        				}
 	
 		        				valueHolder.set(stBld.toString());
-			   	    			context.getCounter("Reducer", "Emit").increment(1);
+			   	    			//context.getCounter("Reducer", "Emit").increment(1);
 			   					context.write(NullWritable.get(), valueHolder);
 			        			stBld.delete(0, stBld.length());
 		        			} else {
-			   	    			context.getCounter("Correlation Intersection", "Below threshold").increment(1);
+			   	    			//context.getCounter("Correlation Intersection", "Below threshold").increment(1);
 		        			}//if int length
 	        			}//for
 	        		}//if

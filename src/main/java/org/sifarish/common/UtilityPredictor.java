@@ -143,7 +143,7 @@ public class UtilityPredictor extends Configured implements Tool{
     		String itemID = items[0];
         	if (isRatingFileSplit) {
         		//user rating
-				context.getCounter("Record type count", "Rating").increment(1);
+				//context.getCounter("Record type count", "Rating").increment(1);
 
         		boolean toInclude = true;
                	for (int i = 1; i < items.length; ++i) {
@@ -173,7 +173,7 @@ public class UtilityPredictor extends Configured implements Tool{
                	}
         	} else  if (isRatingStatFileSplit) {
         		//rating stat
-				context.getCounter("Record type count", "Rating stat").increment(1);
+				//context.getCounter("Record type count", "Rating stat").increment(1);
         		int ratingStdDev = Integer.parseInt(items[STD_DEV_ORD]);
         		keyOut.set(itemID, one);
            		valOut.initialize();
@@ -181,7 +181,7 @@ public class UtilityPredictor extends Configured implements Tool{
    	   			context.write(keyOut, valOut);
         	} else {
         		//if correlation is above min threshold
-				context.getCounter("Record type count", "Correlation").increment(1);
+				//context.getCounter("Record type count", "Correlation").increment(1);
         		correlation =  Integer.parseInt( items[2]);
         		correlationLength =  Integer.parseInt(items[3]);
         		if (correlation > minCorrelation) {
@@ -257,7 +257,7 @@ public class UtilityPredictor extends Configured implements Tool{
            		if ( ((Integer)value.get(value.getSize()-1)) == 0) {
            			//in rating correlation
            			ratingCorrelations.add(value.createClone());
-					context.getCounter("Predictor", "Rating correlation").increment(1);
+					//context.getCounter("Predictor", "Rating correlation").increment(1);
            		} else if  ( ((Integer)value.get(value.getSize()-1)) == 1 )  {
            			//rating stat
            			ratingStat = value.createClone();
@@ -269,7 +269,7 @@ public class UtilityPredictor extends Configured implements Tool{
 	           			
 	    				//all rating correlations
 	           			for (Tuple  ratingCorrTup : ratingCorrelations) { 
-        					context.getCounter("Predictor", "User rating").increment(1);
+        					//context.getCounter("Predictor", "User rating").increment(1);
 	           				itemID = ratingCorrTup.getString(0);
 	           				ratingCorr = ratingCorrTup.getInt(1);
 	           				weight = ratingCorrTup.getInt(2);
@@ -283,7 +283,7 @@ public class UtilityPredictor extends Configured implements Tool{
 	           					valueOut.set(userID + fieldDelim + itemID + fieldDelim + predRating + fieldDelim + weight + 
 	           							fieldDelim +ratingCorr  + fieldDelim + ratingStdDev);
 	           					context.write(NullWritable.get(), valueOut);
-	        					context.getCounter("Predictor", "Rating correlation").increment(1);
+	        					//context.getCounter("Predictor", "Rating correlation").increment(1);
 	           				}
 	           			}
            			}
