@@ -69,6 +69,7 @@ public class Field {
 	public static final String TEXT_TYPE_CITY = "city";
 	public static final String TEXT_TYPE_STATE = "state";
 	public static final String TEXT_TYPE_ZIP = "zip";
+	public static final String TEXT_TYPE_COUNTRY = "country";
 	public static final String TEXT_TYPE_PHONE_NUM = "phoneNum";
 	public static final String TEXT_TYPE_EMAIL_ADDR = "emailAddress";
 	
