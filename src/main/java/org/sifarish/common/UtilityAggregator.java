@@ -70,7 +70,7 @@ public class UtilityAggregator extends Configured implements Tool{
         job.setOutputValueClass(Text.class);
  
         Utility.setConfiguration(job.getConfiguration());
-        int numReducer = job.getConfiguration().getInt("ua.num.reducer", -1);
+        int numReducer = job.getConfiguration().getInt("uta.num.reducer", -1);
         numReducer = -1 == numReducer ? job.getConfiguration().getInt("num.reducer", 1) : numReducer;
         job.setNumReduceTasks(numReducer);
         

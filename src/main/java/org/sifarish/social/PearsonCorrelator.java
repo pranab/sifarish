@@ -73,7 +73,7 @@ public class PearsonCorrelator extends Configured implements Tool{
         job.setPartitionerClass(SecondarySort.TuplePairPartitioner.class);
 
         Utility.setConfiguration(job.getConfiguration());
-        int numReducer = job.getConfiguration().getInt("pc.num.reducer", -1);
+        int numReducer = job.getConfiguration().getInt("pec.num.reducer", -1);
         numReducer = -1 == numReducer ? job.getConfiguration().getInt("num.reducer", 1) : numReducer;
         job.setNumReduceTasks(numReducer);
         
