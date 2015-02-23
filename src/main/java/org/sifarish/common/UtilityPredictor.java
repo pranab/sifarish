@@ -75,7 +75,10 @@ public class UtilityPredictor extends Configured implements Tool{
         job.setPartitionerClass(ItemIdPartitioner.class);
 
         Utility.setConfiguration(job.getConfiguration());
-        job.setNumReduceTasks(job.getConfiguration().getInt("num.reducer", 1));
+        int numReducer = job.getConfiguration().getInt("up.num.reducer", -1);
+        numReducer = -1 == numReducer ? job.getConfiguration().getInt("num.reducer", 1) : numReducer;
+        job.setNumReduceTasks(numReducer);
+        
         int status =  job.waitForCompletion(true) ? 0 : 1;
         return status;
     }

@@ -61,7 +61,9 @@ public class CorrelationMatrixBuilder extends Configured implements Tool {
         job.setMapOutputKeyClass(Text.class);
         job.setMapOutputValueClass(TextTuple.class);
 
-        job.setNumReduceTasks(job.getConfiguration().getInt("num.reducer", 1));
+        int numReducer = job.getConfiguration().getInt("cmb.num.reducer", -1);
+        numReducer = -1 == numReducer ? job.getConfiguration().getInt("num.reducer", 1) : numReducer;
+        job.setNumReduceTasks(numReducer);
 		
         job.setOutputKeyClass(NullWritable.class);
         job.setOutputValueClass(Text.class);

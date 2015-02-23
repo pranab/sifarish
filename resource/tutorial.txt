@@ -243,6 +243,10 @@ new_file_name = new file name with prefix as set through item.metadta.file.prefi
 
 Configuration
 =================
-it's in reco.properties
+It's in reco.properties for all the MR jobs. Feel free to make changes as needed
+
+For number of reducer there is global config param num.reducer. For each MR job there is 
+job specific config param with name as xxx.num.reducer. If this job specific param  is defined 
+it overrides the global param.
 
  
