@@ -232,5 +232,29 @@ public abstract class CountryStandardFormat {
     	
     	return stBld.toString();
     }
-   
+    
+    /**
+     * @param item
+     * @return
+     */
+    public abstract String streetAddressFormat(String item);
+    
+    /**
+     * @param item
+     * @return
+     */
+    public abstract String addressFormat(String item);
+    
+    /**
+     * @param item
+     * @return
+     */
+    public abstract String streetAddressOneFormat(String item);
+
+    /**
+     * @param item
+     * @return
+     */
+    public abstract String streetAddressTwoFormat(String item);
+
 }

@@ -152,6 +152,13 @@ public class StructuredTextAnalyzer extends Configured implements Tool{
             			item = countryFormat.personNameFormat(item);
             		} else if (field.getDataSubType().equals(Field.TEXT_TYPE_STREET_ADDRESS)) {
             			item = countryFormat.caseFormat(item, format);
+            			item = countryFormat.streetAddressFormat(item);
+            		} else if (field.getDataSubType().equals(Field.TEXT_TYPE_STREET_ADDRESS_ONE)) {
+            			item = countryFormat.caseFormat(item, format);
+            			item = countryFormat.streetAddressOneFormat(item);
+            		} else if (field.getDataSubType().equals(Field.TEXT_TYPE_STREET_ADDRESS_TWO)) {
+            			item = countryFormat.caseFormat(item, format);
+            			item = countryFormat.streetAddressTwoFormat(item);
             		} else if (field.getDataSubType().equals(Field.TEXT_TYPE_CITY)) {
             			item = countryFormat.caseFormat(item, format);
             		} else if (field.getDataSubType().equals(Field.TEXT_TYPE_STATE)) {

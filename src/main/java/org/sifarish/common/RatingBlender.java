@@ -46,6 +46,8 @@ import org.chombo.util.Utility;
  *
  */
 public class RatingBlender extends Configured implements Tool{
+	private static final int NUM_RATING_SOURCE = 3;
+	
     @Override
     public int run(String[] args) throws Exception   {
         Job job = new Job(getConf());
@@ -148,18 +150,13 @@ public class RatingBlender extends Configured implements Tool{
     public static class RatingBlenderReducer extends Reducer<Tuple, Tuple, NullWritable, Text> {
     	private String fieldDelim;
     	private Text valOut = new Text();
-    	private Map<Integer, int[]> ratingWeights = new HashMap<Integer, int[]>();
+    	private int[] ratingWeightList;
     	private String userID;
     	private String itemID;
     	private int rating;
     	private int ratingSum;
+    	private int weightSum;
     	private int[] ratingSource = new int[3];
-    	private int[] ratingWeightsByCase;
-    	private static final int IMPLICIT = 1;
-    	private static final int IMPLICIT_EXPLICIT = 2;
-    	private static final int IMPLICIT_CUSTSVC = 3;
-    	private static final int IMPLICIT_EXPLICIT_CUSTSVC = 4;
-        private  final int  MAX_WEIGHT = 100;
         
     	/* (non-Javadoc)
          * @see org.apache.hadoop.mapreduce.Reducer#setup(org.apache.hadoop.mapreduce.Reducer.Context)
@@ -167,29 +164,10 @@ public class RatingBlender extends Configured implements Tool{
         protected void setup(Context context) throws IOException, InterruptedException {
         	Configuration config = context.getConfiguration();
         	fieldDelim = config.get("field.delim", ",");
-        	int[] ratingWeightList = Utility.intArrayFromString(config.get("biz.goal.weights"),fieldDelim );
-        	
-        	//all sources
-        	ratingWeights.put(IMPLICIT_EXPLICIT_CUSTSVC, ratingWeightList);
-        	
-        	//implicit and explicit
-        	int[] modRatingWeights = new int[3];
-        	modRatingWeights[0] = (ratingWeightList[0] * MAX_WEIGHT) / (ratingWeightList[0] + ratingWeightList[1]);
-        	modRatingWeights[1] = (ratingWeightList[1] * MAX_WEIGHT) / (ratingWeightList[0] + ratingWeightList[1]);
-        	modRatingWeights[2] = 0;
-        	ratingWeights.put(IMPLICIT_EXPLICIT, modRatingWeights);
-        	
-        	//implicit and cust svc
-        	modRatingWeights[0] = (ratingWeightList[0] * MAX_WEIGHT) / (ratingWeightList[0] + ratingWeightList[2]);
-        	modRatingWeights[2] = (ratingWeightList[2] * MAX_WEIGHT) / (ratingWeightList[0] + ratingWeightList[2]);
-        	modRatingWeights[1] = 0;
-        	ratingWeights.put(IMPLICIT_CUSTSVC, modRatingWeights);
-        	
-        	//implicit only
-        	modRatingWeights[0] = 100;
-        	modRatingWeights[1] = 0;
-        	modRatingWeights[2] = 0;
-        	ratingWeights.put(IMPLICIT, modRatingWeights);
+        	ratingWeightList = Utility.intArrayFromString(config.get("biz.goal.weights"),fieldDelim );
+        	if ((ratingWeightList[0] + ratingWeightList[1] + ratingWeightList[2]) != 100) {
+        		throw new IllegalArgumentException("rating weights are not normalized");
+        	}
         }
 
         /* (non-Javadoc)
@@ -200,35 +178,23 @@ public class RatingBlender extends Configured implements Tool{
         	userID = key.getString(0);
         	itemID = key.getString(1);
 
-        	for (int i = 0; i < 3; ++i) {
+        	for (int i = 0; i < NUM_RATING_SOURCE; ++i) {
         		ratingSource[i] = 0;
         	}
         	for(Tuple value : values) {
         		ratingSource[value.getInt(0)] = value.getInt(1);
         	}
         	
-        	
-        	//rating weights depending on the case
-        	if (ratingSource[1] == 0 && ratingSource[2] == 0) {
-        		//implicit only
-        		ratingWeightsByCase = ratingWeights.get(IMPLICIT);
-        	} else if (ratingSource[1] > 0 && ratingSource[2] == 0) {
-        		//implicit and explicit only
-        		ratingWeightsByCase = ratingWeights.get(IMPLICIT_EXPLICIT);
-        	} else if (ratingSource[1] == 0 && ratingSource[2] > 0) {
-        		//implicit and cust svc  only
-        		ratingWeightsByCase = ratingWeights.get(IMPLICIT_CUSTSVC);
-        	} else {
-        		//all
-        		ratingWeightsByCase = ratingWeights.get(IMPLICIT_EXPLICIT_CUSTSVC);
-        	}
-        	
         	//aggregate rating
         	ratingSum = 0;
-        	for (int i = 0; i < 3; ++i) {
-        		ratingSum += ratingSource[i] * ratingWeightsByCase[i];
+        	weightSum = 0;
+        	for (int i = 0; i < NUM_RATING_SOURCE; ++i) {
+        		if (ratingSource[i] > 0) {
+            		ratingSum += ratingSource[i] * ratingWeightList[i];
+        			weightSum += ratingWeightList[i];
+        		}
         	}
-        	rating = ratingSum / MAX_WEIGHT;
+        	rating = ratingSum / weightSum;
         	
         	valOut.set(userID + fieldDelim + itemID + fieldDelim + rating);
 			context.write(NullWritable.get(), valOut);
