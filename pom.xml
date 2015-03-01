@@ -190,13 +190,13 @@ xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/ma
         		<dependency>
             		<groupId>org.apache.hadoop</groupId>
             		<artifactId>hadoop-core</artifactId>
-            		<version>2.5.0-mr1-cdh5.2.0</version>
+            		<version>2.5.0-mr1-cdh5.3.1</version>
         		</dependency>
         
         		<dependency>
             		<groupId>org.apache.hadoop</groupId>
             		<artifactId>hadoop-client</artifactId>
-            		<version>2.5.0-mr1-cdh5.2.0</version>
+            		<version>2.5.0-mr1-cdh5.3.1</version>
         		</dependency>
 		
 			</dependencies>
@@ -208,37 +208,31 @@ xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/ma
         		<dependency>
             		<groupId>org.apache.hadoop</groupId>
             		<artifactId>hadoop-mapreduce-client-core</artifactId>
-            		<version>2.5.0-cdh5.3.0</version>
+            		<version>2.5.0-cdh5.3.1</version>
         		</dependency>
         
         		<dependency>
             		<groupId>org.apache.hadoop</groupId>
             		<artifactId>hadoop-common</artifactId>
-            		<version>2.5.0-cdh5.3.0</version>
+            		<version>2.5.0-cdh5.3.1</version>
         		</dependency>
         		
         		<dependency>
             		<groupId>org.apache.hadoop</groupId>
             		<artifactId>hadoop-mapreduce-client-hs</artifactId>
-            		<version>2.5.0-cdh5.3.0</version>
+            		<version>2.5.0-cdh5.3.1</version>
         		</dependency>
         		
         		<dependency>
             		<groupId>org.apache.hadoop</groupId>
             		<artifactId>hadoop-auth</artifactId>
-            		<version>2.5.0-cdh5.3.0</version>
+            		<version>2.5.0-cdh5.3.1</version>
         		</dependency>
         		
         		<dependency>
             		<groupId>org.apache.hadoop</groupId>
             		<artifactId>hadoop-hdfs</artifactId>
-            		<version>2.5.0-cdh5.3.0</version>
-        		</dependency>
-
-        		<dependency>
-            		<groupId>org.apache.hadoop</groupId>
-            		<artifactId>hadoop-hdfs</artifactId>
-            		<version>2.5.0-cdh5.3.0</version>
+            		<version>2.5.0-cdh5.3.1</version>
         		</dependency>
 
 			</dependencies>
