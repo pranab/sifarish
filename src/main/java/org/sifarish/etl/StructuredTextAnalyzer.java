@@ -168,7 +168,7 @@ public class StructuredTextAnalyzer extends Configured implements Tool{
             		} else if (field.getDataSubType().equals(Field.TEXT_TYPE_COUNTRY)) {
             			item = countryFormat.caseFormat(item, format);
             		} else if (field.getDataSubType().equals(Field.TEXT_TYPE_EMAIL_ADDR)) {
-            			item = countryFormat.caseFormat(item, format);
+            			item = countryFormat.emailFormat(item, format);
             		} else if (field.getDataSubType().equals(Field.TEXT_TYPE_PHONE_NUM)) {
             			item = countryFormat.phoneNumFormat(item, format);
             		} else {

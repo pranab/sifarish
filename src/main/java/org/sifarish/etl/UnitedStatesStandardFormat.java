@@ -141,11 +141,17 @@ public class UnitedStatesStandardFormat extends CountryStandardFormat {
     	return item;
     }
 
+    /* (non-Javadoc)
+     * @see org.sifarish.etl.CountryStandardFormat#streetAddressFormat(java.lang.String)
+     */
     public String streetAddressFormat(String item) {
     	String newItem = streetAddressOneFormat(item);
     	return streetAddressTwoFormat(newItem);
     }   
 
+    /* (non-Javadoc)
+     * @see org.sifarish.etl.CountryStandardFormat#streetAddressOneFormat(java.lang.String)
+     */
     public String streetAddressOneFormat(String item) {
     	String newItem = item;
     	newItem = newItem.replace(" St", " Street");
@@ -155,6 +161,9 @@ public class UnitedStatesStandardFormat extends CountryStandardFormat {
     	return newItem;
     }   
 
+    /* (non-Javadoc)
+     * @see org.sifarish.etl.CountryStandardFormat#streetAddressTwoFormat(java.lang.String)
+     */
     public String streetAddressTwoFormat(String item) {
     	String newItem = item;
     	newItem = newItem.replace(" Apt", " Apartment");

@@ -256,5 +256,26 @@ public abstract class CountryStandardFormat {
      * @return
      */
     public abstract String streetAddressTwoFormat(String item);
+    
+    /**
+     * @param item
+     * @param format
+     * @return
+     */
+    public String emailFormat(String item, String format) {
+    	String[] elements = item.split("@");
+    	String name = elements[0];
+		if (format.equals("lowerCase")) {
+			name = name.toLowerCase(); 
+		} else if (format.equals("upperCase")) {
+			name = name.toUpperCase(); 
+		} else if (format.equals("capitalize")) {
+			name = StringUtils.capitalize(name.toLowerCase());
+		} else {
+			throw new IllegalArgumentException("invalid case format");
+		}
+    	
+		return name + "@" + elements[1];
+    }
 
 }
