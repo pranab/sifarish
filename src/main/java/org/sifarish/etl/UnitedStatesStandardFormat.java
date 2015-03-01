@@ -17,6 +17,9 @@
 
 package org.sifarish.etl;
 
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
 import org.apache.commons.lang3.StringUtils;
 
 /**
@@ -136,6 +139,60 @@ public class UnitedStatesStandardFormat extends CountryStandardFormat {
     	}
     	
     	return item;
+    }
+
+    public String streetAddressFormat(String item) {
+    	String newItem = streetAddressOneFormat(item);
+    	return streetAddressTwoFormat(newItem);
+    }   
+
+    public String streetAddressOneFormat(String item) {
+    	String newItem = item;
+    	newItem = newItem.replace(" St", " Street");
+    	newItem = newItem.replace(" Ave", " Avenue");
+    	newItem = newItem.replace(" Rd", " Road");
+    	newItem = newItem.replace(" Blvd", " Boulevard");
+    	return newItem;
+    }   
+
+    public String streetAddressTwoFormat(String item) {
+    	String newItem = item;
+    	newItem = newItem.replace(" Apt", " Apartment");
+    	newItem = newItem.replace(" St", " Suite");
+    	newItem = newItem.replace(" #", " Unit");
+    	return newItem;
+    }   
+
+    /**
+     * Whole address in one field
+     * @param item
+     * @return
+     */
+    public String addressFormat(String item) {
+    	String newItem = item;
+    	newItem = newItem.replace(" St", " Street");
+    	newItem = newItem.replace(" Ave", " Avenue");
+    	newItem = newItem.replace(" Rd", " Road");
+    	newItem = newItem.replace(" Apt", " Apartment");
+    	
+    	String[] lines = newItem.split("\\n");
+    	
+    	//break address line 2
+    	if (lines.length == 3) {
+    		lines[1] = breakAddressLine(lines[1], "Apartment");
+    		lines[1] = breakAddressLine(lines[1], "Suite");
+    		newItem = lines[0] + "\\n" + lines[1] + "\\n" + lines[2];
+    	}
+    	return newItem;
+    }
+    
+    private String breakAddressLine(String line, String unit) {
+    	String newLine = line;
+		if (line.contains(unit)) {
+			String[] subLines = line.split(unit);
+			newLine = subLines[0] + "\\n" + unit + subLines[1];
+		}
+    	return newLine;
     }
     
 }

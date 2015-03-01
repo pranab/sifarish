@@ -20,11 +20,8 @@ package org.sifarish.etl;
 import java.io.IOException;
 import java.io.StringReader;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
-import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.conf.Configured;
 import org.apache.hadoop.fs.FSDataInputStream;
@@ -150,22 +147,30 @@ public class StructuredTextAnalyzer extends Configured implements Tool{
             	Field field = schema.getEntity().getFieldByOrdinal(i);
             	
             	if (null != field && field.getDataType().equals(Field.DATA_TYPE_TEXT)) {
-            		if (field.getDataType().equals(Field.TEXT_TYPE_PERSON_NAME)) {
-            			
-            		} else if (field.getDataType().equals(Field.TEXT_TYPE_PERSON_NAME)) {
-            			item = countryFormat.caseFormat(item, field.getTextDataSubTypeFormat());
-            		} else if (field.getDataType().equals(Field.TEXT_TYPE_STREET_ADDRESS)) {
-            			item = countryFormat.caseFormat(item, field.getTextDataSubTypeFormat());
-            		} else if (field.getDataType().equals(Field.TEXT_TYPE_CITY)) {
-            			item = countryFormat.caseFormat(item, field.getTextDataSubTypeFormat());
-            		} else if (field.getDataType().equals(Field.TEXT_TYPE_STATE)) {
+            		String format =  field.getTextDataSubTypeFormat();
+            		if (field.getDataSubType().equals(Field.TEXT_TYPE_PERSON_NAME)) {
+            			item = countryFormat.personNameFormat(item);
+            		} else if (field.getDataSubType().equals(Field.TEXT_TYPE_STREET_ADDRESS)) {
+            			item = countryFormat.caseFormat(item, format);
+            			item = countryFormat.streetAddressFormat(item);
+            		} else if (field.getDataSubType().equals(Field.TEXT_TYPE_STREET_ADDRESS_ONE)) {
+            			item = countryFormat.caseFormat(item, format);
+            			item = countryFormat.streetAddressOneFormat(item);
+            		} else if (field.getDataSubType().equals(Field.TEXT_TYPE_STREET_ADDRESS_TWO)) {
+            			item = countryFormat.caseFormat(item, format);
+            			item = countryFormat.streetAddressTwoFormat(item);
+            		} else if (field.getDataSubType().equals(Field.TEXT_TYPE_CITY)) {
+            			item = countryFormat.caseFormat(item, format);
+            		} else if (field.getDataSubType().equals(Field.TEXT_TYPE_STATE)) {
             			item = countryFormat.stateFormat(item);
-            		} else if (field.getDataType().equals(Field.TEXT_TYPE_ZIP)) {
-            			
-            		} else if (field.getDataType().equals(Field.TEXT_TYPE_EMAIL_ADDR)) {
-            			item = countryFormat.caseFormat(item, field.getTextDataSubTypeFormat());
-            		} else if (field.getDataType().equals(Field.TEXT_TYPE_PHONE_NUM)) {
-            			item = countryFormat.phoneNumFormat(item, field.getTextDataSubTypeFormat());
+            		} else if (field.getDataSubType().equals(Field.TEXT_TYPE_ZIP)) {
+            			item = countryFormat.caseFormat(item, format);
+            		} else if (field.getDataSubType().equals(Field.TEXT_TYPE_COUNTRY)) {
+            			item = countryFormat.caseFormat(item, format);
+            		} else if (field.getDataSubType().equals(Field.TEXT_TYPE_EMAIL_ADDR)) {
+            			item = countryFormat.caseFormat(item, format);
+            		} else if (field.getDataSubType().equals(Field.TEXT_TYPE_PHONE_NUM)) {
+            			item = countryFormat.phoneNumFormat(item, format);
             		} else {
             			//if text field analyze
             			item = tokenize(item);

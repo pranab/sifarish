@@ -18,6 +18,8 @@
 package org.sifarish.common;
 
 import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.conf.Configured;
@@ -32,31 +34,33 @@ import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
 import org.apache.hadoop.mapreduce.lib.input.FileSplit;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 import org.apache.hadoop.util.Tool;
-import org.apache.hadoop.util.ToolRunner;
 import org.chombo.util.SecondarySort;
 import org.chombo.util.Tuple;
 import org.chombo.util.Utility;
 
+
 /**
- * Injects business goal into rated items and figures out final net rating. The basic idea is to 
- * find a middle ground between consumer interest and business interest
+ * Blends implict rating based on click stream, explicit rating and rating from
+ * CRM or customer service system to derive an aggregated rating based on weighted average
  * @author pranab
  *
  */
-public class BusinessGoalInjector extends Configured implements Tool{
+public class RatingBlender extends Configured implements Tool{
+	private static final int NUM_RATING_SOURCE = 3;
+	
     @Override
     public int run(String[] args) throws Exception   {
         Job job = new Job(getConf());
-        String jobName = "Business goal injector MR";
+        String jobName = "Rating blender MR";
         job.setJobName(jobName);
         
-        job.setJarByClass(BusinessGoalInjector.class);
+        job.setJarByClass(RatingBlender.class);
         
         FileInputFormat.addInputPath(job, new Path(args[0]));
         FileOutputFormat.setOutputPath(job, new Path(args[1]));
 
-        job.setMapperClass(BusinessGoalInjector.BusinessGoalMapper.class);
-        job.setReducerClass(BusinessGoalInjector.BusinessGoalReducer.class);
+        job.setMapperClass(RatingBlender.RatingBlenderlMapper.class);
+        job.setReducerClass(RatingBlender.RatingBlenderReducer.class);
         
         job.setMapOutputKeyClass(Tuple.class);
         job.setMapOutputValueClass(Tuple.class);
@@ -68,31 +72,39 @@ public class BusinessGoalInjector extends Configured implements Tool{
         job.setPartitionerClass(SecondarySort.TuplePairPartitioner.class);
 
         Utility.setConfiguration(job.getConfiguration());
-        int numReducer = job.getConfiguration().getInt("bgi.num.reducer", -1);
+        int numReducer = job.getConfiguration().getInt("rab.num.reducer", -1);
         numReducer = -1 == numReducer ? job.getConfiguration().getInt("num.reducer", 1) : numReducer;
         job.setNumReduceTasks(numReducer);
         
         int status =  job.waitForCompletion(true) ? 0 : 1;
         return status;
     }
-
+    
     /**
      * @author pranab
      *
      */
-    public static class BusinessGoalMapper extends Mapper<LongWritable, Text, Tuple, Tuple> {
+    public static class RatingBlenderlMapper extends Mapper<LongWritable, Text, Tuple, Tuple> {
     	private String fieldDelim;
     	private Tuple keyOut = new Tuple();
     	private Tuple valOut = new Tuple();
-    	private boolean isBizGoalFileSplit;
+    	private boolean isExplicitRatingFileSplit;
+    	private boolean isCustSvcRatingFileSplit;
+    	private String userID;
+    	private String itemID;
+    	private int rating ;
     	
         /* (non-Javadoc)
          * @see org.apache.hadoop.mapreduce.Mapper#setup(org.apache.hadoop.mapreduce.Mapper.Context)
          */
         protected void setup(Context context) throws IOException, InterruptedException {
         	fieldDelim = context.getConfiguration().get("field.delim", ",");
-        	String bizGoalFilePrefix = context.getConfiguration().get("biz.goal.file.prefix", "biz");
-        	isBizGoalFileSplit = ((FileSplit)context.getInputSplit()).getPath().getName().startsWith(bizGoalFilePrefix);
+        	String explicitRatingFilePrefix = context.getConfiguration().get("explicit.rating.file.prefix", "expl");
+        	String custSvcRatingFilePrefix = context.getConfiguration().get("custsvc.rating.file.prefix", "cust");
+        	
+        	String splitName = ((FileSplit)context.getInputSplit()).getPath().getName();
+        	isExplicitRatingFileSplit = splitName.startsWith(explicitRatingFilePrefix);
+        	isCustSvcRatingFileSplit = splitName.startsWith(custSvcRatingFilePrefix);
         }    
     	
         /* (non-Javadoc)
@@ -102,39 +114,49 @@ public class BusinessGoalInjector extends Configured implements Tool{
         protected void map(LongWritable key, Text value, Context context)
             throws IOException, InterruptedException {
            	String[] items = value.toString().split(fieldDelim);
+           	userID = items[0];
+           	itemID = items[1];
+           	rating = Integer.parseInt(items[2]);
+           	
            	keyOut.initialize();
            	valOut.initialize();
-           	if (isBizGoalFileSplit) {
-           		//item ID
-           		keyOut.add(items[0], 0);
-           		
-           		//business goal scores
-           		for (int i = 1; i < items.length; ++i) {
-           			valOut.add(Integer.parseInt(items[i]));
-           		}
+           	if (isExplicitRatingFileSplit) {
+           		setKeyValue(1);
+           	} else if (isCustSvcRatingFileSplit) {
+           		setKeyValue(2);
            	} else {
-           		//item ID
-           		keyOut.add(items[1], 1);
-           		
-           		//userID, score
-           		valOut.add(items[0], Integer.parseInt(items[2]));
+           		setKeyValue(0);
            	}
            	context.write(keyOut, valOut);
-        }    
+        }  
+        
+        /**
+         * Sets key and value
+         * @param secodaryKey
+         */
+        private void setKeyValue(int secodaryKey) {
+       		//userID, item ID
+       		keyOut.add(userID, itemID, secodaryKey);
+
+       		//rating
+       		valOut.add(secodaryKey, rating);
+        }
     }
     
     /**
      * @author pranab
      *
      */
-    public static class BusinessGoalReducer extends Reducer<Tuple, Tuple, NullWritable, Text> {
+    public static class RatingBlenderReducer extends Reducer<Tuple, Tuple, NullWritable, Text> {
     	private String fieldDelim;
     	private Text valOut = new Text();
-    	private int[] bizGoalWeights;
-    	private int[] bizGoalThreshold;
-        private int recWt;
-        private int maxBizGoalWeight;
-        private  final int  MAX_WEIGHT = 100;
+    	private int[] ratingWeightList;
+    	private String userID;
+    	private String itemID;
+    	private int rating;
+    	private int ratingSum;
+    	private int weightSum;
+    	private int[] ratingSource = new int[3];
         
     	/* (non-Javadoc)
          * @see org.apache.hadoop.mapreduce.Reducer#setup(org.apache.hadoop.mapreduce.Reducer.Context)
@@ -142,77 +164,42 @@ public class BusinessGoalInjector extends Configured implements Tool{
         protected void setup(Context context) throws IOException, InterruptedException {
         	Configuration config = context.getConfiguration();
         	fieldDelim = config.get("field.delim", ",");
-        	bizGoalWeights = Utility.intArrayFromString(config.get("biz.goal.weights"),fieldDelim );
-        	maxBizGoalWeight = config.getInt("max.biz.goal.weight",  70);
-        	int sumWt = 0;
-        	for (int wt : bizGoalWeights) {
-        		sumWt += wt;
+        	ratingWeightList = Utility.intArrayFromString(config.get("biz.goal.weights"),fieldDelim );
+        	if ((ratingWeightList[0] + ratingWeightList[1] + ratingWeightList[2]) != 100) {
+        		throw new IllegalArgumentException("rating weights are not normalized");
         	}
-        	if (sumWt > maxBizGoalWeight) {
-        		throw new IllegalArgumentException("Sum of business score weights exceed limit");
-        	}
-        	recWt = MAX_WEIGHT - sumWt;
-        	
-        	bizGoalThreshold = Utility.intArrayFromString(config.get("biz.goal.min.threshold"),fieldDelim );
-
         }
-        
+
         /* (non-Javadoc)
          * @see org.apache.hadoop.mapreduce.Reducer#reduce(KEYIN, java.lang.Iterable, org.apache.hadoop.mapreduce.Reducer.Context)
          */
         protected void reduce(Tuple  key, Iterable<Tuple> values, Context context)
         throws IOException, InterruptedException {
-        	boolean first = true;
-        	Tuple bizScore = null;
-        	boolean toSkip = false;
+        	userID = key.getString(0);
+        	itemID = key.getString(1);
+
+        	for (int i = 0; i < NUM_RATING_SOURCE; ++i) {
+        		ratingSource[i] = 0;
+        	}
         	for(Tuple value : values) {
-        		toSkip = false;
-        		if (first) {
-        			if (value.isInt(0)) {
-        				//business score available for this item
-        				bizScore = value.createClone();
-        			} else {
-        				//just emit rating
-        				valOut.set(value.getString(0) + fieldDelim + key.getString(0) + fieldDelim + value.getInt(1));
-            	   		context.write(NullWritable.get(), valOut);
-        			}
-        			first = false;
-        		} else {
-        			int weightedScore = 0;
-        			if (null != bizScore) {
-        				//weighted average score
-        				int sumWeightedScore = recWt * value.getInt(1);
-        				int numBizGoal = bizScore.getSize();
-        				for (int i = 0; i < numBizGoal; ++i) {
-        					int score = bizScore.getInt(i);
-        					if (bizGoalThreshold[i] >= 0 && score  <= bizGoalThreshold[i] ) {
-        						toSkip = true;
-        						break;
-        					}
-        					sumWeightedScore += bizGoalWeights[i] * score;
-        				}
-        				weightedScore = sumWeightedScore / MAX_WEIGHT;
-        			} else {
-        				//just  score
-        				weightedScore = value.getInt(1);
-        			}
-        			if (!toSkip) {
-        				valOut.set(value.getString(0) + fieldDelim + key.getString(0) + fieldDelim + weightedScore);
-        				context.write(NullWritable.get(), valOut);
-        			}
+        		ratingSource[value.getInt(0)] = value.getInt(1);
+        	}
+        	
+        	//aggregate rating
+        	ratingSum = 0;
+        	weightSum = 0;
+        	for (int i = 0; i < NUM_RATING_SOURCE; ++i) {
+        		if (ratingSource[i] > 0) {
+            		ratingSum += ratingSource[i] * ratingWeightList[i];
+        			weightSum += ratingWeightList[i];
         		}
         	}
-        }        
-    	
-    }   
-    
-    /**
-     * @param args
-     * @throws Exception
-     */
-    public static void main(String[] args) throws Exception {
-        int exitCode = ToolRunner.run(new BusinessGoalInjector(), args);
-        System.exit(exitCode);
+        	rating = ratingSum / weightSum;
+        	
+        	valOut.set(userID + fieldDelim + itemID + fieldDelim + rating);
+			context.write(NullWritable.get(), valOut);
+        }
+        
     }
-    
+
 }

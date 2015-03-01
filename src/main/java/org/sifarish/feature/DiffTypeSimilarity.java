@@ -80,7 +80,9 @@ public class DiffTypeSimilarity  extends Configured implements Tool {
         
         Utility.setConfiguration(job.getConfiguration());
 
-        job.setNumReduceTasks(job.getConfiguration().getInt("num.reducer", 1));
+        int numReducer = job.getConfiguration().getInt("dts.num.reducer", -1);
+        numReducer = -1 == numReducer ? job.getConfiguration().getInt("num.reducer", 1) : numReducer;
+        job.setNumReduceTasks(numReducer);
         
         int status =  job.waitForCompletion(true) ? 0 : 1;
         return status;
