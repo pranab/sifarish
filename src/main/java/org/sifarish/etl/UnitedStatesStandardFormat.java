@@ -21,6 +21,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.apache.commons.lang3.StringUtils;
+import org.sifarish.util.Field;
 
 /**
  * Standard format for US
@@ -28,8 +29,14 @@ import org.apache.commons.lang3.StringUtils;
  *
  */
 public class UnitedStatesStandardFormat extends CountryStandardFormat {
+	private StructuredTextNormalizer textNormalizer;
+	
+    public UnitedStatesStandardFormat(StructuredTextNormalizer textNormalizer) {
+		super();
+		this.textNormalizer = textNormalizer;
+	}
 
-    /* (non-Javadoc)
+	/* (non-Javadoc)
      * @see org.sifarish.etl.CountryStandardFormat#intializeStateCodes()
      */
     public void intializeStateCodes() {
@@ -153,11 +160,9 @@ public class UnitedStatesStandardFormat extends CountryStandardFormat {
      * @see org.sifarish.etl.CountryStandardFormat#streetAddressOneFormat(java.lang.String)
      */
     public String streetAddressOneFormat(String item) {
-    	String newItem = item;
-    	newItem = newItem.replace(" St", " Street");
-    	newItem = newItem.replace(" Ave", " Avenue");
-    	newItem = newItem.replace(" Rd", " Road");
-    	newItem = newItem.replace(" Blvd", " Boulevard");
+    	TextFieldTokenNormalizer tokenNormalizer = 
+    			textNormalizer.findTokenNormalizer(Field.TEXT_TYPE_STREET_ADDRESS_ONE);
+    	String newItem = tokenNormalizer.normalize(item);
     	return newItem;
     }   
 
@@ -165,10 +170,9 @@ public class UnitedStatesStandardFormat extends CountryStandardFormat {
      * @see org.sifarish.etl.CountryStandardFormat#streetAddressTwoFormat(java.lang.String)
      */
     public String streetAddressTwoFormat(String item) {
-    	String newItem = item;
-    	newItem = newItem.replace(" Apt", " Apartment");
-    	newItem = newItem.replace(" St", " Suite");
-    	newItem = newItem.replace(" #", " Unit");
+    	TextFieldTokenNormalizer tokenNormalizer = 
+    			textNormalizer.findTokenNormalizer(Field.TEXT_TYPE_STREET_ADDRESS_TWO);
+    	String newItem = tokenNormalizer.normalize(item);
     	return newItem;
     }   
 

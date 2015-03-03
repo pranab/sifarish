@@ -23,6 +23,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.commons.lang3.ArrayUtils;
+import org.sifarish.etl.StructuredTextNormalizer;
 import org.sifarish.util.Event;
 import org.sifarish.util.Field;
 import org.sifarish.util.HourWindow;
@@ -47,6 +48,7 @@ public class RecordDistanceFinder {
 	private int[] passiveFields;
 	private DynamicAttrSimilarityStrategy textSimStrategy;
 	private String subFieldDelim;
+	private StructuredTextNormalizer textNormalizer;
 	
     /**
      * @param fieldDelimRegex
@@ -60,7 +62,8 @@ public class RecordDistanceFinder {
     public RecordDistanceFinder(String fieldDelimRegex, int idOrdinal,
 			int distThreshold, DistanceStrategy distStrategy,
 			SingleTypeSchema schema,
-			DynamicAttrSimilarityStrategy textSimStrategy, String subFieldDelim) {
+			DynamicAttrSimilarityStrategy textSimStrategy, String subFieldDelim,
+			StructuredTextNormalizer textNormalizer) {
 		super();
 		this.fieldDelimRegex = fieldDelimRegex;
 		this.idOrdinal = idOrdinal;
@@ -69,6 +72,7 @@ public class RecordDistanceFinder {
 		this.schema = schema;
 		this.textSimStrategy = textSimStrategy;
 		this.subFieldDelim = subFieldDelim;
+		this.textNormalizer = textNormalizer;
 	}
 
     /**

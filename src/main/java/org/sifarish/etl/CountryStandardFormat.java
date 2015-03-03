@@ -54,10 +54,10 @@ public abstract class CountryStandardFormat {
      * @param country
      * @return
      */
-    public static CountryStandardFormat createCountryStandardFormat(String country) {
+    public static CountryStandardFormat createCountryStandardFormat(String country, StructuredTextNormalizer textNormalizer) {
     	CountryStandardFormat countryFormat = null;
     	if (country.equals("United States")) {
-    		countryFormat = new UnitedStatesStandardFormat();
+    		countryFormat = new UnitedStatesStandardFormat(textNormalizer);
     	} else {
     		throw new IllegalArgumentException("invalid country name");
     	}
