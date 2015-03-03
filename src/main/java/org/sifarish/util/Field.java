@@ -52,7 +52,7 @@ public class Field {
 	private double functionThreshold = 0.5;
 	private double implodeThreshold = -0.1;
 	private double explodeThreshold = 1.1;
-	
+	private double[] partWeights;
 	public static final String DATA_TYPE_STRING = "string";
 	public static final String DATA_TYPE_CATEGORICAL = "categorical";
 	public static final String DATA_TYPE_INT = "int";
@@ -351,5 +351,11 @@ public class Field {
 	}
 	public void setExplodeThreshold(double explodeThreshold) {
 		this.explodeThreshold = explodeThreshold;
+	}
+	public double[] getPartWeights() {
+		return partWeights;
+	}
+	public void setPartWeights(double[] partWeights) {
+		this.partWeights = partWeights;
 	}
 }

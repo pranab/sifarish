@@ -213,7 +213,7 @@ public class RecordDistanceFinder {
     				dist =  numericDistance( field,  firstAttr,  secondAttr, false);
     			} else if (field.getDataType().equals(Field.DATA_TYPE_TEXT)) { 
     				//text
-    				dist = textSimStrategy.findDistance(firstAttr, secondAttr);	    				
+    				dist = textDistance(field, firstAttr, secondAttr);
     			} else if (field.getDataType().equals(Field.DATA_TYPE_TIME_WINDOW)) {
     				//time window
     				dist = timeWindowDistance(field, firstAttr,  secondAttr);
@@ -249,6 +249,25 @@ public class RecordDistanceFinder {
 		
 		netDist = thresholdCrossed?  distThreshold + 1  : distStrategy.getSimilarity();
 		return netDist;
+    }
+
+    /**
+     * @param field
+     * @param firstAttr
+     * @param secondAttr
+     * @return
+     * @throws IOException
+     */
+    private double textDistance(Field field, String firstAttr,  String secondAttr) throws IOException {
+    	double dist = 0;
+		if (field.getDataSubType() == Field.TEXT_TYPE_PERSON_NAME) {
+			dist = personNameDistance(field, firstAttr, secondAttr);
+		} if (field.getDataSubType() == Field.TEXT_TYPE_STREET_ADDRESS) {
+			dist = streetAddressDistance(field, firstAttr, secondAttr);
+		} else {
+			dist = textSimStrategy.findDistance(firstAttr, secondAttr);	    
+		}
+		return dist;
     }
     
     /**
@@ -409,6 +428,62 @@ public class RecordDistanceFinder {
 		}
     	return dist;
     }    
+    
+    /**
+     * @param field
+     * @param firstAttr
+     * @param secondAttr
+     * @return
+     * @throws IOException
+     */
+    private double personNameDistance(Field field, String firstAttr, String secondAttr) throws IOException {
+    	double dist = 0;
+    	String[] firstItems = firstAttr.split("\\s+");
+    	String[] secondItems = secondAttr.split("\\s+");
+    	double firstNameDist = textSimStrategy.findDistance(firstItems[0], secondItems[0]);	
+    	double lastNameDist = textSimStrategy.findDistance(firstItems[firstItems.length-1], 
+    			secondItems[secondItems.length-1]);	
+    	dist = firstNameDist * field.getPartWeights()[0] + lastNameDist * field.getPartWeights()[1]; 
+    	return dist;
+    }
+    
+    /**
+     * @param field
+     * @param firstAttr
+     * @param secondAttr
+     * @return
+     * @throws IOException
+     */
+    private double streetAddressDistance(Field field, String firstAttr, String secondAttr) throws IOException {
+    	double dist = 0;
+    	String[] firstStreetCoponents = getStreetComponents(firstAttr);
+    	String[] secondStreetCoponents = getStreetComponents(secondAttr);
+    	dist = textSimStrategy.findDistance(firstStreetCoponents[0], secondStreetCoponents[0]) * field.getPartWeights()[0] + 
+    			textSimStrategy.findDistance(firstStreetCoponents[1], secondStreetCoponents[1]) * field.getPartWeights()[1]; 
+    	return dist;
+    }
+    
+    /**
+     * @param address
+     * @return
+     */
+    private String[] getStreetComponents(String address) {
+    	String baseAddress = "";
+    	int pos;
+    	String[] streeTypes = {"Street", "Avenue", "Road", "Boulevard"};
+    	for (String streetType : streeTypes) {
+        	pos = address.indexOf(streetType);
+        	if (pos > 0) {
+        		baseAddress = address.substring(0, pos) + streetType;
+        		break;
+        	}    		
+    	}
+    	String[] streetCoponents = new String[2];
+    	pos = baseAddress.indexOf("\\s+");
+    	streetCoponents[0] = baseAddress.substring(0, pos);
+    	streetCoponents[1] = baseAddress.substring(pos).trim();
+    	return streetCoponents;
+    }
 }    
     
 
