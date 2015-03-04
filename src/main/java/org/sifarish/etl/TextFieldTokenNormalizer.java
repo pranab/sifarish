@@ -62,4 +62,19 @@ public class TextFieldTokenNormalizer {
 		return newItem;
 	}
 	
+	/**
+	 * @param normalized
+	 * @return
+	 */
+	public boolean containsNormalize(String normalized) {
+		boolean contains = false;
+		for (String[] normalizer : normalizers) {
+			contains = normalizer[1].equals(normalized);
+			if (contains)
+				break;
+		}		
+		
+		return contains;
+	}
+	
 }

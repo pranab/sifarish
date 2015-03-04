@@ -40,56 +40,6 @@ public class UnitedStatesStandardFormat extends CountryStandardFormat {
      * @see org.sifarish.etl.CountryStandardFormat#intializeStateCodes()
      */
     public void intializeStateCodes() {
-    	stateCodes.put("alabama", "AL");
-    	stateCodes.put("alaska", "AK");
-    	stateCodes.put("arizona", "AZ");
-    	stateCodes.put("arkansas", "AR");
-    	stateCodes.put("california", "CA");
-    	stateCodes.put("colorado", "CO");
-    	stateCodes.put("connecticut", "CT");
-    	stateCodes.put("delaware", "DE");
-    	stateCodes.put("district of columbia", "DC");
-    	stateCodes.put("florida", "FL");
-    	stateCodes.put("georgia", "GA");
-    	stateCodes.put("hawaii", "HI");
-    	stateCodes.put("idaho", "ID");
-    	stateCodes.put("illinois", "IL");
-    	stateCodes.put("indiana", "IN");
-    	stateCodes.put("iowa", "IA");
-    	stateCodes.put("kansas", "KS");
-    	stateCodes.put("kentucky", "KY");
-    	stateCodes.put("louisiana", "LA");
-    	stateCodes.put("maine", "ME");
-    	stateCodes.put("maryland", "MD");
-    	stateCodes.put("massachusetts", "MA");
-    	stateCodes.put("michigan", "MI");
-    	stateCodes.put("minnesota", "MN");
-    	stateCodes.put("mississippi", "MS");
-    	stateCodes.put("missouri", "MO");
-    	stateCodes.put("montana", "MT");
-    	stateCodes.put("nebraska", "NE");
-    	stateCodes.put("new hampshire", "NH");
-    	stateCodes.put("new jersey", "NJ");
-    	stateCodes.put("new mexico", "NM");
-    	stateCodes.put("new york", "NY");
-    	stateCodes.put("north carolina", "NC");
-    	stateCodes.put("north dakota", "ND");
-    	stateCodes.put("ohio", "OH");
-    	stateCodes.put("oklahoma", "OK");
-    	stateCodes.put("oregon", "OR");
-    	stateCodes.put("pennsylvania", "PA");
-    	stateCodes.put("rhode island", "RI");
-    	stateCodes.put("south carolina", "SC");
-    	stateCodes.put("south dakota", "SD");
-    	stateCodes.put("tennessee", "TN");
-    	stateCodes.put("texas", "TX");
-    	stateCodes.put("utah", "UT");
-    	stateCodes.put("vermont", "VT");
-    	stateCodes.put("virginia", "VA");
-    	stateCodes.put("washington", "WA");
-    	stateCodes.put("west virginia", "WV");
-    	stateCodes.put("wisconsin", "WI");
-    	stateCodes.put("wyoming", "WY");
     }
 
     /* (non-Javadoc)
@@ -132,20 +82,19 @@ public class UnitedStatesStandardFormat extends CountryStandardFormat {
      * @see org.sifarish.etl.CountryStandardFormat#stateFormat(java.lang.String)
      */
     public String stateFormat(String item) {
-    	if (item.length() == 2) {
-    		item = item.toUpperCase();
-    		if (!stateCodes.containsValue(item)) {
+    	String newItem = item;
+    	TextFieldTokenNormalizer tokenNormalizer = 
+    			textNormalizer.findTokenNormalizer(Field.TEXT_TYPE_STATE);
+    	if (newItem.length() == 2) {
+    		newItem = newItem.toUpperCase();
+    		if (tokenNormalizer.containsNormalize(newItem)) {
     			throw new IllegalArgumentException("invalid state code");
     		}
     	} else {
-    		item = item.toLowerCase();
-    		item = stateCodes.get(item);
-    		if (null == item) {
-    			throw new IllegalArgumentException("invalid state name");
-    		}
+        	newItem = tokenNormalizer.normalize(newItem);
     	}
     	
-    	return item;
+    	return newItem;
     }
 
     /* (non-Javadoc)
@@ -182,11 +131,11 @@ public class UnitedStatesStandardFormat extends CountryStandardFormat {
      * @return
      */
     public String addressFormat(String item) {
-    	String newItem = item;
-    	newItem = newItem.replace(" St", " Street");
-    	newItem = newItem.replace(" Ave", " Avenue");
-    	newItem = newItem.replace(" Rd", " Road");
-    	newItem = newItem.replace(" Apt", " Apartment");
+    	TextFieldTokenNormalizer tokenNormalizer = 
+    			textNormalizer.findTokenNormalizer(Field.TEXT_TYPE_STREET_ADDRESS_ONE);
+    	String newItem = tokenNormalizer.normalize(item);
+    	tokenNormalizer = textNormalizer.findTokenNormalizer(Field.TEXT_TYPE_STREET_ADDRESS_TWO);
+    	newItem = tokenNormalizer.normalize(newItem);
     	
     	String[] lines = newItem.split("\\n");
     	
