@@ -17,12 +17,14 @@
 
 package org.sifarish.etl;
 
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.apache.commons.lang3.StringUtils;
+import org.sifarish.feature.DynamicAttrSimilarityStrategy;
 
 /**
  * Country specific formats for different kinds of structured text data
@@ -99,7 +101,19 @@ public abstract class CountryStandardFormat {
      * @param item
      * @return
      */
-    public abstract String stateFormat(String item);
+    public abstract String stateFormat(String item) throws IOException;
+    
+    /**
+     * @param item
+     * @param fuzzyMatch
+     * @param textSimStrategy
+     * @param minDist
+     * @return
+     * @throws IOException
+     */
+    public abstract String stateFormat(String item, boolean fuzzyMatch, DynamicAttrSimilarityStrategy textSimStrategy, 
+        	double minDist) throws IOException;
+
     
     /**
      * @param item
@@ -276,6 +290,16 @@ public abstract class CountryStandardFormat {
 		}
     	
 		return name + "@" + elements[1];
+    }
+    
+    /**
+     * @param item
+     * @return
+     */
+    public String removePunctuations(String item) {
+    	String newItem = item.replaceAll("\\.","");
+    	newItem = item.replaceAll(",","");
+    	return newItem;
     }
 
 }

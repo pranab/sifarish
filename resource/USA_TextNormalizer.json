@@ -6,7 +6,15 @@
 				[" St", " Street"],
 				[" Ave", " Avenue"],
 				[" Rd", " Road"],
-				[" Blvd", " Boulevard"]
+				[" Blvd", " Boulevard"],
+				[" 1st", " First"],
+				[" 2nd", " Second"],
+				[" 3rd", " Third"],
+				[" 4th", " Fourth"],
+				[" N", " North"],
+				[" S", " South"],
+				[" E", " East"],
+				[" W", " West"]
 			]
 		},
 		{

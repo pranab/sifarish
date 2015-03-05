@@ -17,6 +17,12 @@
 
 package org.sifarish.etl;
 
+import java.io.IOException;
+
+import org.apache.commons.lang3.tuple.ImmutablePair;
+import org.apache.commons.lang3.tuple.Pair;
+import org.sifarish.feature.DynamicAttrSimilarityStrategy;
+
 /**
  * @author pranab
  *
@@ -77,4 +83,47 @@ public class TextFieldTokenNormalizer {
 		return contains;
 	}
 	
+	/**
+	 * @param item
+	 * @param textSimStrategy
+	 * @return
+	 * @throws IOException
+	 */
+	public Pair<String, Double> fuzzymatchWithUnnormalized(String item, DynamicAttrSimilarityStrategy textSimStrategy) 
+		throws IOException  {
+		return fuzzymatch(item, textSimStrategy, 0);
+	}
+	
+	/**
+	 * @param item
+	 * @param textSimStrategy
+	 * @return
+	 * @throws IOException
+	 */
+	public Pair<String, Double> fuzzymatchWithNormalized(String item, DynamicAttrSimilarityStrategy textSimStrategy) 
+		throws IOException  {
+		return fuzzymatch(item, textSimStrategy, 1);
+	}
+	
+	/**
+	 * @param item
+	 * @param textSimStrategy
+	 * @param index
+	 * @return
+	 * @throws IOException
+	 */
+	private Pair<String, Double> fuzzymatch(String item, DynamicAttrSimilarityStrategy textSimStrategy, int index ) 
+		throws IOException  {
+		double dist = 1.0;
+		String token = null;
+		for (String[] normalizer : normalizers) {
+			double  thisDist = textSimStrategy.findDistance(item, normalizer[index]);
+			if (thisDist < dist) {
+				dist = thisDist;
+				token = normalizer[0];
+			}
+		}		
+		ImmutablePair<String, Double> match = new ImmutablePair<String, Double>(token, dist);
+		return match;
+	}
 }

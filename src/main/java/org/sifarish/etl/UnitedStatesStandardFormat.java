@@ -17,10 +17,11 @@
 
 package org.sifarish.etl;
 
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
+import java.io.IOException;
 
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.tuple.Pair;
+import org.sifarish.feature.DynamicAttrSimilarityStrategy;
 import org.sifarish.util.Field;
 
 /**
@@ -73,7 +74,6 @@ public class UnitedStatesStandardFormat extends CountryStandardFormat {
     	} else if (format.equals("spaceSep")) {
     		item = item.substring(0, 3) + " " + item.substring(3,6) + " " + item.substring(6);
     	} else {
-			throw new IllegalArgumentException("invalid phone number format");
 		}
     	return item;
     }
@@ -81,17 +81,37 @@ public class UnitedStatesStandardFormat extends CountryStandardFormat {
     /* (non-Javadoc)
      * @see org.sifarish.etl.CountryStandardFormat#stateFormat(java.lang.String)
      */
-    public String stateFormat(String item) {
+    public String stateFormat(String item) throws IOException {
+    	return stateFormat(item, false, null, 0);
+    }
+    
+    /* (non-Javadoc)
+     * @see org.sifarish.etl.CountryStandardFormat#stateFormat(java.lang.String, boolean, org.sifarish.feature.DynamicAttrSimilarityStrategy, double)
+     */
+    public String stateFormat(String item, boolean fuzzyMatch, DynamicAttrSimilarityStrategy textSimStrategy, 
+    	double minDist) throws IOException {
     	String newItem = item;
     	TextFieldTokenNormalizer tokenNormalizer = 
     			textNormalizer.findTokenNormalizer(Field.TEXT_TYPE_STATE);
     	if (newItem.length() == 2) {
     		newItem = newItem.toUpperCase();
-    		if (tokenNormalizer.containsNormalize(newItem)) {
-    			throw new IllegalArgumentException("invalid state code");
-    		}
+        	if (fuzzyMatch && !tokenNormalizer.containsNormalize(newItem)) {
+        		//try fuzzy matching
+	    		Pair<String, Double>  match = tokenNormalizer.fuzzymatchWithNormalized(newItem, textSimStrategy);
+	    		if (match.getRight() <= minDist) {
+	    			newItem = match.getLeft();
+	    		}
+        	}
     	} else {
         	newItem = tokenNormalizer.normalize(newItem);
+        	if (fuzzyMatch && newItem.equals(item)) {
+        		//try fuzzy matching
+        		Pair<String, Double>  match = tokenNormalizer.fuzzymatchWithUnnormalized(newItem, textSimStrategy);
+        		if (match.getRight() <= minDist) {
+        			newItem = match.getLeft();
+        			newItem = tokenNormalizer.normalize(newItem);
+        		}
+        	}
     	}
     	
     	return newItem;
