@@ -24,6 +24,8 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.tuple.ImmutablePair;
+import org.apache.commons.lang3.tuple.Pair;
 import org.sifarish.feature.DynamicAttrSimilarityStrategy;
 
 /**
@@ -251,26 +253,48 @@ public abstract class CountryStandardFormat {
      * @param item
      * @return
      */
-    public abstract String streetAddressFormat(String item);
+    public abstract String streetAddressFormat(String item) throws IOException;
     
     /**
      * @param item
      * @return
      */
-    public abstract String addressFormat(String item);
+    public abstract String addressFormat(String item) throws IOException;
     
     /**
      * @param item
      * @return
      */
-    public abstract String streetAddressOneFormat(String item);
+    public abstract String streetAddressOneFormat(String item) throws IOException;
 
     /**
      * @param item
+     * @param fuzzyMatch
+     * @param textSimStrategy
+     * @param minDist
+     * @return
+     * @throws IOException
+     */
+    public abstract String streetAddressOneFormat(String item, boolean fuzzyMatch, DynamicAttrSimilarityStrategy textSimStrategy, 
+        	double minDist) throws IOException;   
+    
+    /**
+     * @param item
      * @return
      */
-    public abstract String streetAddressTwoFormat(String item);
+    public abstract String streetAddressTwoFormat(String item) throws IOException;
     
+    /**
+     * @param item
+     * @param fuzzyMatch
+     * @param textSimStrategy
+     * @param minDist
+     * @return
+     * @throws IOException
+     */
+    public abstract  String streetAddressTwoFormat(String item, boolean fuzzyMatch, DynamicAttrSimilarityStrategy textSimStrategy, 
+        	double minDist) throws IOException;
+   
     /**
      * @param item
      * @param format
@@ -300,6 +324,36 @@ public abstract class CountryStandardFormat {
     	String newItem = item.replaceAll("\\.","");
     	newItem = item.replaceAll(",","");
     	return newItem;
+    }
+    
+    /**
+     * @param component
+     * @param tokenNormalizer
+     * @param textSimStrategy
+     * @param minDist
+     * @return
+     * @throws IOException
+     */
+    protected Pair<Boolean, String> fuzyyMatchComponent(String component,  TextFieldTokenNormalizer tokenNormalizer, 
+    		DynamicAttrSimilarityStrategy textSimStrategy, double minDist) throws IOException {
+		String newComponent = component;
+		boolean fuzzyMatched = false;
+    	if (!tokenNormalizer.containsNormalize(component)) {
+    		//try fuzzy matching
+    		Pair<String, Double>  match = tokenNormalizer.fuzzymatchWithUnnormalized(component, textSimStrategy);
+    		if (match.getRight() <= minDist) {
+    			newComponent = match.getLeft();
+    			newComponent = tokenNormalizer.normalize(newComponent);
+    			fuzzyMatched = true;
+    		} else {
+    			match = tokenNormalizer.fuzzymatchWithNormalized(component, textSimStrategy);
+        		if (match.getRight() <= minDist) {
+        			newComponent = match.getLeft();
+        			fuzzyMatched = true;
+        		}
+    		}
+    	}
+		return  new ImmutablePair<Boolean, String>(fuzzyMatched, newComponent);
     }
 
 }

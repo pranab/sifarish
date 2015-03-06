@@ -18,6 +18,16 @@
 			]
 		},
 		{
+			"fieldType" ; "streetType",
+			"normalizations" : [
+				[" St", " Street"],
+				[" Ave", " Avenue"],
+				[" Rd", " Road"],
+				[" Blvd", " Boulevard"]
+			]
+		},
+		
+		{
 			"fieldType" ; "streetAddressTwo",
 			"normalizations" : [
 				[" Apt", " Apartment"],

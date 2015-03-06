@@ -20,6 +20,7 @@ package org.sifarish.etl;
 import java.io.IOException;
 
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 import org.sifarish.feature.DynamicAttrSimilarityStrategy;
 import org.sifarish.util.Field;
@@ -120,7 +121,7 @@ public class UnitedStatesStandardFormat extends CountryStandardFormat {
     /* (non-Javadoc)
      * @see org.sifarish.etl.CountryStandardFormat#streetAddressFormat(java.lang.String)
      */
-    public String streetAddressFormat(String item) {
+    public String streetAddressFormat(String item) throws IOException {
     	String newItem = streetAddressOneFormat(item);
     	return streetAddressTwoFormat(newItem);
     }   
@@ -128,20 +129,76 @@ public class UnitedStatesStandardFormat extends CountryStandardFormat {
     /* (non-Javadoc)
      * @see org.sifarish.etl.CountryStandardFormat#streetAddressOneFormat(java.lang.String)
      */
-    public String streetAddressOneFormat(String item) {
-    	TextFieldTokenNormalizer tokenNormalizer = 
-    			textNormalizer.findTokenNormalizer(Field.TEXT_TYPE_STREET_ADDRESS_ONE);
-    	String newItem = tokenNormalizer.normalize(item);
-    	return newItem;
+    public String streetAddressOneFormat(String item) throws IOException {
+    	return streetAddressOneFormat(item, false, null, 0);
     }   
 
     /* (non-Javadoc)
+     * @see org.sifarish.etl.CountryStandardFormat#streetAddressOneFormat(java.lang.String, boolean, org.sifarish.feature.DynamicAttrSimilarityStrategy, double)
+     */
+    public String streetAddressOneFormat(String item, boolean fuzzyMatch, DynamicAttrSimilarityStrategy textSimStrategy, 
+        	double minDist) throws IOException {
+    	TextFieldTokenNormalizer tokenNormalizer = 
+    			textNormalizer.findTokenNormalizer(Field.TEXT_TYPE_STREET_ADDRESS_ONE);
+    	String newItem = tokenNormalizer.normalize(item);
+    	
+    	if (fuzzyMatch && newItem.equals(item)) {
+    		String[] elements = newItem.split("\\s+");
+    		String streetType = elements[elements.length -1];
+        	tokenNormalizer = textNormalizer.findTokenNormalizer(Field.TEXT_TYPE_STREET_TYPE);
+        	if (!tokenNormalizer.containsNormalize(streetType)) {
+	    		//try fuzzy matching
+        		Pair<Boolean, String> fuzzyMatched = fuzyyMatchComponent(streetType,  tokenNormalizer, 
+        	    		textSimStrategy, minDist);
+	    		if (fuzzyMatched.getLeft()) {
+		    		StringBuilder stBld = new StringBuilder(elements[0]);
+		    		for (int i = 1; i < elements.length-1; ++i) {
+		    			if (i == elements.length-1) {
+		    				stBld.append(" ").append(fuzzyMatched.getRight());
+		    			} else {
+		    				stBld.append(" ").append(elements[i]);
+		    			}
+		    		}
+		    		newItem = stBld.toString();
+	    		}
+        	}
+    	}
+    	return newItem;
+    }   
+    
+    /* (non-Javadoc)
      * @see org.sifarish.etl.CountryStandardFormat#streetAddressTwoFormat(java.lang.String)
      */
-    public String streetAddressTwoFormat(String item) {
+    public String streetAddressTwoFormat(String item) throws IOException  {
+    	return streetAddressTwoFormat(item, false, null, 0);
+    }   
+
+    /* (non-Javadoc)
+     * @see org.sifarish.etl.CountryStandardFormat#streetAddressTwoFormat(java.lang.String, boolean, org.sifarish.feature.DynamicAttrSimilarityStrategy, double)
+     */
+    public String streetAddressTwoFormat(String item, boolean fuzzyMatch, DynamicAttrSimilarityStrategy textSimStrategy, 
+        	double minDist) throws IOException {
     	TextFieldTokenNormalizer tokenNormalizer = 
     			textNormalizer.findTokenNormalizer(Field.TEXT_TYPE_STREET_ADDRESS_TWO);
     	String newItem = tokenNormalizer.normalize(item);
+    	
+    	if (fuzzyMatch && newItem.equals(item)) {
+    		String[] elements = newItem.split("\\s+");
+    		String unitType = elements[0];
+        	if (!tokenNormalizer.containsNormalize(unitType)) {
+	    		//try fuzzy matching
+        		Pair<Boolean, String> fuzzyMatched = fuzyyMatchComponent(unitType,  tokenNormalizer, 
+        	    		textSimStrategy, minDist);
+	    		if (fuzzyMatched.getLeft()) {
+		    		StringBuilder stBld = new StringBuilder(fuzzyMatched.getRight());
+		    		for (int i = 1; i < elements.length-1; ++i) {
+		    			stBld.append(" ").append(elements[i]);
+		    		}
+		    		newItem = stBld.toString();
+	    		}
+        	}
+    	}
+    	
     	return newItem;
     }   
 
