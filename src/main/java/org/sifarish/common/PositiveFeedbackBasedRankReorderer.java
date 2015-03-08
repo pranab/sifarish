@@ -157,15 +157,15 @@ public class PositiveFeedbackBasedRankReorderer  extends Configured implements T
         	
         	//final rating 
             if (null != actualRating && actualRating == maxRating) {
-        		context.getCounter("Rating", "Actual max and converted").increment(1);
+        		//context.getCounter("Rating", "Actual max and converted").increment(1);
             } else if (null == actualRating) {
             	finalRating = predictedRating;
-	    		context.getCounter("Rating", "Only Predicted").increment(1);
+	    		//context.getCounter("Rating", "Only Predicted").increment(1);
             } else if(null == predictedRating) {
             	finalRating = actualRating;
-            	context.getCounter("Rating", "Only Actual").increment(1);
+            	//context.getCounter("Rating", "Only Actual").increment(1);
             } else {
-	    		context.getCounter("Rating", "Both").increment(1);
+	    		//context.getCounter("Rating", "Both").increment(1);
             	if (ratingAggrStrategy.equals("max")) {
                 	finalRating = Math.max(actualRating, predictedRating);
             	} else if (ratingAggrStrategy.equals("weightedAverage")) {

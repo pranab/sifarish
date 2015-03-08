@@ -263,7 +263,7 @@ public class AttributeBasedDiversifier   extends Configured implements Tool{
 		               		if (null == index) {
 		               			//no item with same attribute yet
 		               			selectedRateItemAttr = rateItemAttr;
-		               			context.getCounter("Reordering", "first occurence of this attr").increment(1);
+		               			//context.getCounter("Reordering", "first occurence of this attr").increment(1);
 		               			break;
 		               		} else {
 		               			//items with same attributes already in ranked list
@@ -278,7 +278,7 @@ public class AttributeBasedDiversifier   extends Configured implements Tool{
 		               			if (rankDist >= minRankDistance) {
 		               				//min rank distance requirement  met for highest rated item
 			               			selectedRateItemAttr = rateItemAttr;
-			               			context.getCounter("Reordering", "min rank distance satisfied").increment(1);
+			               			//context.getCounter("Reordering", "min rank distance satisfied").increment(1);
 			               			break;
 		               			}
 		               		}
@@ -288,7 +288,7 @@ public class AttributeBasedDiversifier   extends Configured implements Tool{
 		               	if (null == selectedRateItemAttr) {
 		               		//use the item with max rank distance
 		               		selectedRateItemAttr = rateItemAttrWithMaxRankDist;
-	               			context.getCounter("Reordering", "min rank distance not satisfied").increment(1);
+	               			//context.getCounter("Reordering", "min rank distance not satisfied").increment(1);
 		               	}
 		               	
 	               		//add to list and update index

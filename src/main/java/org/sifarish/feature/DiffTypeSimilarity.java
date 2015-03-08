@@ -329,9 +329,9 @@ public class DiffTypeSimilarity  extends Configured implements Tool {
         			++targetCount;
         		}
         	}
-			context.getCounter("Data", "Source Count").increment(srcCount);
-			context.getCounter("Data", "Target Count").increment(targetCount);
-			context.getCounter("Data", "Similarity Count").increment(simCount);
+			//context.getCounter("Data", "Source Count").increment(srcCount);
+			//context.getCounter("Data", "Target Count").increment(targetCount);
+			//context.getCounter("Data", "Similarity Count").increment(simCount);
         	
         }
         
@@ -349,7 +349,7 @@ public class DiffTypeSimilarity  extends Configured implements Tool {
     		String[] trgItems = target.split(fieldDelimRegex);
     		
     		double dist = 0;
-			context.getCounter("Data", "Target Field Count").increment(targetFields.size());
+			//context.getCounter("Data", "Target Field Count").increment(targetFields.size());
 			if (prntDetail){
 				System.out.println("target record: " + trgItems[0]);
 			}
@@ -388,7 +388,7 @@ public class DiffTypeSimilarity  extends Configured implements Tool {
 		    					}
 	    					}
 	    					
-    						context.getCounter("Data", "Dist Calculated").increment(1);
+    						//context.getCounter("Data", "Dist Calculated").increment(1);
     					} else {
     						//missing source
     						if (schema.getMissingValueHandler().equals("default")){
@@ -396,7 +396,7 @@ public class DiffTypeSimilarity  extends Configured implements Tool {
     						} else {
     							skipAttr = true;
     						}
-    						context.getCounter("Data", "Missing Source").increment(1);
+    						//context.getCounter("Data", "Missing Source").increment(1);
     					}
     				} else if (field.getDataType().equals("int")) {
     					if (!mappedValues.isEmpty()) {
@@ -437,7 +437,7 @@ public class DiffTypeSimilarity  extends Configured implements Tool {
 				} else {
 					//missing target value
 					if (schema.getMissingValueHandler().equals("default")){
-						context.getCounter("Data", "Missing Target").increment(1);
+						//context.getCounter("Data", "Missing Target").increment(1);
 						dist = getDistForMissingTrg(field, mappedValues);
 					} else {
 						skipAttr = true;
@@ -612,7 +612,7 @@ public class DiffTypeSimilarity  extends Configured implements Tool {
 									//store mapped values
 									if (valMapping.getThisValue().equals(value)) {
 										mappedValues.add(valMapping.getThatValue());
-			    						context.getCounter("Data", "Mapped Value").increment(1);
+			    						//context.getCounter("Data", "Mapped Value").increment(1);
 			    						if (prntDetail){
 			    							System.out.println("mapped: " + value + "  " + valMapping.getThatValue() + 
 			    									" matching ordinal:" + matchingOrdinal);

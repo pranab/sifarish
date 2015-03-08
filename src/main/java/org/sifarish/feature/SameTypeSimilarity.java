@@ -355,7 +355,7 @@ public class SameTypeSimilarity  extends Configured implements Tool {
 		        				context.write(NullWritable.get(), valueHolder);
 		        			}
 	            		} else {
-	    					context.getCounter("Distance Data", "Same ID").increment(1);
+	    					//context.getCounter("Distance Data", "Same ID").increment(1);
 	    					LOG.debug("Repeat:" + firstId );
 	            		}
 	   				}
@@ -409,7 +409,7 @@ public class SameTypeSimilarity  extends Configured implements Tool {
         		String secondEntityId = secondId.substring(setIdSize);
         		if (!firstEntityId.equals(secondEntityId)) {
         			netDist =  distThreshold + 1;
-					context.getCounter("Distance Data", "Diff ID from separate sets").increment(1);
+					//context.getCounter("Distance Data", "Diff ID from separate sets").increment(1);
         			return netDist;
         		}
         	}
@@ -463,13 +463,13 @@ public class SameTypeSimilarity  extends Configured implements Tool {
     			
     			if (firstAttr.isEmpty() || secondAttr.isEmpty() ) {
     				//handle missing value
-					context.getCounter("Missing Data", "Field:" + field.getOrdinal()).increment(1);
+					//context.getCounter("Missing Data", "Field:" + field.getOrdinal()).increment(1);
 					String missingValueHandler = schema.getMissingValueHandler();
     				if (missingValueHandler.equals("default")) {
-       					context.getCounter("Missing Data", "Distance Set at Max").increment(1);
+       					//context.getCounter("Missing Data", "Distance Set at Max").increment(1);
        				    dist = 1.0;
     				} else if (missingValueHandler.equals("skip")) {
-    					context.getCounter("Missing Data", "FieldSkipped").increment(1);
+    					//context.getCounter("Missing Data", "FieldSkipped").increment(1);
     					continue;
     				} else {
     					//custom handler
@@ -510,7 +510,7 @@ public class SameTypeSimilarity  extends Configured implements Tool {
     			//if threshold crossed for this attribute, skip the remaining attributes of the entity pair
     			thresholdCrossed = field.isDistanceThresholdCrossed(dist);
     			if (thresholdCrossed){
-					context.getCounter("Distance Data", "Attribute distance threshold filter").increment(1);
+					//context.getCounter("Distance Data", "Attribute distance threshold filter").increment(1);
     				break;
     			}
     			
@@ -632,7 +632,7 @@ public class SameTypeSimilarity  extends Configured implements Tool {
 							schema.getNumericDiffThreshold());
 					}
 				} catch (NumberFormatException nfEx) {
-					context.getCounter("Invalid Data Format", "Field:" + field.getOrdinal()).increment(1);
+					//context.getCounter("Invalid Data Format", "Field:" + field.getOrdinal()).increment(1);
 				}
 			} else {
 			}
@@ -657,7 +657,7 @@ public class SameTypeSimilarity  extends Configured implements Tool {
 
     			dist = field.findDistance(firstTimeWindow, secondTimeWindow);
     		} catch (ParseException e) {
-    			context.getCounter("Invalid Data Format", "Field:" + field.getOrdinal()).increment(1);
+    			//context.getCounter("Invalid Data Format", "Field:" + field.getOrdinal()).increment(1);
     		}
         	return dist;
         }    
@@ -679,7 +679,7 @@ public class SameTypeSimilarity  extends Configured implements Tool {
 
     			dist = field.findDistance(firstTimeWindow, secondTimeWindow);
     		} catch (ParseException e) {
-    			context.getCounter("Invalid Data Format", "Field:" + field.getOrdinal()).increment(1);
+    			//context.getCounter("Invalid Data Format", "Field:" + field.getOrdinal()).increment(1);
     		}
         	return dist;
         }    
@@ -741,7 +741,7 @@ public class SameTypeSimilarity  extends Configured implements Tool {
  
     			dist = field.findDistance(firstEvent, secondEvent);
     		} catch (ParseException e) {
-    			context.getCounter("Invalid Data Format", "Field:" + field.getOrdinal()).increment(1);
+    			//context.getCounter("Invalid Data Format", "Field:" + field.getOrdinal()).increment(1);
     		}
         	return dist;
         }    

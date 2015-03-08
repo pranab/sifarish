@@ -125,7 +125,7 @@ public class ImplicitRatingEstimator   extends Configured implements Tool{
 	           	valOut.initialize();
 	           	valOut.add(eventType, timeStamp);
 	           	context.write(keyOut, valOut);
-				context.getCounter("ImplicitRating", "Processed record").increment(1);
+				//context.getCounter("ImplicitRating", "Processed record").increment(1);
            	}
         }       
     }    
@@ -203,7 +203,7 @@ public class ImplicitRatingEstimator   extends Configured implements Tool{
     			Integer negCount =  negativeEventCounts.get(-eventType);
         		if (null != negCount && negCount > 0) {
         			negativeEventCounts.put(-eventType, negCount - 1);
-    				context.getCounter("ImplicitRating", "Num negative events").increment(1);
+    				//context.getCounter("ImplicitRating", "Num negative events").increment(1);
         		} else {
         			Integer posCount = eventCounts.get(eventType);
         			posCount = null == posCount?  1 : posCount + 1;
