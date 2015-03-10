@@ -17,11 +17,13 @@
 
 package org.sifarish.util;
 
+import java.io.Serializable;
+
 /**
  * @author pranab
  *
  */
-public interface IDistanceStrategy {
+public interface IDistanceStrategy  extends Serializable {
 	
 	/**
 	 * 

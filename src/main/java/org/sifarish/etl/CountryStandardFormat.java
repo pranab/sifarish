@@ -60,7 +60,7 @@ public abstract class CountryStandardFormat {
      */
     public static CountryStandardFormat createCountryStandardFormat(String country, StructuredTextNormalizer textNormalizer) {
     	CountryStandardFormat countryFormat = null;
-    	if (country.equals("United States")) {
+    	if (country.equals("USA")) {
     		countryFormat = new UnitedStatesStandardFormat(textNormalizer);
     	} else {
     		throw new IllegalArgumentException("invalid country name");

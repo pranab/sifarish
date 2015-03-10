@@ -18,16 +18,18 @@
 package org.sifarish.etl;
 
 import java.io.IOException;
+import java.io.Serializable;
 
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 import org.sifarish.feature.DynamicAttrSimilarityStrategy;
 
 /**
+ * Normalizer for structured text field type
  * @author pranab
  *
  */
-public class TextFieldTokenNormalizer {
+public class TextFieldTokenNormalizer implements Serializable {
 	private String fieldType;
 	private String[][] normalizers;
 	

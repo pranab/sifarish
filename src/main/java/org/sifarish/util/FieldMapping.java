@@ -17,6 +17,7 @@
 
 package org.sifarish.util;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -25,7 +26,7 @@ import java.util.List;
  * @author pranab
  *
  */
-public class FieldMapping {
+public class FieldMapping implements Serializable {
 	private int matchingOrdinal = -1;
 	private List<FieldMapping.ValueMapping> valueMappings;
 	

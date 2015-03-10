@@ -17,13 +17,15 @@
 
 package org.sifarish.etl;
 
+import java.io.Serializable;
 import java.util.List;
 
 /**
+ * Normalizers for all structured text field types
  * @author pranab
  *
  */
-public class StructuredTextNormalizer {
+public class StructuredTextNormalizer implements Serializable {
 	private List<TextFieldTokenNormalizer>  textFieldTypes;
 
 	/**

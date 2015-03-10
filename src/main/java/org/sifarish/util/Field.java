@@ -17,6 +17,7 @@
 
 package org.sifarish.util;
 
+import java.io.Serializable;
 import java.util.List;
 
 /**
@@ -24,7 +25,7 @@ import java.util.List;
  * @author pranab
  *
  */
-public class Field {
+public class Field implements Serializable {
 	private String name;
 	private int ordinal = -1;
 	private boolean type;
