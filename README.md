@@ -157,12 +157,13 @@ listed in the next section.
 Just accuracy from the CF algorithm is not enough for a good recommender. There
 are various post processing plugins are essential. They improve the quality of results. 
 Here is the list. Sifarsh supports most them. Some are under development.
-1. Business goal injection 
-2. Adding novelty 
-3. Adding diversity 
-4. Rank reordering for explicit positive feedback 
-5. Rank reordering for implicit negative feedback 
-6. Dithering
+
+* Business goal injection 
+* Adding novelty 
+* Adding diversity 
+* Rank reordering for explicit positive feedback 
+* Rank reordering for implicit negative feedback 
+* Dithering
 
 ## Configuration
 Please refer to the wiki page for a detailed list of all configuration parameters
@@ -175,6 +176,7 @@ need to be built first before building sifarish.
 
 ## Hadoop2
 If you are using Hadoop2, please switch to branch nuovo and build as follows for yarn
+
 mvn clean install -P yarn
 
 ## Help
