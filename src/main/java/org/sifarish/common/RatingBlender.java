@@ -93,6 +93,7 @@ public class RatingBlender extends Configured implements Tool{
     	private String userID;
     	private String itemID;
     	private int rating ;
+    	private long timeStamp;
     	
         /* (non-Javadoc)
          * @see org.apache.hadoop.mapreduce.Mapper#setup(org.apache.hadoop.mapreduce.Mapper.Context)
@@ -117,6 +118,7 @@ public class RatingBlender extends Configured implements Tool{
            	userID = items[0];
            	itemID = items[1];
            	rating = Integer.parseInt(items[2]);
+           	timeStamp = Long.parseLong(items[3]);
            	
            	keyOut.initialize();
            	valOut.initialize();
@@ -139,7 +141,7 @@ public class RatingBlender extends Configured implements Tool{
        		keyOut.add(userID, itemID, secodaryKey);
 
        		//rating
-       		valOut.add(secodaryKey, rating);
+       		valOut.add(secodaryKey, rating, timeStamp);
         }
     }
     
@@ -156,7 +158,13 @@ public class RatingBlender extends Configured implements Tool{
     	private int rating;
     	private int ratingSum;
     	private int weightSum;
+    	private long timeStamp ;
     	private int[] ratingSource = new int[3];
+    	private int[] ratingTimeStamp = new int[3];
+    	private boolean explicitRatingOverride;
+    	private static final int IMPLICIT_RATING = 0;
+    	private static final int EXPLICIT_RATING = 1;
+    	private static final int CUST_SVC_RATING = 2;
         
     	/* (non-Javadoc)
          * @see org.apache.hadoop.mapreduce.Reducer#setup(org.apache.hadoop.mapreduce.Reducer.Context)
@@ -168,6 +176,7 @@ public class RatingBlender extends Configured implements Tool{
         	if ((ratingWeightList[0] + ratingWeightList[1] + ratingWeightList[2]) != 100) {
         		throw new IllegalArgumentException("rating weights are not normalized");
         	}
+        	explicitRatingOverride = config.getBoolean("explicit.rating.override", false);
         }
 
         /* (non-Javadoc)
@@ -180,21 +189,41 @@ public class RatingBlender extends Configured implements Tool{
 
         	for (int i = 0; i < NUM_RATING_SOURCE; ++i) {
         		ratingSource[i] = 0;
+        		ratingTimeStamp[i] = 0;
         	}
         	for(Tuple value : values) {
         		ratingSource[value.getInt(0)] = value.getInt(1);
+        		ratingTimeStamp[value.getInt(0)] = value.getInt(2);
         	}
         	
         	//aggregate rating
-        	ratingSum = 0;
-        	weightSum = 0;
-        	for (int i = 0; i < NUM_RATING_SOURCE; ++i) {
-        		if (ratingSource[i] > 0) {
-            		ratingSum += ratingSource[i] * ratingWeightList[i];
-        			weightSum += ratingWeightList[i];
-        		}
+        	if (explicitRatingOverride) {
+        		//time stamp based explicit rating override
+	        	for (int i = 0; i < NUM_RATING_SOURCE; ++i) {
+	        		if (i == 0) {
+	        			rating = ratingSource[i];
+	        			timeStamp = ratingTimeStamp[i];
+	        		} else {
+	        			if (ratingSource[i] > 0) {
+	        				if (ratingTimeStamp[i] >  timeStamp) {
+	    	        			rating = ratingSource[i];
+	    	        			timeStamp = ratingTimeStamp[i];
+	        				}
+	        			}
+	        		}
+	        	}        		
+        	} else {
+        		//weighted average
+	        	ratingSum = 0;
+	        	weightSum = 0;
+	        	for (int i = 0; i < NUM_RATING_SOURCE; ++i) {
+	        		if (ratingSource[i] > 0) {
+	            		ratingSum += ratingSource[i] * ratingWeightList[i];
+	        			weightSum += ratingWeightList[i];
+	        		}
+	        	}
+	        	rating = ratingSum / weightSum;
         	}
-        	rating = ratingSum / weightSum;
         	
         	valOut.set(userID + fieldDelim + itemID + fieldDelim + rating);
 			context.write(NullWritable.get(), valOut);
