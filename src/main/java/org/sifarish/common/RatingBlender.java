@@ -161,7 +161,7 @@ public class RatingBlender extends Configured implements Tool{
     	private long timeStamp ;
     	private int[] ratingSource = new int[3];
     	private int[] ratingTimeStamp = new int[3];
-    	private boolean explicitRatingOverride;
+    	private String explicitRatingOverride;
     	private static final int IMPLICIT_RATING = 0;
     	private static final int EXPLICIT_RATING = 1;
     	private static final int CUST_SVC_RATING = 2;
@@ -176,7 +176,7 @@ public class RatingBlender extends Configured implements Tool{
         	if ((ratingWeightList[0] + ratingWeightList[1] + ratingWeightList[2]) != 100) {
         		throw new IllegalArgumentException("rating weights are not normalized");
         	}
-        	explicitRatingOverride = config.getBoolean("explicit.rating.override", false);
+        	explicitRatingOverride = config.get("explicit.rating.override", "none");
         }
 
         /* (non-Javadoc)
@@ -197,7 +197,7 @@ public class RatingBlender extends Configured implements Tool{
         	}
         	
         	//aggregate rating
-        	if (explicitRatingOverride) {
+        	if (!explicitRatingOverride.equals("none")) {
         		//time stamp based explicit rating override
 	        	for (int i = 0; i < NUM_RATING_SOURCE; ++i) {
 	        		if (i == 0) {
@@ -205,11 +205,20 @@ public class RatingBlender extends Configured implements Tool{
 	        			timeStamp = ratingTimeStamp[i];
 	        		} else {
 	        			if (ratingSource[i] > 0) {
-	        				if (ratingTimeStamp[i] >  timeStamp) {
-	    	        			rating = ratingSource[i];
-	    	        			timeStamp = ratingTimeStamp[i];
-	        				}
-	        			}
+		        			if (explicitRatingOverride.equals("timeStampBased")) {
+			            		//time stamp based explicit rating override
+			        			if (ratingTimeStamp[i] >  timeStamp) {
+			    	        		rating = ratingSource[i];
+			    	        		timeStamp = ratingTimeStamp[i];
+			        			}
+		        			} else {
+		        				//explicit supersede
+		        				if (i == 1 && explicitRatingOverride.equals("supersedeExplicit")  ||
+		        						i == 2 && explicitRatingOverride.equals("supersedeCustSvc")) {
+		    	        			rating = ratingSource[i];
+		        				}
+		        			}
+		        		}
 	        		}
 	        	}        		
         	} else {
