@@ -28,7 +28,7 @@ case "$1" in
     ;;
 
 "createExplicitRating")  
-	# usage ./brec.sh createExplicitRating <implicit_rating_file> <percentage_rated>
+	# usage ./brec.sh createExplicitRating <implicit_rating_file> <percentage_rated> <output_file>
 	echo "generating post conversion explicit rating data based implicit rating data"
 	./explicit_rating.py $2 $3 > $4
     ;;
@@ -82,7 +82,7 @@ case "$1" in
 "compactRating")  
 	echo "running MR to format rating to compact form"
 	CLASS_NAME=org.sifarish.common.CompactRatingFormatter
-	IN_PATH=$HDFS_BASE_DIR/rate
+	IN_PATH=$HDFS_BASE_DIR/$2
 	OUT_PATH=$HDFS_BASE_DIR/crat
 	echo "input $IN_PATH output $OUT_PATH"
 	hadoop fs -rmr $OUT_PATH
