@@ -33,6 +33,7 @@ of detail documentation
 * http://pkghosh.wordpress.com/2014/06/23/novelty-in-personalization/
 * http://pkghosh.wordpress.com/2014/09/10/realtime-trending-analysis-with-approximate-algorithms/
 * http://pkghosh.wordpress.com/2014/12/22/positive-feedback-driven-recommendation-rank-reordering/
+* https://pkghosh.wordpress.com/2015/01/20/diversity-in-personalization-with-attribute-diffusion/
 * https://pkghosh.wordpress.com/2015/03/22/customer-service-and-recommendation-system/
 
 ## Content Similarity Based Recommendation
