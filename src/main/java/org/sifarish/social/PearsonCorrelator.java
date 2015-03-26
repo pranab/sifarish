@@ -314,13 +314,13 @@ public class PearsonCorrelator extends Configured implements Tool{
 	        	}
 	        	coVar /= coVarItems.length;
 	        	if (coVar == 0) {
-	        		context.getCounter("Pearson", "Zero covariance").increment(1);
+	        		//context.getCounter("Pearson", "Zero covariance").increment(1);
 	        	}
 	        	
 	        	//pearson correlation
 	        	int stdDevProd = ratingOne.getRatingStdDev() * ratingTwo.getRatingStdDev();
 	        	if (stdDevProd == 0) {
-	        		context.getCounter("Pearson", "Zero std dev").increment(1);
+	        		//context.getCounter("Pearson", "Zero std dev").increment(1);
 	        	}
 	        	corr = stdDevProd == 0 ? corrScale : (coVar * corrScale) / stdDevProd;
 	        	corr += corrScale;
