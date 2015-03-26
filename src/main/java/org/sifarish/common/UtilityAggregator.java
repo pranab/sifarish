@@ -21,9 +21,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.UUID;
 
-import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.conf.Configured;
 import org.apache.hadoop.fs.Path;
@@ -33,14 +31,11 @@ import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.mapreduce.Mapper;
 import org.apache.hadoop.mapreduce.Reducer;
-import org.apache.hadoop.mapreduce.Reducer.Context;
 import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 import org.apache.hadoop.util.Tool;
 import org.apache.hadoop.util.ToolRunner;
 import org.chombo.redis.RedisCache;
-import org.chombo.util.ConfigUtility;
-import org.chombo.util.TextPair;
 import org.chombo.util.Tuple;
 import org.chombo.util.Utility;
 
@@ -263,13 +258,13 @@ public class UtilityAggregator extends Configured implements Tool{
 				maxPredictedRating = utilityScore;
 			}
 			
-			//userID, itemID, [context],score, count
+			//userID, itemID, [context],score, [count]
 			stBld.append(key.getString(0)).append(fieldDelim).append(key.getString(1)).append(fieldDelim);
            	if (userRatingWithContext) {
            		stBld.append(key.getString(2)).append(fieldDelim);
-           	} else {
-           		stBld.append(utilityScore);
-           	}
+           	} 
+           	stBld.append(utilityScore);
+           	
 			if (outputAggregationCount) {
 				stBld.append(fieldDelim).append(count);
 			}

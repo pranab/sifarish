@@ -31,14 +31,18 @@ Rating Data
 ===========
 There are 3 ways to generate rating data.
 
-1. Explicit
-Follow step 1
+1. Explicit 
+In reality you will hardly ever do recommendations based on explicit rating. This option
+is provided for development purpose only
+Follow step 1 and then 3
 
 2. Implicit
+This will be the typical way to create input rating
 Follow steps 2.1 through 2.4 and 3
 
 3. Blended Rating
-It combines implicit rating with explicit and rating data from CRM systems
+This is a more advanced approach. It combines implicit rating with explicit 
+and rating data from CRM systems
 Follow steps 2.1 through 2.9 and 3
 
 
