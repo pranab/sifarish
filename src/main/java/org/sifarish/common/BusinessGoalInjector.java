@@ -34,12 +34,8 @@ import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 import org.apache.hadoop.util.Tool;
 import org.apache.hadoop.util.ToolRunner;
 import org.chombo.util.SecondarySort;
-import org.chombo.util.TextPair;
 import org.chombo.util.Tuple;
 import org.chombo.util.Utility;
-import org.omg.CORBA.portable.ValueOutputStream;
-import org.sifarish.common.UtilityPredictor.ItemIdGroupComprator;
-import org.sifarish.common.UtilityPredictor.ItemIdPartitioner;
 
 /**
  * Injects business goal into rated items and figures out final net rating. The basic idea is to 
@@ -72,7 +68,10 @@ public class BusinessGoalInjector extends Configured implements Tool{
         job.setPartitionerClass(SecondarySort.TuplePairPartitioner.class);
 
         Utility.setConfiguration(job.getConfiguration());
-        job.setNumReduceTasks(job.getConfiguration().getInt("num.reducer", 1));
+        int numReducer = job.getConfiguration().getInt("bgi.num.reducer", -1);
+        numReducer = -1 == numReducer ? job.getConfiguration().getInt("num.reducer", 1) : numReducer;
+        job.setNumReduceTasks(numReducer);
+        
         int status =  job.waitForCompletion(true) ? 0 : 1;
         return status;
     }

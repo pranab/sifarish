@@ -17,6 +17,7 @@
 
 package org.sifarish.util;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -25,7 +26,7 @@ import java.util.List;
  * @author pranab
  *
  */
-public class Entity {
+public class Entity implements Serializable {
 	private String name;
 	private int type;
 	private int fieldCount;

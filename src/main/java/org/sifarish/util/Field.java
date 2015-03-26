@@ -17,6 +17,7 @@
 
 package org.sifarish.util;
 
+import java.io.Serializable;
 import java.util.List;
 
 /**
@@ -24,7 +25,7 @@ import java.util.List;
  * @author pranab
  *
  */
-public class Field {
+public class Field implements Serializable {
 	private String name;
 	private int ordinal = -1;
 	private boolean type;
@@ -52,7 +53,7 @@ public class Field {
 	private double functionThreshold = 0.5;
 	private double implodeThreshold = -0.1;
 	private double explodeThreshold = 1.1;
-	
+	private double[] partWeights;
 	public static final String DATA_TYPE_STRING = "string";
 	public static final String DATA_TYPE_CATEGORICAL = "categorical";
 	public static final String DATA_TYPE_INT = "int";
@@ -66,9 +67,13 @@ public class Field {
 
 	public static final String TEXT_TYPE_PERSON_NAME = "personName";
 	public static final String TEXT_TYPE_STREET_ADDRESS = "streetAddress";
+	public static final String TEXT_TYPE_STREET_ADDRESS_ONE = "streetAddressOne";
+	public static final String TEXT_TYPE_STREET_TYPE = "streetType";
+	public static final String TEXT_TYPE_STREET_ADDRESS_TWO = "streetAddressTwo";
 	public static final String TEXT_TYPE_CITY = "city";
 	public static final String TEXT_TYPE_STATE = "state";
 	public static final String TEXT_TYPE_ZIP = "zip";
+	public static final String TEXT_TYPE_COUNTRY = "country";
 	public static final String TEXT_TYPE_PHONE_NUM = "phoneNum";
 	public static final String TEXT_TYPE_EMAIL_ADDR = "emailAddress";
 	
@@ -348,5 +353,11 @@ public class Field {
 	}
 	public void setExplodeThreshold(double explodeThreshold) {
 		this.explodeThreshold = explodeThreshold;
+	}
+	public double[] getPartWeights() {
+		return partWeights;
+	}
+	public void setPartWeights(double[] partWeights) {
+		this.partWeights = partWeights;
 	}
 }

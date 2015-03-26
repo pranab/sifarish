@@ -23,11 +23,13 @@ import org.sifarish.util.Entity;
 import org.sifarish.util.Field;
 import org.sifarish.util.IDistanceStrategy;
 
+import java.io.Serializable;
+
 /**
  * @author pranab
  *
  */
-public class SingleTypeSchema  extends TypeSchema {
+public class SingleTypeSchema  extends TypeSchema implements Serializable {
 	private Entity entity;
 	private int partitioningColumn = -1;
 	

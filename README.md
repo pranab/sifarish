@@ -33,6 +33,8 @@ of detail documentation
 * http://pkghosh.wordpress.com/2014/06/23/novelty-in-personalization/
 * http://pkghosh.wordpress.com/2014/09/10/realtime-trending-analysis-with-approximate-algorithms/
 * http://pkghosh.wordpress.com/2014/12/22/positive-feedback-driven-recommendation-rank-reordering/
+* https://pkghosh.wordpress.com/2015/01/20/diversity-in-personalization-with-attribute-diffusion/
+* https://pkghosh.wordpress.com/2015/03/22/customer-service-and-recommendation-system/
 
 ## Content Similarity Based Recommendation
 In the absence of social rating data, the only options is a feature similarity 
@@ -157,12 +159,13 @@ listed in the next section.
 Just accuracy from the CF algorithm is not enough for a good recommender. There
 are various post processing plugins are essential. They improve the quality of results. 
 Here is the list. Sifarsh supports most them. Some are under development.
-(1)Business goal injection 
-(2)Adding novelty 
-(3)Adding diversity 
-(4)Rank reordering for explicit positive feedback 
-(5)Rank reordering for implicit negative feedback 
-(6)Dithering
+
+* Business goal injection 
+* Adding novelty 
+* Adding diversity 
+* Rank reordering for explicit positive feedback 
+* Rank reordering for implicit negative feedback 
+* Dithering
 
 ## Configuration
 Please refer to the wiki page for a detailed list of all configuration parameters
@@ -174,8 +177,9 @@ It has dependencies on two of my other open source projects, chombo and hoidla. 
 need to be built first before building sifarish. 
 
 ## Hadoop2
-If you are using Hadoop2, please change the hadoop dependency in build.xml
-and rebuild. Code change is not necessary.
+If you are using Hadoop2, please switch to branch nuovo and build as follows for yarn
+
+mvn clean install -P yarn
 
 ## Help
 Please feel free to email me at pkghosh99@gmail.com
