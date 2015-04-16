@@ -97,7 +97,9 @@ public class ItemRatingAttributeAggregator  extends Configured implements Tool{
         	fieldDelimRegex = config.get("field.delim.regex", ",");
         	String metaDataFilePrefix = config.get("item.metadta.file.prefix", "meta");
         	isMetaDataFileSplit = ((FileSplit)context.getInputSplit()).getPath().getName().startsWith(metaDataFilePrefix);
-        	attrOrdinals = Utility.intArrayFromString(config.get("item.attr.ordinals"));
+        	if (null != config.get("item.attr.ordinals")) {
+        		attrOrdinals = Utility.intArrayFromString(config.get("item.attr.ordinals"));
+        	}
         }
         
         /* (non-Javadoc)
@@ -114,8 +116,17 @@ public class ItemRatingAttributeAggregator  extends Configured implements Tool{
            		itemID = items[0];
            		keyOut.add(itemID, 1);
            		valOut.append(1);
-           		for (int ordinal :  attrOrdinals) {
-           			valOut.append(items[ordinal]);
+           		
+           		if (null != attrOrdinals) {
+           			//selected attributes
+           			for (int ordinal :  attrOrdinals) {
+           				valOut.append(items[ordinal]);
+           			}
+           		} else {
+           			//all attributes
+           			for (int i = 1; i < items.length; ++i) {
+           				valOut.append(items[i]);
+           			}
            		}
            		
            	} else {
@@ -137,8 +148,10 @@ public class ItemRatingAttributeAggregator  extends Configured implements Tool{
     	private String fieldDelim;
     	private Text valOut = new Text();
     	private List<String> users = new ArrayList<String>();
+    	private List<Integer> ratings = new  ArrayList<Integer>();
     	private String itemID;
 		private StringBuilder stBld =  new StringBuilder();
+		private boolean outputRating;
 
     	/* (non-Javadoc)
          * @see org.apache.hadoop.mapreduce.Reducer#setup(org.apache.hadoop.mapreduce.Reducer.Context)
@@ -146,6 +159,7 @@ public class ItemRatingAttributeAggregator  extends Configured implements Tool{
         protected void setup(Context context) throws IOException, InterruptedException {
         	Configuration config = context.getConfiguration();
         	fieldDelim = config.get("field.delim", ",");
+        	outputRating = config.getBoolean("output.rating", false);
         }
         
         /* (non-Javadoc)
@@ -154,21 +168,31 @@ public class ItemRatingAttributeAggregator  extends Configured implements Tool{
         protected void reduce(Tuple  key, Iterable<Tuple> values, Context context)
         throws IOException, InterruptedException {
         	users.clear();
+        	if (outputRating) {
+        		ratings.clear();
+        	}
         	itemID = key.getString(0);
         	for(Tuple value : values) {
         		int type = value.getInt(0);
         		if (0 == type) {
         			//users for which this item has predicted ratings
         			users.add(value.getString(1));
+        			if (outputRating) {
+        				ratings.add(value.getInt(2));
+        			}
         		} else {
         			//item attributes
         			String attrs = value.toString(1);
+        			int i = 0;
         			for (String user : users) {
         				stBld.delete(0, stBld.length());
         				stBld.append(user).append(fieldDelim).append(itemID).append(fieldDelim).append(attrs);
+        				if (outputRating) {
+        					stBld.append(fieldDelim).append(ratings.get(i++));
+        				}
         				valOut.set(stBld.toString());
         				
-                		//userID, itemID, item attribute, ...,..
+                		//userID, itemID, item attribute, ...,..,[rating]
         				context.write(NullWritable.get(), valOut);
         			}
         		}
