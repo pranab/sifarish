@@ -35,13 +35,12 @@ import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
 import org.apache.hadoop.mapreduce.lib.input.FileSplit;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 import org.apache.hadoop.util.Tool;
+import org.apache.hadoop.util.ToolRunner;
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 import org.chombo.util.SecondarySort;
 import org.chombo.util.Tuple;
 import org.chombo.util.Utility;
-import org.sifarish.etl.StructuredTextNormalizer;
-import org.sifarish.feature.DistanceStrategy;
 import org.sifarish.feature.RecordDistanceFinder;
 import org.sifarish.feature.SingleTypeSchema;
 
@@ -165,11 +164,8 @@ public class NewItemUtility extends Configured implements Tool{
                	}
           		
            		context.write(keyOut, valOut);
-
           	}
-           	
         }    
-        
     }
     
     /**
@@ -183,6 +179,7 @@ public class NewItemUtility extends Configured implements Tool{
     	private String itemID;
     	private int rating;
     	private Map<String, List<RatedItemWithAttributes>> itemsForUsers = new HashMap<String, List<RatedItemWithAttributes>>();
+    	private Map<String, List<RatedItem>> newItemsForUsers = new HashMap<String, List<RatedItem>>();
     	private List<RatedItemWithAttributes> newItems = new ArrayList<RatedItemWithAttributes>();
     	private String[] attrs;
     	private SingleTypeSchema schema;
@@ -190,6 +187,8 @@ public class NewItemUtility extends Configured implements Tool{
     	private int  distThreshold;
     	private RecordDistanceFinder distFinder;
     	private int[] newItemPredRatings;
+    	private String ratingAggrStrategy;
+    	private StringBuilder stBld =  new StringBuilder();
  		private static final Logger LOG = Logger.getLogger(NewItemUtility.ItemUtilityReducer.class);
 
     	/* (non-Javadoc)
@@ -212,6 +211,8 @@ public class NewItemUtility extends Configured implements Tool{
         	distThreshold = config.getInt("dist.threshold", scale);
         	distFinder = new RecordDistanceFinder( config.get("field.delim.regex", ","),  0, scale,
         			distThreshold, schema, ":");
+        	ratingAggrStrategy = config.get("new.item.rating.aggregator.strategy", "average");
+        	
         }
    	
         /* (non-Javadoc)
@@ -222,6 +223,8 @@ public class NewItemUtility extends Configured implements Tool{
         	userID = key.getString(0);
         	itemsForUsers.clear();
         	newItems.clear();
+        	newItemsForUsers.clear();
+        	
         	for(Tuple value : values) {
         		int type = value.getInt(0);
         		if (0 == type) {
@@ -237,7 +240,7 @@ public class NewItemUtility extends Configured implements Tool{
         			}
         			items.add(new RatedItemWithAttributes(value.getString(1),  rating, attrs));
         		} else {
-        			//item attributes
+        			//new item attributes
         			attrs = value.getTupleAsArray();
         			newItems.add(new RatedItemWithAttributes(value.getString(0),  0, attrs));
         		}
@@ -252,17 +255,92 @@ public class NewItemUtility extends Configured implements Tool{
         			 int i = 0;
         			 //items or an user
         			 for (RatedItemWithAttributes item : items) {
-        				 newItemPredRatings[i++] = distFinder.findDistance(item.getAttributeArray(), newItem.getAttributeArray()) * item.getRight();
+        				 newItemPredRatings[i++] = 
+        						 (scale - distFinder.findDistance(item.getAttributeArray(), newItem.getAttributeArray())) * item.getRight();
         			 }
-        			 
-        			 
+        			 int aggrRating = aggregateRating();
+        			 List<RatedItem> ratedNewItems = newItemsForUsers.get(userID);
+        			 if (null == userID) {
+        				 ratedNewItems = new ArrayList<RatedItem>();
+        				 newItemsForUsers.put(userID, ratedNewItems);
+        			 }
+        			 ratedNewItems.add(new RatedItem(newItem.getLeft(),  aggrRating ));
         		 }
-        		 
         	 }
+        	 
+        	 //output ratings
+        	 outputRating(context);
         }
         
-       
+       /**
+     * @return
+     */
+        private int aggregateRating() {
+        	int aggrRating = 0;
+        	if (ratingAggrStrategy.equals("average")) {
+        		int sum = 0;
+    		    for (int rating : newItemPredRatings) {
+    		    	sum += rating;
+    		    }
+    		    aggrRating = sum / (newItemPredRatings.length * scale);
+    	   } else if  (ratingAggrStrategy.equals("average")) {
+    		   int max = -1;
+   		    	for (int rating : newItemPredRatings) {
+   		    		if (rating > max) {
+   		    			max = rating;
+   		    		}
+   		    	}    		   
+   		    	aggrRating = max;
+    	   } else {
+    		   throw new IllegalArgumentException("invalid rating aggregation function");
+    	   }
+    	   
+    	   return aggrRating;
+        }
         
+    
+    /**
+     * @param context
+     * @throws IOException
+     * @throws InterruptedException
+     */
+        private void outputRating(Context context) throws IOException, InterruptedException {
+        	//all users
+        	for (String userID : itemsForUsers.keySet()) {
+        		List<RatedItemWithAttributes> items = itemsForUsers.get(userID);
+    		
+        		//existing items
+        		for (RatedItemWithAttributes item : items) {
+    	    		stBld.delete(0, stBld.length());
+    	    		stBld.append(userID).append(fieldDelim).append(item.getLeft()).append(fieldDelim).
+    	    			append(item.getRight()).append("E");
+    	    		valOut.set(stBld.toString());
+    	    		context.write(NullWritable.get(), valOut);
+        		}
+    		 
+        		//new items
+        		List<RatedItem> newItems = newItemsForUsers.get(userID);
+        		for (RatedItem item : newItems) {
+        			stBld.delete(0, stBld.length());
+        			stBld.append(userID).append(fieldDelim).append(item.getLeft()).append(fieldDelim).
+   	    				append(item.getRight()).append("N");
+        			valOut.set(stBld.toString());
+        			context.write(NullWritable.get(), valOut);
+        		}
+    		 
+   	 		}
+        }
+        
+        
+    }
+    
+    /**
+     * @param args
+     * @throws Exception
+     */
+    public static void main(String[] args) throws Exception {
+        int exitCode = ToolRunner.run(new NewItemUtility(), args);
+        System.exit(exitCode);
     }
     
 }
