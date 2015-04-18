@@ -17,6 +17,10 @@
 package org.sifarish.common;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.conf.Configured;
@@ -27,7 +31,6 @@ import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.mapreduce.Mapper;
 import org.apache.hadoop.mapreduce.Reducer;
-import org.apache.hadoop.mapreduce.Reducer.Context;
 import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
 import org.apache.hadoop.mapreduce.lib.input.FileSplit;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
@@ -37,6 +40,10 @@ import org.apache.log4j.Logger;
 import org.chombo.util.SecondarySort;
 import org.chombo.util.Tuple;
 import org.chombo.util.Utility;
+import org.sifarish.etl.StructuredTextNormalizer;
+import org.sifarish.feature.DistanceStrategy;
+import org.sifarish.feature.RecordDistanceFinder;
+import org.sifarish.feature.SingleTypeSchema;
 
 /**
  * Solves cold start problem with new items. Finds predicted rating based on items recommended
@@ -175,7 +182,15 @@ public class NewItemUtility extends Configured implements Tool{
     	private String userID;
     	private String itemID;
     	private int rating;
-		 private static final Logger LOG = Logger.getLogger(NewItemUtility.ItemUtilityReducer.class);
+    	private Map<String, List<RatedItemWithAttributes>> itemsForUsers = new HashMap<String, List<RatedItemWithAttributes>>();
+    	private List<RatedItemWithAttributes> newItems = new ArrayList<RatedItemWithAttributes>();
+    	private String[] attrs;
+    	private SingleTypeSchema schema;
+    	private int scale;
+    	private int  distThreshold;
+    	private RecordDistanceFinder distFinder;
+    	private int[] newItemPredRatings;
+ 		private static final Logger LOG = Logger.getLogger(NewItemUtility.ItemUtilityReducer.class);
 
     	/* (non-Javadoc)
          * @see org.apache.hadoop.mapreduce.Reducer#setup(org.apache.hadoop.mapreduce.Reducer.Context)
@@ -188,6 +203,15 @@ public class NewItemUtility extends Configured implements Tool{
             }
 
         	fieldDelim = config.get("field.delim", ",");
+        	try {
+				schema = org.sifarish.util.Utility.getSameTypeSchema( config);
+			} catch (Exception e) {
+				throw new IOException("failed to process schema " + e.getMessage());
+			}
+        	scale = config.getInt("distance.scale", 1000);
+        	distThreshold = config.getInt("dist.threshold", scale);
+        	distFinder = new RecordDistanceFinder( config.get("field.delim.regex", ","),  0, scale,
+        			distThreshold, schema, ":");
         }
    	
         /* (non-Javadoc)
@@ -196,17 +220,49 @@ public class NewItemUtility extends Configured implements Tool{
         protected void reduce(Tuple  key, Iterable<Tuple> values, Context context)
         throws IOException, InterruptedException {
         	userID = key.getString(0);
-        	
+        	itemsForUsers.clear();
+        	newItems.clear();
         	for(Tuple value : values) {
         		int type = value.getInt(0);
         		if (0 == type) {
         			//predicted ratings with item attributes
-        			
+        			userID = value.getString(0);
+        			int size = value.getSize();
+        			rating = value.getInt(size -1);
+        			attrs = value.subTupleAsArray(1, size-1);
+        			List<RatedItemWithAttributes> items = itemsForUsers.get(userID);
+        			if (null == items) {
+        				items = new  ArrayList<RatedItemWithAttributes>();
+        				itemsForUsers.put(userID, items);
+        			}
+        			items.add(new RatedItemWithAttributes(value.getString(1),  rating, attrs));
         		} else {
         			//item attributes
+        			attrs = value.getTupleAsArray();
+        			newItems.add(new RatedItemWithAttributes(value.getString(0),  0, attrs));
         		}
         	}
+        	
+        	//all users
+        	 for (String userID : itemsForUsers.keySet()) {
+        		 //new items
+        		 for (RatedItemWithAttributes newItem : newItems) {
+        			 List<RatedItemWithAttributes> items = itemsForUsers.get(userID);
+        			 newItemPredRatings = new int[items.size()];
+        			 int i = 0;
+        			 //items or an user
+        			 for (RatedItemWithAttributes item : items) {
+        				 newItemPredRatings[i++] = distFinder.findDistance(item.getAttributeArray(), newItem.getAttributeArray()) * item.getRight();
+        			 }
+        			 
+        			 
+        		 }
+        		 
+        	 }
         }
+        
+       
+        
     }
     
 }

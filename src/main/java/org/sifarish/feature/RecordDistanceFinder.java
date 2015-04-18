@@ -59,22 +59,33 @@ public class RecordDistanceFinder {
      * @param textSimStrategy
      * @param subFieldDelim
      */
-    public RecordDistanceFinder(String fieldDelimRegex, int idOrdinal,
-			int distThreshold, DistanceStrategy distStrategy,
-			SingleTypeSchema schema,
-			DynamicAttrSimilarityStrategy textSimStrategy, String subFieldDelim,
+    public RecordDistanceFinder(String fieldDelimRegex, int idOrdinal, int scale,
+			int distThreshold, SingleTypeSchema schema, String subFieldDelim,
 			StructuredTextNormalizer textNormalizer) {
 		super();
 		this.fieldDelimRegex = fieldDelimRegex;
 		this.idOrdinal = idOrdinal;
 		this.distThreshold = distThreshold;
-		this.distStrategy = distStrategy;
+		this.distStrategy = schema.createDistanceStrategy(scale);
 		this.schema = schema;
-		this.textSimStrategy = textSimStrategy;
+		this.textSimStrategy =schema.createTextSimilarityStrategy();
 		this.subFieldDelim = subFieldDelim;
 		this.textNormalizer = textNormalizer;
 	}
 
+    /**
+     * @param fieldDelimRegex
+     * @param idOrdinal
+     * @param scale
+     * @param distThreshold
+     * @param schema
+     * @param subFieldDelim
+     */
+    public RecordDistanceFinder(String fieldDelimRegex, int idOrdinal, int scale,
+			int distThreshold, SingleTypeSchema schema, String subFieldDelim) {
+    	this(fieldDelimRegex, idOrdinal, scale, distThreshold, schema, subFieldDelim,null);
+    }
+    
     /**
      * @param mixedInSets
      * @return
@@ -120,18 +131,25 @@ public class RecordDistanceFinder {
     	return this;
     }
 
-    
-	/**
+    /**
      * @param first
      * @param second
-     * @param context
      * @return
-     * @throws IOException 
+     * @throws IOException
      */
     public int findDistance(String first, String second) throws IOException {
 		String[] firstItems = first.split(fieldDelimRegex);
 		String[] secondItems = second.split(fieldDelimRegex);
-
+		return findDistance(firstItems, secondItems);
+    }
+    
+	/**
+     * @param first
+     * @param second
+     * @return
+     * @throws IOException 
+     */
+    public int findDistance(String[] firstItems, String[] secondItems) throws IOException {
 		String firstId =  firstItems[idOrdinal];
 		String secondId =  secondItems[idOrdinal];
 		
@@ -181,7 +199,7 @@ public class RecordDistanceFinder {
 				firstAttr = firstItems[field.getOrdinal()];
 			} else {
 				throw new IOException("Invalid field ordinal. Looking for field " + field.getOrdinal() + 
-						" found "  + firstItems.length + " fields in the record:" + first);
+						" found "  + firstItems.length + " fields in the record starting with :" + firstItems[0]);
 			}
 			
 			String secondAttr = "";
@@ -189,8 +207,8 @@ public class RecordDistanceFinder {
 				secondAttr = secondItems[field.getOrdinal()];
 			}else {
 				throw new IOException("Invalid field ordinal. Looking for field " + field.getOrdinal() + 
-						" found "  + secondItems.length + " fields in the record:" + second);
-			}
+						" found "  + secondItems.length + " fields in the record starting with:" + secondItems[0]);
+			} 
 			String unit = field.getUnit();
 			
 			if (firstAttr.isEmpty() || secondAttr.isEmpty() ) {
