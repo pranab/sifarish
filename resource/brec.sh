@@ -304,8 +304,8 @@ case "$1" in
 
 "genItemAttrData")  
 	echo "generating item attribute data"
-	echo "usage: ./item_cat_brand.py <event_file>"
-	./item_cat_brand.py $2
+	echo "usage: ./item_cat_brand.py existingItems <event_file>"
+	./item_cat_brand.py existingItems $2
     ;;
 
 "storeItemAttrData")  
