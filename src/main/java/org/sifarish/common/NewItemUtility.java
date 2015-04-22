@@ -106,7 +106,7 @@ public class NewItemUtility extends Configured implements Tool{
         protected void setup(Context context) throws IOException, InterruptedException {
         	Configuration config = context.getConfiguration();
         	fieldDelimRegex = config.get("field.delim.regex", ",");
-        	String metaDataFilePrefix = config.get("user.item.metadta.file.prefix", "meta");
+        	String metaDataFilePrefix = config.get("new.item.metadta.file.prefix", "new");
         	isMetaDataFileSplit = ((FileSplit)context.getInputSplit()).getPath().getName().startsWith(metaDataFilePrefix);
         	hashBucketCount = config.getInt("hash.bucket.count", 16);
         	if (null != config.get("item.attr.ordinals")) {

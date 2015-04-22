@@ -304,12 +304,14 @@ case "$1" in
 
 "genItemAttrData")  
 	echo "generating item attribute data"
-	echo "usage: ./item_cat_brand.py existingItems <event_file>"
+	echo "usage: ./brec.sh genItemAttrData <event_file>"
 	./item_cat_brand.py existingItems $2
     ;;
 
+
 "storeItemAttrData")  
 	echo "exporting item attribute data to HDFS dir itat"
+	hadoop fs -rm $HDFS_BASE_DIR/itat/*
 	hadoop fs -put $2 $HDFS_BASE_DIR/itat/$3
 	hadoop fs -ls $HDFS_BASE_DIR/itat
     ;;
@@ -346,6 +348,39 @@ case "$1" in
 	hadoop fs -rmr $HDFS_BASE_DIR/abdi/_logs
 	hadoop fs -rmr $HDFS_BASE_DIR/abdi/_SUCCESS	
 	hadoop fs -ls $HDFS_BASE_DIR/abdi
+    ;;
+
+"genItemAllAttrData")  
+	echo "generating item all attribute data"
+	echo "usage: ./brec.sh  genItemAllAttrData <event_file>"
+	./item_cat_brand.py existingItems $2 all
+    ;;
+
+"genNewItemAllAttrData")  
+	echo "generating new item all attribute data"
+	echo "usage: ./brec.sh genNewItemAllAttrData <item_count>"
+	./item_cat_brand.py newItems $2
+    ;;
+
+"storeNewItemAttrData")  
+	echo "exporting new item attribute data to HDFS dir neit"
+	hadoop fs -rm $HDFS_BASE_DIR/neit/*
+	hadoop fs -put $2 $HDFS_BASE_DIR/neit/$3
+	hadoop fs -ls $HDFS_BASE_DIR/neit
+    ;;
+
+"newItemUtilityEstimator") 
+	CLASS_NAME=org.sifarish.common.NewItemUtility
+	echo "running MR for attribute based diversifier"
+	IN_PATH=$HDFS_BASE_DIR/neit,$HDFS_BASE_DIR/iraa
+	OUT_PATH=$HDFS_BASE_DIR/neiU
+	echo "input $IN_PATH output $OUT_PATH"
+	hadoop fs -rmr $OUT_PATH
+	echo "removed output dir $OUT_PATH"
+	hadoop jar $JAR_NAME  $CLASS_NAME -Dconf.path=$PROP_FILE  $IN_PATH  $OUT_PATH
+	hadoop fs -rmr $HDFS_BASE_DIR/neiU/_logs
+	hadoop fs -rmr $HDFS_BASE_DIR/neiU/_SUCCESS	
+	hadoop fs -ls $HDFS_BASE_DIR/neiU
     ;;
 
 *) 
