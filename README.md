@@ -189,7 +189,8 @@ For Hadoop 2 (yarn), use the branch nuovo
 ## Help
 Please feel free to email me at pkghosh99@gmail.com
 
-
+## Contribution
+Contributors are welcome. Please email me at pkghosh99@gmail.com
 
 
 
