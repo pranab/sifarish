@@ -22,7 +22,7 @@ import java.io.IOException;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.util.ToolRunner;
 import org.chombo.mr.Transformer;
-import org.chombo.util.AttributeTransformer;
+import org.chombo.transformer.AttributeTransformer;
 
 /**
  * Per user item novelty. Novelty has an inverse relationship with user's engagement 
@@ -83,12 +83,14 @@ public class IndividualNovelty extends Transformer {
 		}
 		
 		@Override
-		public String tranform(String value) {
+		public String[] tranform(String value) {
 			//from rating distr to novelty
 			int rating = Integer.parseInt(value);
 			rating = rating == 0 ? 1 : rating;
 			Integer novelty = (int)((1.0 - log2(rating) / maxNovelty) * maxRating);
-			return novelty.toString();
+			String[] transformed = new String[1];
+			transformed[0] = novelty.toString();
+			return transformed;
 		}
 	}
 
@@ -114,7 +116,7 @@ public class IndividualNovelty extends Transformer {
 		}
 		
 		@Override
-		public String tranform(String value) {
+		public String[] tranform(String value) {
 			//from rating to novelty
 			int rating = Integer.parseInt(value);
 			
@@ -131,7 +133,9 @@ public class IndividualNovelty extends Transformer {
 			} else {
 				novelty = (int)(k2 * rating * rating + k1 * rating + k0);
 			}
-			return novelty.toString();
+			String[] transformed = new String[1];
+			transformed[0] = novelty.toString();
+			return transformed;
 		}
 		
 	}	
