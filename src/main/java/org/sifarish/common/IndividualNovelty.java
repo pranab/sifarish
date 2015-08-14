@@ -69,7 +69,7 @@ public class IndividualNovelty extends Transformer {
 	 * @author pranab
 	 *
 	 */
-	public static class SelfInformation implements AttributeTransformer {
+	public static class SelfInformation extends AttributeTransformer {
 		private double maxNovelty;
 		private int maxRating;
 		
@@ -99,7 +99,7 @@ public class IndividualNovelty extends Transformer {
 	 * @author pranab
 	 *
 	 */
-	public static class NonLinearInverse  implements AttributeTransformer {
+	public static class NonLinearInverse  extends AttributeTransformer {
 		private int maxRating; 
 		private double k0, k1, k2;
 		private int maxRatingInData;
