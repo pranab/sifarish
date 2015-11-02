@@ -17,6 +17,7 @@
 package org.sifarish.feature;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -27,8 +28,6 @@ import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.conf.Configured;
-import org.apache.hadoop.fs.FSDataInputStream;
-import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.NullWritable;
@@ -137,12 +136,10 @@ public class SameTypeSimilarity  extends Configured implements Tool {
         	bucketCount = context.getConfiguration().getInt("bucket.count", 1000);
         	fieldDelimRegex = context.getConfiguration().get("field.delim.regex", "\\[\\]");
             
-        	//data schema
 			Configuration conf = context.getConfiguration();
-            String filePath = conf.get("same.schema.file.path");
-            FileSystem dfs = FileSystem.get(conf);
-            Path src = new Path(filePath);
-            FSDataInputStream fs = dfs.open(src);
+            
+        	//data schema
+    		InputStream fs = org.chombo.util.Utility.getFileStream(conf, "same.schema.file.path");
             ObjectMapper mapper = new ObjectMapper();
             schema = mapper.readValue(fs, SingleTypeSchema.class);
             
@@ -272,11 +269,8 @@ public class SameTypeSimilarity  extends Configured implements Tool {
         	fieldDelim = context.getConfiguration().get("field.delim", ",");
 			
 			//schema
-            String filePath = conf.get("same.schema.file.path");
-            FileSystem dfs = FileSystem.get(conf);
-            Path src = new Path(filePath);
-            FSDataInputStream fs = dfs.open(src);
-            ObjectMapper mapper = new ObjectMapper();
+       		InputStream fs = org.chombo.util.Utility.getFileStream(conf, "same.schema.file.path");
+       	    ObjectMapper mapper = new ObjectMapper();
             schema = mapper.readValue(fs, SingleTypeSchema.class);
             schema.processStructuredFields();
             schema.setConf(conf);
@@ -697,7 +691,6 @@ public class SameTypeSimilarity  extends Configured implements Tool {
 			Location firstLocation  = new Location( subFields[0], subFields[1], subFields[2]); 
 		    subFields = secondAttr.split(subFieldDelim);
 			Location secondLocation  = new Location( subFields[0], subFields[1], subFields[2]); 
-
 			dist = field.findDistance(firstLocation, secondLocation);
         	return dist;
         }    

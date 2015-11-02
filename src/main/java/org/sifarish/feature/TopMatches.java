@@ -109,7 +109,6 @@ public class TopMatches extends Configured implements Tool {
             fieldDelimRegex = conf.get("field.delim.regex", ",");
             distOrdinal = conf.getInt("distance.ordinal", -1);
         	recordInOutput =  conf.getBoolean("record.in.output", false);     
-
         }    
 
         /* (non-Javadoc)
@@ -162,14 +161,17 @@ public class TopMatches extends Configured implements Tool {
          * @see org.apache.hadoop.mapreduce.Reducer#setup(org.apache.hadoop.mapreduce.Reducer.Context)
          */
         protected void setup(Context context) throws IOException, InterruptedException {
-           	fieldDelim = context.getConfiguration().get("field.delim", ",");
-        	nearestByCount = context.getConfiguration().getBoolean("nearest.by.count", true);
+			Configuration conf = context.getConfiguration();
+
+           	fieldDelim = conf.get("field.delim", ",");
+        	nearestByCount = conf.getBoolean("nearest.by.count", true);
         	if (nearestByCount) {
-        		topMatchCount = context.getConfiguration().getInt("top.match.count", 10);
+        		topMatchCount = conf.getInt("top.match.count", 10);
         	} else {
-        		topMatchDistance = context.getConfiguration().getInt("top.match.distance", 200);
+        		topMatchDistance = conf.getInt("top.match.distance", 200);
         	}
-        }
+       }
+        
        	/* (non-Javadoc)
     	 * @see org.apache.hadoop.mapreduce.Reducer#reduce(KEYIN, java.lang.Iterable, org.apache.hadoop.mapreduce.Reducer.Context)
     	 */
@@ -196,7 +198,6 @@ public class TopMatches extends Configured implements Tool {
     	}
     }
     
-    
     /**
      * @author pranab
      *
@@ -214,6 +215,7 @@ public class TopMatches extends Configured implements Tool {
         private boolean recordInOutput;
         private boolean compactOutput;
         private List<String> valueList = new ArrayList<String>();
+    	private boolean outputWithNoNeighbor;
     	
         /* (non-Javadoc)
          * @see org.apache.hadoop.mapreduce.Reducer#setup(org.apache.hadoop.mapreduce.Reducer.Context)
@@ -230,6 +232,7 @@ public class TopMatches extends Configured implements Tool {
         	}
         	recordInOutput =  conf.getBoolean("record.in.output", false);     
         	compactOutput =  conf.getBoolean("compact.output", false);     
+        	outputWithNoNeighbor =  conf.getBoolean("output.with.no.neighbor", false);     
         }
     	
     	/* (non-Javadoc)
@@ -268,14 +271,21 @@ public class TopMatches extends Configured implements Tool {
 				if (doEmitNeighbor) {
 					//along with neighbors
 					if (compactOutput) {
-						valueList.add(value.toString());
+						if (recordInOutput) {
+							//contains id,record,rank - strip out entity ID and rank
+							String[] valueItems = value.toString().split(fieldDelim);
+							valueList.add(org.chombo.util.Utility.join(valueItems, 1, valueItems.length -1));
+						} else {
+							//contains id, rank
+							valueList.add(value.toString());
+						}
 					} else {
 						outVal.set(srcEntityId + fieldDelim + value.toString());
 						context.write(NullWritable.get(), outVal);
 					}
 				} else {
-					//only source entity
-					if (!compactOutput) {
+					//only source entity if neighborhood condition not met
+					if (outputWithNoNeighbor && !compactOutput) {
 						outVal.set(srcEntityId);
 						context.write(NullWritable.get(), outVal);
 					}
@@ -284,20 +294,27 @@ public class TopMatches extends Configured implements Tool {
         	
         	//emit in compact format
         	if (compactOutput) {
+        		boolean doEmit = true;
         		String srcRec = recordInOutput ? key.getString(1) : "";
         		int numNeighbor = valueList.size();
-        		if (0 == numNeighbor) {
-					outVal.set(recordInOutput ? srcEntityId + fieldDelim + srcRec + fieldDelim +  numNeighbor: 
-						srcEntityId);
+        		if ( 0 == numNeighbor) {
+					//only source entity if neighborhood condition not met
+        			if (outputWithNoNeighbor) {
+        				outVal.set(recordInOutput ? srcEntityId + fieldDelim + srcRec + fieldDelim +  numNeighbor: 
+        					srcEntityId);
+        			} else {
+        				doEmit = false;
+        			}
         		} else {
         			String targetValues = org.chombo.util.Utility.join(valueList, fieldDelim);
 					outVal.set(recordInOutput ? srcEntityId + fieldDelim + srcRec + fieldDelim +  numNeighbor + targetValues : 
-						srcEntityId + fieldDelim + srcRec);
+						srcEntityId + fieldDelim + targetValues);
         		}
-				context.write(NullWritable.get(), outVal);
+        		if (doEmit) {
+        			context.write(NullWritable.get(), outVal);
+        		}
         	}
     	}
-    	
     }
 	
 	/**
