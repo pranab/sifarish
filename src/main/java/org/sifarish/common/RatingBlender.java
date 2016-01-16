@@ -216,6 +216,7 @@ public class RatingBlender extends Configured implements Tool{
 		        				if (i == 1 && explicitRatingOverride.equals("supersedeExplicit")  ||
 		        						i == 2 && explicitRatingOverride.equals("supersedeCustSvc")) {
 		    	        			rating = ratingSource[i];
+			    	        		timeStamp = ratingTimeStamp[i];
 			    	        		context.getCounter("Blended rating","explicitOverride").increment(1);
 		        				}
 		        			}
@@ -230,12 +231,17 @@ public class RatingBlender extends Configured implements Tool{
 	        		if (ratingSource[i] > 0) {
 	            		ratingSum += ratingSource[i] * ratingWeightList[i];
 	        			weightSum += ratingWeightList[i];
+		        		if (i == 0) {
+		        			timeStamp = ratingTimeStamp[i];
+		        		} else if (ratingTimeStamp[i] >  timeStamp) {
+	    	        		timeStamp = ratingTimeStamp[i];
+	        			}
 	        		}
 	        	}
 	        	rating = ratingSum / weightSum;
         	}
         	
-        	valOut.set(userID + fieldDelim + itemID + fieldDelim + rating);
+        	valOut.set(userID + fieldDelim + itemID + fieldDelim + rating + fieldDelim + timeStamp);
 			context.write(NullWritable.get(), valOut);
         }
         

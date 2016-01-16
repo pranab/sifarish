@@ -173,18 +173,24 @@ https://github.com/pranab/sifarish/wiki/Configuration. Going through the tutoria
 in the resource directory, you can find sample configuration for various use cases.
 
 ## Build
-It has dependencies on two of my other open source projects, chombo and hoidla. They
-need to be built first before building sifarish. 
+Please read jar\_dependency.txt in the resource directory for build and run time dependency
 
-## Hadoop2
-If you are using Hadoop2, please switch to branch nuovo and build as follows for yarn
+For Hadoop 1
+* mvn clean install
 
-mvn clean install -P yarn
+For Hadoop 2 (non yarn), use the branch nuovo
+* git checkout nuovo
+* mvn clean install
+
+For Hadoop 2 (yarn), use the branch nuovo
+* git checkout nuovo
+* mvn clean install -P yarn
 
 ## Help
 Please feel free to email me at pkghosh99@gmail.com
 
-
+## Contribution
+Contributors are welcome. Please email me at pkghosh99@gmail.com
 
 
 
