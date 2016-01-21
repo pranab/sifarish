@@ -37,8 +37,6 @@ import org.codehaus.jackson.map.JsonMappingException;
 import org.codehaus.jackson.map.ObjectMapper;
 import org.sifarish.common.EngagementToPreferenceMapper;
 
-import redis.clients.jedis.Jedis;
-
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
