@@ -17,12 +17,14 @@
 
 package org.sifarish.util;
 
+import java.io.Serializable;
+
 /**
  * Explicity set distance between two categorical values
  * @author pranab
  *
  */
-public class CategoricalDistance {
+public class CategoricalDistance implements Serializable {
 
 	private String thisValue;
 	private String thatValue;

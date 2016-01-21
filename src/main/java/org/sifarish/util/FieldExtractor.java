@@ -17,6 +17,7 @@ package org.sifarish.util;
  * permissions and limitations under the License.
  */
 
+import java.io.Serializable;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -25,7 +26,7 @@ import java.util.regex.Pattern;
  * @author pranab
  *
  */
-public class FieldExtractor {
+public class FieldExtractor implements Serializable {
 	private String name;
 	private int ordinal;
 	private int srcOrdinal;

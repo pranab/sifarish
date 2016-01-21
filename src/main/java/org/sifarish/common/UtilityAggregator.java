@@ -21,9 +21,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.UUID;
 
-import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.conf.Configured;
 import org.apache.hadoop.fs.Path;
@@ -33,14 +31,11 @@ import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.mapreduce.Mapper;
 import org.apache.hadoop.mapreduce.Reducer;
-import org.apache.hadoop.mapreduce.Reducer.Context;
 import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 import org.apache.hadoop.util.Tool;
 import org.apache.hadoop.util.ToolRunner;
 import org.chombo.redis.RedisCache;
-import org.chombo.util.ConfigUtility;
-import org.chombo.util.TextPair;
 import org.chombo.util.Tuple;
 import org.chombo.util.Utility;
 
@@ -63,7 +58,7 @@ public class UtilityAggregator extends Configured implements Tool{
         job.setMapperClass(UtilityAggregator.AggregateMapper.class);
         job.setReducerClass(UtilityAggregator.AggregateReducer.class);
         
-        job.setMapOutputKeyClass(TextPair.class);
+        job.setMapOutputKeyClass(Tuple.class);
         job.setMapOutputValueClass(Tuple.class);
 
         job.setOutputKeyClass(NullWritable.class);
@@ -82,16 +77,20 @@ public class UtilityAggregator extends Configured implements Tool{
      * @author pranab
      *
      */
-    public static class AggregateMapper extends Mapper<LongWritable, Text, TextPair, Tuple> {
+    public static class AggregateMapper extends Mapper<LongWritable, Text, Tuple, Tuple> {
     	private String fieldDelim;
-    	private TextPair keyOut = new TextPair();
+    	private Tuple keyOut = new Tuple();
     	private Tuple valOut = new Tuple();
+    	private boolean userRatingWithContext;
+    	private int valStart;
     	
         /* (non-Javadoc)
          * @see org.apache.hadoop.mapreduce.Mapper#setup(org.apache.hadoop.mapreduce.Mapper.Context)
          */
         protected void setup(Context context) throws IOException, InterruptedException {
-        	fieldDelim = context.getConfiguration().get("field.delim", ",");
+        	Configuration conf = context.getConfiguration();
+        	fieldDelim = conf.get("field.delim", ",");
+        	userRatingWithContext = conf.getBoolean("user.rating.with.context", false);
         }    
     	
         /* (non-Javadoc)
@@ -103,11 +102,19 @@ public class UtilityAggregator extends Configured implements Tool{
            	String[] items = value.toString().split(fieldDelim);
            	
            	//userID, itemID
-           	keyOut.set(items[0], items[1]);   	
+           	keyOut.initialize();
+       		keyOut.add(items[0], items[1]);   	
+       		valStart = 2;
+           	if (userRatingWithContext) {
+           		//context
+           		keyOut.add(items[2]);
+           		valStart = 3;
+           	} 
            	
            	//rating, weight, correlation, rating std dev
            	valOut.initialize();
-           	valOut.add(new Integer(items[2]), new Integer(items[3]),  new Integer(items[4]), new Integer(items[5]));
+           	valOut.add(new Integer(items[valStart]), new Integer(items[valStart+1]),  new Integer(items[valStart+2]), 
+           			new Integer(items[valStart+3]));
 	   		context.write(keyOut, valOut);
         }   
     }
@@ -116,7 +123,7 @@ public class UtilityAggregator extends Configured implements Tool{
      * @author pranab
      *
      */
-    public static class AggregateReducer extends Reducer<TextPair, Tuple, NullWritable, Text> {
+    public static class AggregateReducer extends Reducer<Tuple, Tuple, NullWritable, Text> {
     	private String fieldDelim;
     	private int sum ;
     	private int sumWt;
@@ -135,6 +142,7 @@ public class UtilityAggregator extends Configured implements Tool{
     	private int maxStdDev;
     	private int maxPredictedRating;
     	private boolean  outputAggregationCount;
+    	private boolean userRatingWithContext;
 		private StringBuilder stBld = new  StringBuilder();
 		private RedisCache redisCache;
 
@@ -152,6 +160,7 @@ public class UtilityAggregator extends Configured implements Tool{
         	maxStdDev = (35 * maxRating)  / 100;
         	maxPredictedRating = 0;
         	outputAggregationCount = config.getBoolean("output.aggregation.count", true);
+        	userRatingWithContext = config.getBoolean("user.rating.with.context", false);
         	
         	boolean cacheMaxPredRating = config.getBoolean("cache.max.pred.rating", false);
         	if (cacheMaxPredRating) {
@@ -176,7 +185,7 @@ public class UtilityAggregator extends Configured implements Tool{
         /* (non-Javadoc)
          * @see org.apache.hadoop.mapreduce.Reducer#reduce(KEYIN, java.lang.Iterable, org.apache.hadoop.mapreduce.Reducer.Context)
          */
-        protected void reduce(TextPair  key, Iterable<Tuple> values, Context context)
+        protected void reduce(Tuple  key, Iterable<Tuple> values, Context context)
         throws IOException, InterruptedException {
 			stBld.delete(0, stBld.length());
 			sum = sumWt = 0;
@@ -249,9 +258,13 @@ public class UtilityAggregator extends Configured implements Tool{
 				maxPredictedRating = utilityScore;
 			}
 			
-			//userID, itemID, score, count
-			stBld.append(key.getFirst()).append(fieldDelim).append(key.getSecond()).append(fieldDelim).
-				append(utilityScore);
+			//userID, itemID, [context],score, [count]
+			stBld.append(key.getString(0)).append(fieldDelim).append(key.getString(1)).append(fieldDelim);
+           	if (userRatingWithContext) {
+           		stBld.append(key.getString(2)).append(fieldDelim);
+           	} 
+           	stBld.append(utilityScore);
+           	
 			if (outputAggregationCount) {
 				stBld.append(fieldDelim).append(count);
 			}

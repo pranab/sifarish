@@ -106,6 +106,8 @@ public class UtilityPredictor extends Configured implements Tool{
     	private int minCorrelation;
     	private int correlation;
     	private int  correlationLength;
+    	private boolean userRatingWithContext;
+    	private String ratingContext;
     	private static final int STD_DEV_ORD = 3;
     	
         private static final Logger LOG = Logger.getLogger(UtilityPredictor.PredictionMapper.class);
@@ -133,6 +135,8 @@ public class UtilityPredictor extends Configured implements Tool{
         	
         	minInputRating = conf.getInt("min.input.rating",  -1);
         	minCorrelation = conf.getInt("min.correlation",  -1);
+        	
+        	userRatingWithContext = conf.getBoolean("user.rating.with.context", false);
         	LOG.info("isRatingFileSplit:" + isRatingFileSplit);
         }    
     	
@@ -160,6 +164,11 @@ public class UtilityPredictor extends Configured implements Tool{
             			 toInclude = timeStamp > ratingTimeCutoff;
             		 }
             
+            		 //contextual recommendation
+            		 if (userRatingWithContext) {
+            			 ratingContext = ratings[3];
+            		 }
+            		 
             		 //check for min input rating threshold
            			 inputRating = new Integer(ratings[1]);
             		toInclude = toInclude && inputRating > minInputRating;
@@ -170,7 +179,11 @@ public class UtilityPredictor extends Configured implements Tool{
 	            		
 	            		//userID, rating
 	               		valOut.initialize();
-	            		valOut.add(ratings[0],  inputRating, two);
+	            		 if (userRatingWithContext) {
+	            			 valOut.add(ratings[0],  inputRating, context, two);
+	            		 } else {
+	            			 valOut.add(ratings[0],  inputRating,  two);
+	            		 }
 	       	   			context.write(keyOut, valOut);
             		 }
                	}
@@ -183,10 +196,13 @@ public class UtilityPredictor extends Configured implements Tool{
         		valOut.add(ratingStdDev,   one);
    	   			context.write(keyOut, valOut);
         	} else {
-        		//if correlation is above min threshold
+        		//item correlation
 				//context.getCounter("Record type count", "Correlation").increment(1);
+
         		correlation =  Integer.parseInt( items[2]);
         		correlationLength =  Integer.parseInt(items[3]);
+
+        		//if correlation is above min threshold
         		if (correlation > minCorrelation) {
 	        		//correlation of 1st item
 	        		keyOut.set(items[0], zero);
@@ -236,16 +252,20 @@ public class UtilityPredictor extends Configured implements Tool{
     	private double correlationModifier;
     	private Tuple ratingStat;
     	private int ratingStdDev;
+    	private boolean userRatingWithContext;
+    	private String ratingContext;
     	
         /* (non-Javadoc)
          * @see org.apache.hadoop.mapreduce.Reducer#setup(org.apache.hadoop.mapreduce.Reducer.Context)
          */
         protected void setup(Context context) throws IOException, InterruptedException {
-        	fieldDelim = context.getConfiguration().get("field.delim", ",");
-        	linearCorrelation = context.getConfiguration().getBoolean("correlation.linear", true);
-        	correlationScale = context.getConfiguration().getInt("correlation.linear.scale", 1000);
-           	maxRating = context.getConfiguration().getInt("max.rating", 100);
-           	correlationModifier = context.getConfiguration().getFloat("correlation.modifier", (float)1.0);
+        	Configuration conf = context.getConfiguration();
+        	fieldDelim = conf.get("field.delim", ",");
+        	linearCorrelation = conf.getBoolean("correlation.linear", true);
+        	correlationScale = conf.getInt("correlation.linear.scale", 1000);
+           	maxRating = conf.getInt("max.rating", 100);
+           	correlationModifier = conf.getFloat("correlation.modifier", (float)1.0);
+        	userRatingWithContext = conf.getBoolean("user.rating.with.context", false);
         } 	
         
         /* (non-Javadoc)
@@ -269,6 +289,9 @@ public class UtilityPredictor extends Configured implements Tool{
            			if (!ratingCorrelations.isEmpty()) {
 	           			String userID = value.getString(0);
 	           			rating = value.getInt(1);
+	           			if (userRatingWithContext) {
+	           				ratingContext = value.getString(2);
+	           			}
 	           			
 	    				//all rating correlations
 	           			for (Tuple  ratingCorrTup : ratingCorrelations) { 
@@ -283,8 +306,13 @@ public class UtilityPredictor extends Configured implements Tool{
 	           				if (predRating > 0) {
 	           					//userID, itemID, predicted rating, correlation length, correlation coeff, input rating std dev
 	           					ratingStdDev = ratingStat != null ? ratingStat.getInt(0) :  -1;
-	           					valueOut.set(userID + fieldDelim + itemID + fieldDelim + predRating + fieldDelim + weight + 
+	    	           			if (userRatingWithContext) {
+	    	           				valueOut.set(userID + fieldDelim + itemID + fieldDelim + ratingContext + fieldDelim + 
+	    	           					predRating + fieldDelim + weight + fieldDelim +ratingCorr  + fieldDelim + ratingStdDev);
+	    	           			} else {
+	    	           				valueOut.set(userID + fieldDelim + itemID + fieldDelim + predRating + fieldDelim + weight + 
 	           							fieldDelim +ratingCorr  + fieldDelim + ratingStdDev);
+	    	           			}
 	           					context.write(NullWritable.get(), valueOut);
 	        					//context.getCounter("Predictor", "Rating correlation").increment(1);
 	           				}

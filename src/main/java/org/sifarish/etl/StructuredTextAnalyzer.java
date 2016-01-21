@@ -87,7 +87,7 @@ public class StructuredTextAnalyzer extends Configured implements Tool{
         private List<String> itemList = new ArrayList<String>();
         private SingleTypeSchema schema;
         private CountryStandardFormat countryFormat;
-        	
+        private StructuredTextNormalizer textNormalizer	;
         /* (non-Javadoc)
          * @see org.apache.hadoop.mapreduce.Mapper#setup(org.apache.hadoop.mapreduce.Mapper.Context)
          */
@@ -98,7 +98,7 @@ public class StructuredTextAnalyzer extends Configured implements Tool{
         	
         	//country specific format
             String country = config.get("text.country", "United States");
-            countryFormat = CountryStandardFormat.createCountryStandardFormat(country);
+            countryFormat = CountryStandardFormat.createCountryStandardFormat(country, textNormalizer);
             
             //language specific analyzer
             String lang = config.get("text.language", "en");
@@ -168,7 +168,7 @@ public class StructuredTextAnalyzer extends Configured implements Tool{
             		} else if (field.getDataSubType().equals(Field.TEXT_TYPE_COUNTRY)) {
             			item = countryFormat.caseFormat(item, format);
             		} else if (field.getDataSubType().equals(Field.TEXT_TYPE_EMAIL_ADDR)) {
-            			item = countryFormat.caseFormat(item, format);
+            			item = countryFormat.emailFormat(item, format);
             		} else if (field.getDataSubType().equals(Field.TEXT_TYPE_PHONE_NUM)) {
             			item = countryFormat.phoneNumFormat(item, format);
             		} else {

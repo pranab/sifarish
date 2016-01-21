@@ -17,6 +17,7 @@
 
 package org.sifarish.util;
 
+import java.io.Serializable;
 import java.util.List;
 
 
@@ -25,7 +26,7 @@ import java.util.List;
  * @author pranab
  *
  */
-public class ConceptHierarchy {
+public class ConceptHierarchy  implements Serializable {
 	private List<Concept> concepts;
 
 	public List<Concept> getConcepts() {

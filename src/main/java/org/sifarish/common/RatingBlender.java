@@ -18,8 +18,6 @@
 package org.sifarish.common;
 
 import java.io.IOException;
-import java.util.HashMap;
-import java.util.Map;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.conf.Configured;
@@ -34,6 +32,7 @@ import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
 import org.apache.hadoop.mapreduce.lib.input.FileSplit;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 import org.apache.hadoop.util.Tool;
+import org.apache.hadoop.util.ToolRunner;
 import org.chombo.util.SecondarySort;
 import org.chombo.util.Tuple;
 import org.chombo.util.Utility;
@@ -56,7 +55,7 @@ public class RatingBlender extends Configured implements Tool{
         
         job.setJarByClass(RatingBlender.class);
         
-        FileInputFormat.addInputPath(job, new Path(args[0]));
+        FileInputFormat.addInputPaths(job, args[0]);
         FileOutputFormat.setOutputPath(job, new Path(args[1]));
 
         job.setMapperClass(RatingBlender.RatingBlenderlMapper.class);
@@ -93,6 +92,7 @@ public class RatingBlender extends Configured implements Tool{
     	private String userID;
     	private String itemID;
     	private int rating ;
+    	private long timeStamp;
     	
         /* (non-Javadoc)
          * @see org.apache.hadoop.mapreduce.Mapper#setup(org.apache.hadoop.mapreduce.Mapper.Context)
@@ -117,6 +117,7 @@ public class RatingBlender extends Configured implements Tool{
            	userID = items[0];
            	itemID = items[1];
            	rating = Integer.parseInt(items[2]);
+           	timeStamp = Long.parseLong(items[3]);
            	
            	keyOut.initialize();
            	valOut.initialize();
@@ -139,7 +140,7 @@ public class RatingBlender extends Configured implements Tool{
        		keyOut.add(userID, itemID, secodaryKey);
 
        		//rating
-       		valOut.add(secodaryKey, rating);
+       		valOut.add(secodaryKey, rating, timeStamp);
         }
     }
     
@@ -156,7 +157,13 @@ public class RatingBlender extends Configured implements Tool{
     	private int rating;
     	private int ratingSum;
     	private int weightSum;
+    	private long timeStamp ;
     	private int[] ratingSource = new int[3];
+    	private long[] ratingTimeStamp = new long[3];
+    	private String explicitRatingOverride;
+    	private static final int IMPLICIT_RATING = 0;
+    	private static final int EXPLICIT_RATING = 1;
+    	private static final int CUST_SVC_RATING = 2;
         
     	/* (non-Javadoc)
          * @see org.apache.hadoop.mapreduce.Reducer#setup(org.apache.hadoop.mapreduce.Reducer.Context)
@@ -164,10 +171,11 @@ public class RatingBlender extends Configured implements Tool{
         protected void setup(Context context) throws IOException, InterruptedException {
         	Configuration config = context.getConfiguration();
         	fieldDelim = config.get("field.delim", ",");
-        	ratingWeightList = Utility.intArrayFromString(config.get("biz.goal.weights"),fieldDelim );
+        	ratingWeightList = Utility.intArrayFromString(config.get("rating.weights"),fieldDelim );
         	if ((ratingWeightList[0] + ratingWeightList[1] + ratingWeightList[2]) != 100) {
         		throw new IllegalArgumentException("rating weights are not normalized");
         	}
+        	explicitRatingOverride = config.get("explicit.rating.override", "none");
         }
 
         /* (non-Javadoc)
@@ -180,26 +188,73 @@ public class RatingBlender extends Configured implements Tool{
 
         	for (int i = 0; i < NUM_RATING_SOURCE; ++i) {
         		ratingSource[i] = 0;
+        		ratingTimeStamp[i] = 0;
         	}
         	for(Tuple value : values) {
         		ratingSource[value.getInt(0)] = value.getInt(1);
+        		ratingTimeStamp[value.getInt(0)] = value.getLong(2);
         	}
         	
         	//aggregate rating
-        	ratingSum = 0;
-        	weightSum = 0;
-        	for (int i = 0; i < NUM_RATING_SOURCE; ++i) {
-        		if (ratingSource[i] > 0) {
-            		ratingSum += ratingSource[i] * ratingWeightList[i];
-        			weightSum += ratingWeightList[i];
-        		}
+        	if (!explicitRatingOverride.equals("none")) {
+        		//time stamp based explicit rating override
+	        	for (int i = 0; i < NUM_RATING_SOURCE; ++i) {
+	        		if (i == 0) {
+	        			rating = ratingSource[i];
+	        			timeStamp = ratingTimeStamp[i];
+	        		} else {
+	        			if (ratingSource[i] > 0) {
+		        			if (explicitRatingOverride.equals("timeStampBased")) {
+			            		//time stamp based explicit rating override
+			        			if (ratingTimeStamp[i] >  timeStamp) {
+			    	        		rating = ratingSource[i];
+			    	        		timeStamp = ratingTimeStamp[i];
+			    	        		context.getCounter("Blended rating","timeStampBasedOverride").increment(1);
+			        			}
+		        			} else {
+		        				//explicit supersede
+		        				if (i == 1 && explicitRatingOverride.equals("supersedeExplicit")  ||
+		        						i == 2 && explicitRatingOverride.equals("supersedeCustSvc")) {
+		    	        			rating = ratingSource[i];
+			    	        		timeStamp = ratingTimeStamp[i];
+			    	        		context.getCounter("Blended rating","explicitOverride").increment(1);
+		        				}
+		        			}
+		        		}
+	        		}
+	        	}        		
+        	} else {
+        		//weighted average
+	        	ratingSum = 0;
+	        	weightSum = 0;
+	        	for (int i = 0; i < NUM_RATING_SOURCE; ++i) {
+	        		if (ratingSource[i] > 0) {
+	            		ratingSum += ratingSource[i] * ratingWeightList[i];
+	        			weightSum += ratingWeightList[i];
+		        		if (i == 0) {
+		        			timeStamp = ratingTimeStamp[i];
+		        		} else if (ratingTimeStamp[i] >  timeStamp) {
+	    	        		timeStamp = ratingTimeStamp[i];
+	        			}
+	        		}
+	        	}
+	        	rating = ratingSum / weightSum;
         	}
-        	rating = ratingSum / weightSum;
         	
-        	valOut.set(userID + fieldDelim + itemID + fieldDelim + rating);
+        	valOut.set(userID + fieldDelim + itemID + fieldDelim + rating + fieldDelim + timeStamp);
 			context.write(NullWritable.get(), valOut);
         }
         
     }
 
+    /**
+     * @param args
+     * @throws Exception
+     */
+    public static void main(String[] args) throws Exception {
+        int exitCode = ToolRunner.run(new RatingBlender(), args);
+        System.exit(exitCode);
+    }
+    
+    
 }

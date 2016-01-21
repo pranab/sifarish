@@ -29,7 +29,22 @@ under it
 
 Rating Data
 ===========
-Uou have to generate rating data explicitly or implicit ly
+There are 3 ways to generate rating data.
+
+1. Explicit 
+In reality you will hardly ever do recommendations based on explicit rating. This option
+is provided for development purpose only
+Follow step 1 and then 3
+
+2. Implicit
+This will be the typical way to create input rating
+Follow steps 2.1 through 2.4 and 3
+
+3. Blended Rating
+This is a more advanced approach. It combines implicit rating with explicit 
+and rating data from CRM systems
+Follow steps 2.1 through 2.9 and 3
+
 
 Map reduce workflow
 ===================
@@ -67,8 +82,8 @@ The value of user_per_items_multipler should be 5 or more. A reasoable value is 
 1.2 Copy rating data to HDFS
 ./brec.sh expExplicitRating <rating_file>
 
-2. Implicit Rating Predictor (optional)
-=======================================
+2. Implicit Rating Generator and Blending Rating (optional)
+===========================================================
 This MR task is optional. You want to run this MR if you want to generate rating data
 from user engaement click stream data. If you have generated rating data directly 
 from script then skip this.
@@ -91,15 +106,46 @@ user ID,session ID,item ID,event type,time of event
 2.4 Run MR
 ./brec.sh genRating  <event_data_file>
 
+Following additional steps should be performed if you want to aggregate explicit
+and implicit rating and optional additional rating data from CRM systems
+
+2.5 Create explicit rating data (if you want to use it)
+Uses implicit rating data file and generates explicit rating for some of those
+users that have converted i.e., has maximum implicit rating
+./brec.sh createExplicitRating <implicit_rating_file> <percentage_rated> <expl_rating_file>
+
+The argument percentage_rated is percentage of users who have converted 
+(e.g., purchased) and also explicit ly rated.  Recommended value is 50
+
+2.6 Export explicit rating data to HDFS (if you want to use it)
+./brec.sh putExplicitRating <expl_rating_file> [clean]
+Use the clean option if you want all existing files from the HDFS directory removed
+before exporting 
+
+2.7 Create customer service rating data (if you want to use it)
+Uses implicit rating data file and generates customer service rating for some of those
+users that have converted i.e., has maximum implicit rating
+./brec.sh createExplicitRating <implicit_rating_file> <percentage_rated> <cust_svc_rating_file>
+
+The argument percentage_rated is percentage of users who have converted 
+(e.g., purchased) and contacted customer service. Recommended value is 30
+
+2.8 Export customer service rating data to HDFS (if you want to use it)
+./brec.sh putExplicitRating <cust_svc_rating_file>
+
+2.9 Generate blended or aggregated rating by running MR job
+./brec.sh blendRating
 
 3. Rating data formatter (optional)
 ===================================
-If you ran ImplicitRatingPredictor, it generated rating data in an exploded format as 
-userID, itemID, rating. However, Rating Correlation MR below expects data in a compact 
-format as  itemID, userID1:rating1, userId2:rating2
+If you are using implicit rating or blended rating, it generated rating data in 
+an exploded format as  userID, itemID, rating. However, Rating Correlation MR below 
+expects data in a compact  format as  itemID, userID1:rating1, userId2:rating2
 
 3.1 Run MR
-./brech.sh compactRating
+./brech.sh compactRating <rating_input>
+Depending on nthe option chosen for rating data generation, rating_input should be rate 
+or erat. It points to HDFS directory containing the rating data
 
 
 4. Rating Statistics (optional)

@@ -17,10 +17,13 @@
 
 package org.sifarish.etl;
 
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
+import java.io.IOException;
 
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.tuple.ImmutablePair;
+import org.apache.commons.lang3.tuple.Pair;
+import org.sifarish.feature.DynamicAttrSimilarityStrategy;
+import org.sifarish.util.Field;
 
 /**
  * Standard format for US
@@ -28,61 +31,17 @@ import org.apache.commons.lang3.StringUtils;
  *
  */
 public class UnitedStatesStandardFormat extends CountryStandardFormat {
+	private StructuredTextNormalizer textNormalizer;
+	
+    public UnitedStatesStandardFormat(StructuredTextNormalizer textNormalizer) {
+		super();
+		this.textNormalizer = textNormalizer;
+	}
 
-    /* (non-Javadoc)
+	/* (non-Javadoc)
      * @see org.sifarish.etl.CountryStandardFormat#intializeStateCodes()
      */
     public void intializeStateCodes() {
-    	stateCodes.put("alabama", "AL");
-    	stateCodes.put("alaska", "AK");
-    	stateCodes.put("arizona", "AZ");
-    	stateCodes.put("arkansas", "AR");
-    	stateCodes.put("california", "CA");
-    	stateCodes.put("colorado", "CO");
-    	stateCodes.put("connecticut", "CT");
-    	stateCodes.put("delaware", "DE");
-    	stateCodes.put("district of columbia", "DC");
-    	stateCodes.put("florida", "FL");
-    	stateCodes.put("georgia", "GA");
-    	stateCodes.put("hawaii", "HI");
-    	stateCodes.put("idaho", "ID");
-    	stateCodes.put("illinois", "IL");
-    	stateCodes.put("indiana", "IN");
-    	stateCodes.put("iowa", "IA");
-    	stateCodes.put("kansas", "KS");
-    	stateCodes.put("kentucky", "KY");
-    	stateCodes.put("louisiana", "LA");
-    	stateCodes.put("maine", "ME");
-    	stateCodes.put("maryland", "MD");
-    	stateCodes.put("massachusetts", "MA");
-    	stateCodes.put("michigan", "MI");
-    	stateCodes.put("minnesota", "MN");
-    	stateCodes.put("mississippi", "MS");
-    	stateCodes.put("missouri", "MO");
-    	stateCodes.put("montana", "MT");
-    	stateCodes.put("nebraska", "NE");
-    	stateCodes.put("new hampshire", "NH");
-    	stateCodes.put("new jersey", "NJ");
-    	stateCodes.put("new mexico", "NM");
-    	stateCodes.put("new york", "NY");
-    	stateCodes.put("north carolina", "NC");
-    	stateCodes.put("north dakota", "ND");
-    	stateCodes.put("ohio", "OH");
-    	stateCodes.put("oklahoma", "OK");
-    	stateCodes.put("oregon", "OR");
-    	stateCodes.put("pennsylvania", "PA");
-    	stateCodes.put("rhode island", "RI");
-    	stateCodes.put("south carolina", "SC");
-    	stateCodes.put("south dakota", "SD");
-    	stateCodes.put("tennessee", "TN");
-    	stateCodes.put("texas", "TX");
-    	stateCodes.put("utah", "UT");
-    	stateCodes.put("vermont", "VT");
-    	stateCodes.put("virginia", "VA");
-    	stateCodes.put("washington", "WA");
-    	stateCodes.put("west virginia", "WV");
-    	stateCodes.put("wisconsin", "WI");
-    	stateCodes.put("wyoming", "WY");
     }
 
     /* (non-Javadoc)
@@ -116,7 +75,6 @@ public class UnitedStatesStandardFormat extends CountryStandardFormat {
     	} else if (format.equals("spaceSep")) {
     		item = item.substring(0, 3) + " " + item.substring(3,6) + " " + item.substring(6);
     	} else {
-			throw new IllegalArgumentException("invalid phone number format");
 		}
     	return item;
     }
@@ -124,42 +82,123 @@ public class UnitedStatesStandardFormat extends CountryStandardFormat {
     /* (non-Javadoc)
      * @see org.sifarish.etl.CountryStandardFormat#stateFormat(java.lang.String)
      */
-    public String stateFormat(String item) {
-    	if (item.length() == 2) {
-    		item = item.toUpperCase();
-    		if (!stateCodes.containsValue(item)) {
-    			throw new IllegalArgumentException("invalid state code");
-    		}
+    public String stateFormat(String item) throws IOException {
+    	return stateFormat(item, false, null, 0);
+    }
+    
+    /* (non-Javadoc)
+     * @see org.sifarish.etl.CountryStandardFormat#stateFormat(java.lang.String, boolean, org.sifarish.feature.DynamicAttrSimilarityStrategy, double)
+     */
+    public String stateFormat(String item, boolean fuzzyMatch, DynamicAttrSimilarityStrategy textSimStrategy, 
+    	double minDist) throws IOException {
+    	String newItem = item;
+    	TextFieldTokenNormalizer tokenNormalizer = 
+    			textNormalizer.findTokenNormalizer(Field.TEXT_TYPE_STATE);
+    	if (newItem.length() == 2) {
+    		newItem = newItem.toUpperCase();
+        	if (fuzzyMatch && !tokenNormalizer.containsNormalize(newItem)) {
+        		//try fuzzy matching
+	    		Pair<String, Double>  match = tokenNormalizer.fuzzymatchWithNormalized(newItem, textSimStrategy);
+	    		if (match.getRight() <= minDist) {
+	    			newItem = match.getLeft();
+	    		}
+        	}
     	} else {
-    		item = item.toLowerCase();
-    		item = stateCodes.get(item);
-    		if (null == item) {
-    			throw new IllegalArgumentException("invalid state name");
-    		}
+        	newItem = tokenNormalizer.normalize(newItem);
+        	if (fuzzyMatch && newItem.equals(item)) {
+        		//try fuzzy matching
+        		Pair<String, Double>  match = tokenNormalizer.fuzzymatchWithUnnormalized(newItem, textSimStrategy);
+        		if (match.getRight() <= minDist) {
+        			newItem = match.getLeft();
+        			newItem = tokenNormalizer.normalize(newItem);
+        		}
+        	}
     	}
     	
-    	return item;
+    	return newItem;
     }
 
-    public String streetAddressFormat(String item) {
+    /* (non-Javadoc)
+     * @see org.sifarish.etl.CountryStandardFormat#streetAddressFormat(java.lang.String)
+     */
+    public String streetAddressFormat(String item) throws IOException {
     	String newItem = streetAddressOneFormat(item);
     	return streetAddressTwoFormat(newItem);
     }   
 
-    public String streetAddressOneFormat(String item) {
-    	String newItem = item;
-    	newItem = newItem.replace(" St", " Street");
-    	newItem = newItem.replace(" Ave", " Avenue");
-    	newItem = newItem.replace(" Rd", " Road");
-    	newItem = newItem.replace(" Blvd", " Boulevard");
-    	return newItem;
+    /* (non-Javadoc)
+     * @see org.sifarish.etl.CountryStandardFormat#streetAddressOneFormat(java.lang.String)
+     */
+    public String streetAddressOneFormat(String item) throws IOException {
+    	return streetAddressOneFormat(item, false, null, 0);
     }   
 
-    public String streetAddressTwoFormat(String item) {
-    	String newItem = item;
-    	newItem = newItem.replace(" Apt", " Apartment");
-    	newItem = newItem.replace(" St", " Suite");
-    	newItem = newItem.replace(" #", " Unit");
+    /* (non-Javadoc)
+     * @see org.sifarish.etl.CountryStandardFormat#streetAddressOneFormat(java.lang.String, boolean, org.sifarish.feature.DynamicAttrSimilarityStrategy, double)
+     */
+    public String streetAddressOneFormat(String item, boolean fuzzyMatch, DynamicAttrSimilarityStrategy textSimStrategy, 
+        	double minDist) throws IOException {
+    	TextFieldTokenNormalizer tokenNormalizer = 
+    			textNormalizer.findTokenNormalizer(Field.TEXT_TYPE_STREET_ADDRESS_ONE);
+    	String newItem = tokenNormalizer.normalize(item);
+    	
+    	if (fuzzyMatch && newItem.equals(item)) {
+    		String[] elements = newItem.split("\\s+");
+    		String streetType = elements[elements.length -1];
+        	tokenNormalizer = textNormalizer.findTokenNormalizer(Field.TEXT_TYPE_STREET_TYPE);
+        	if (!tokenNormalizer.containsNormalize(streetType)) {
+	    		//try fuzzy matching
+        		Pair<Boolean, String> fuzzyMatched = fuzyyMatchComponent(streetType,  tokenNormalizer, 
+        	    		textSimStrategy, minDist);
+	    		if (fuzzyMatched.getLeft()) {
+		    		StringBuilder stBld = new StringBuilder(elements[0]);
+		    		for (int i = 1; i < elements.length-1; ++i) {
+		    			if (i == elements.length-1) {
+		    				stBld.append(" ").append(fuzzyMatched.getRight());
+		    			} else {
+		    				stBld.append(" ").append(elements[i]);
+		    			}
+		    		}
+		    		newItem = stBld.toString();
+	    		}
+        	}
+    	}
+    	return newItem;
+    }   
+    
+    /* (non-Javadoc)
+     * @see org.sifarish.etl.CountryStandardFormat#streetAddressTwoFormat(java.lang.String)
+     */
+    public String streetAddressTwoFormat(String item) throws IOException  {
+    	return streetAddressTwoFormat(item, false, null, 0);
+    }   
+
+    /* (non-Javadoc)
+     * @see org.sifarish.etl.CountryStandardFormat#streetAddressTwoFormat(java.lang.String, boolean, org.sifarish.feature.DynamicAttrSimilarityStrategy, double)
+     */
+    public String streetAddressTwoFormat(String item, boolean fuzzyMatch, DynamicAttrSimilarityStrategy textSimStrategy, 
+        	double minDist) throws IOException {
+    	TextFieldTokenNormalizer tokenNormalizer = 
+    			textNormalizer.findTokenNormalizer(Field.TEXT_TYPE_STREET_ADDRESS_TWO);
+    	String newItem = tokenNormalizer.normalize(item);
+    	
+    	if (fuzzyMatch && newItem.equals(item)) {
+    		String[] elements = newItem.split("\\s+");
+    		String unitType = elements[0];
+        	if (!tokenNormalizer.containsNormalize(unitType)) {
+	    		//try fuzzy matching
+        		Pair<Boolean, String> fuzzyMatched = fuzyyMatchComponent(unitType,  tokenNormalizer, 
+        	    		textSimStrategy, minDist);
+	    		if (fuzzyMatched.getLeft()) {
+		    		StringBuilder stBld = new StringBuilder(fuzzyMatched.getRight());
+		    		for (int i = 1; i < elements.length-1; ++i) {
+		    			stBld.append(" ").append(elements[i]);
+		    		}
+		    		newItem = stBld.toString();
+	    		}
+        	}
+    	}
+    	
     	return newItem;
     }   
 
@@ -169,11 +208,11 @@ public class UnitedStatesStandardFormat extends CountryStandardFormat {
      * @return
      */
     public String addressFormat(String item) {
-    	String newItem = item;
-    	newItem = newItem.replace(" St", " Street");
-    	newItem = newItem.replace(" Ave", " Avenue");
-    	newItem = newItem.replace(" Rd", " Road");
-    	newItem = newItem.replace(" Apt", " Apartment");
+    	TextFieldTokenNormalizer tokenNormalizer = 
+    			textNormalizer.findTokenNormalizer(Field.TEXT_TYPE_STREET_ADDRESS_ONE);
+    	String newItem = tokenNormalizer.normalize(item);
+    	tokenNormalizer = textNormalizer.findTokenNormalizer(Field.TEXT_TYPE_STREET_ADDRESS_TWO);
+    	newItem = tokenNormalizer.normalize(newItem);
     	
     	String[] lines = newItem.split("\\n");
     	

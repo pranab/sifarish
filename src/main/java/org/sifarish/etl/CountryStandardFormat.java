@@ -17,12 +17,16 @@
 
 package org.sifarish.etl;
 
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.tuple.ImmutablePair;
+import org.apache.commons.lang3.tuple.Pair;
+import org.sifarish.feature.DynamicAttrSimilarityStrategy;
 
 /**
  * Country specific formats for different kinds of structured text data
@@ -54,10 +58,10 @@ public abstract class CountryStandardFormat {
      * @param country
      * @return
      */
-    public static CountryStandardFormat createCountryStandardFormat(String country) {
+    public static CountryStandardFormat createCountryStandardFormat(String country, StructuredTextNormalizer textNormalizer) {
     	CountryStandardFormat countryFormat = null;
-    	if (country.equals("United States")) {
-    		countryFormat = new UnitedStatesStandardFormat();
+    	if (country.equals("USA")) {
+    		countryFormat = new UnitedStatesStandardFormat(textNormalizer);
     	} else {
     		throw new IllegalArgumentException("invalid country name");
     	}
@@ -99,7 +103,19 @@ public abstract class CountryStandardFormat {
      * @param item
      * @return
      */
-    public abstract String stateFormat(String item);
+    public abstract String stateFormat(String item) throws IOException;
+    
+    /**
+     * @param item
+     * @param fuzzyMatch
+     * @param textSimStrategy
+     * @param minDist
+     * @return
+     * @throws IOException
+     */
+    public abstract String stateFormat(String item, boolean fuzzyMatch, DynamicAttrSimilarityStrategy textSimStrategy, 
+        	double minDist) throws IOException;
+
     
     /**
      * @param item
@@ -237,24 +253,107 @@ public abstract class CountryStandardFormat {
      * @param item
      * @return
      */
-    public abstract String streetAddressFormat(String item);
+    public abstract String streetAddressFormat(String item) throws IOException;
     
     /**
      * @param item
      * @return
      */
-    public abstract String addressFormat(String item);
+    public abstract String addressFormat(String item) throws IOException;
     
     /**
      * @param item
      * @return
      */
-    public abstract String streetAddressOneFormat(String item);
+    public abstract String streetAddressOneFormat(String item) throws IOException;
 
     /**
      * @param item
+     * @param fuzzyMatch
+     * @param textSimStrategy
+     * @param minDist
+     * @return
+     * @throws IOException
+     */
+    public abstract String streetAddressOneFormat(String item, boolean fuzzyMatch, DynamicAttrSimilarityStrategy textSimStrategy, 
+        	double minDist) throws IOException;   
+    
+    /**
+     * @param item
      * @return
      */
-    public abstract String streetAddressTwoFormat(String item);
+    public abstract String streetAddressTwoFormat(String item) throws IOException;
+    
+    /**
+     * @param item
+     * @param fuzzyMatch
+     * @param textSimStrategy
+     * @param minDist
+     * @return
+     * @throws IOException
+     */
+    public abstract  String streetAddressTwoFormat(String item, boolean fuzzyMatch, DynamicAttrSimilarityStrategy textSimStrategy, 
+        	double minDist) throws IOException;
+   
+    /**
+     * @param item
+     * @param format
+     * @return
+     */
+    public String emailFormat(String item, String format) {
+    	String[] elements = item.split("@");
+    	String name = elements[0];
+		if (format.equals("lowerCase")) {
+			name = name.toLowerCase(); 
+		} else if (format.equals("upperCase")) {
+			name = name.toUpperCase(); 
+		} else if (format.equals("capitalize")) {
+			name = StringUtils.capitalize(name.toLowerCase());
+		} else {
+			throw new IllegalArgumentException("invalid case format");
+		}
+    	
+		return name + "@" + elements[1];
+    }
+    
+    /**
+     * @param item
+     * @return
+     */
+    public String removePunctuations(String item) {
+    	String newItem = item.replaceAll("\\.","");
+    	newItem = item.replaceAll(",","");
+    	return newItem;
+    }
+    
+    /**
+     * @param component
+     * @param tokenNormalizer
+     * @param textSimStrategy
+     * @param minDist
+     * @return
+     * @throws IOException
+     */
+    protected Pair<Boolean, String> fuzyyMatchComponent(String component,  TextFieldTokenNormalizer tokenNormalizer, 
+    		DynamicAttrSimilarityStrategy textSimStrategy, double minDist) throws IOException {
+		String newComponent = component;
+		boolean fuzzyMatched = false;
+    	if (!tokenNormalizer.containsNormalize(component)) {
+    		//try fuzzy matching
+    		Pair<String, Double>  match = tokenNormalizer.fuzzymatchWithUnnormalized(component, textSimStrategy);
+    		if (match.getRight() <= minDist) {
+    			newComponent = match.getLeft();
+    			newComponent = tokenNormalizer.normalize(newComponent);
+    			fuzzyMatched = true;
+    		} else {
+    			match = tokenNormalizer.fuzzymatchWithNormalized(component, textSimStrategy);
+        		if (match.getRight() <= minDist) {
+        			newComponent = match.getLeft();
+        			fuzzyMatched = true;
+        		}
+    		}
+    	}
+		return  new ImmutablePair<Boolean, String>(fuzzyMatched, newComponent);
+    }
 
 }

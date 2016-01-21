@@ -21,6 +21,11 @@ import java.io.FileInputStream;
 import java.util.Properties;
 
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.FSDataInputStream;
+import org.apache.hadoop.fs.FileSystem;
+import org.apache.hadoop.fs.Path;
+import org.codehaus.jackson.map.ObjectMapper;
+import org.sifarish.feature.SingleTypeSchema;
 
 /**
  * Utility
@@ -79,4 +84,22 @@ public class Utility {
         return (int) (Math.round(AVERAGE_RADIUS_OF_EARTH * c));
 
     }    
+    
+    /**
+     * @param conf
+     * @return
+     * @throws Exception
+     */
+    public static SingleTypeSchema getSameTypeSchema(Configuration conf) throws Exception  {
+		//schema
+        String filePath = conf.get("same.schema.file.path");
+        FileSystem dfs = FileSystem.get(conf);
+        Path src = new Path(filePath);
+        FSDataInputStream fs = dfs.open(src);
+        ObjectMapper mapper = new ObjectMapper();
+        SingleTypeSchema schema = mapper.readValue(fs, SingleTypeSchema.class);
+    	return schema;
+    }
+    
+    
 }

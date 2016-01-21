@@ -23,6 +23,7 @@ package org.sifarish.common;
  */
 public class RatedItemWithAttributes  extends RatedItem {
 	private String attributes;
+	private String[] attributeArray;
 	
 	public RatedItemWithAttributes(String itemID, int rating) {
 		super(itemID, rating);
@@ -33,12 +34,25 @@ public class RatedItemWithAttributes  extends RatedItem {
 		this.attributes = attributes;
 	}
 
+	public RatedItemWithAttributes(String itemID, int rating, String[] attributeArray) {
+		this(itemID, rating);
+		this.attributeArray = attributeArray;
+	}
+
 	public String getAttributes() {
 		return attributes;
 	}
 
 	public void setAttributes(String attributes) {
 		this.attributes = attributes;
+	}
+
+	public String[] getAttributeArray() {
+		return attributeArray;
+	}
+
+	public void setAttributeArray(String[] attributeArray) {
+		this.attributeArray = attributeArray;
 	}
 	
 }
