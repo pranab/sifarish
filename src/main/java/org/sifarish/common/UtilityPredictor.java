@@ -198,7 +198,6 @@ public class UtilityPredictor extends Configured implements Tool{
         	} else {
         		//item correlation
 				//context.getCounter("Record type count", "Correlation").increment(1);
-
         		correlation =  Integer.parseInt( items[2]);
         		correlationLength =  Integer.parseInt(items[3]);
 
