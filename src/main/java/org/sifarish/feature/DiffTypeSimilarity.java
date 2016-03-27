@@ -119,15 +119,15 @@ public class DiffTypeSimilarity  extends Configured implements Tool {
          * @see org.apache.hadoop.mapreduce.Mapper#setup(org.apache.hadoop.mapreduce.Mapper.Context)
          */
         protected void setup(Context context) throws IOException, InterruptedException {
-        	bucketCount = context.getConfiguration().getInt("bucket.count", 1000);
+        	bucketCount = context.getConfiguration().getInt("dts.bucket.count", 1000);
         	fieldDelimRegex = context.getConfiguration().get("field.delim.regex", "\\[\\]");
-        	identifyWithFilePrefix = context.getConfiguration().getBoolean("identify.with.file.prefix", false);
+        	identifyWithFilePrefix = context.getConfiguration().getBoolean("dts.identify.with.file.prefix", false);
         	if (identifyWithFilePrefix) {
-        		filePrefixLength = Integer.parseInt(context.getConfiguration().get("file.prefix.length"));
+        		filePrefixLength = Integer.parseInt(context.getConfiguration().get("dts.file.prefix.length"));
         	}
         	
 			Configuration conf = context.getConfiguration();
-            String filePath = conf.get("schema.file.path");
+            String filePath = conf.get("dts.schema.file.path");
             FileSystem dfs = FileSystem.get(conf);
             Path src = new Path(filePath);
             FSDataInputStream fs = dfs.open(src);
@@ -234,7 +234,7 @@ public class DiffTypeSimilarity  extends Configured implements Tool {
         protected void setup(Context context) throws IOException, InterruptedException {
         	//load schema
             Configuration conf = context.getConfiguration();
-            String filePath = conf.get("schema.file.path");
+            String filePath = conf.get("dts.schema.file.path");
             FileSystem dfs = FileSystem.get(conf);
             Path src = new Path(filePath);
             FSDataInputStream fs = dfs.open(src);
@@ -252,13 +252,13 @@ public class DiffTypeSimilarity  extends Configured implements Tool {
         	
         	fields = schema.getEntityByType(0).getFields();
         	targetFields = schema.getEntityByType(1).getFields();
-        	scale = context.getConfiguration().getInt("distance.scale", 1000);
+        	scale = context.getConfiguration().getInt("dts.distance.scale", 1000);
         	distStrategy = schema.createDistanceStrategy(scale);
         	fieldDelimRegex = context.getConfiguration().get("field.delim.regex", "\\[\\]");
         	fieldDelim = context.getConfiguration().get("field.delim", ",");
         	textSimStrategy = schema.createTextSimilarityStrategy();
-        	outputVerbose = context.getConfiguration().getBoolean("sim.output.verbose", true);
-           	identifyWithFilePrefix = context.getConfiguration().getBoolean("identify.with.file.prefix", false);
+        	outputVerbose = context.getConfiguration().getBoolean("dts.sim.output.verbose", true);
+           	identifyWithFilePrefix = context.getConfiguration().getBoolean("dts.identify.with.file.prefix", false);
                     	
         	System.out.println("firstTypeSize: " + firstTypeSize + " firstIdOrdinal:" +firstIdOrdinal + 
         			" secondIdOrdinal:" + secondIdOrdinal + " Source field count:" + fields.size() + 
