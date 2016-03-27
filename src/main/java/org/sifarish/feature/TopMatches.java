@@ -70,7 +70,7 @@ public class TopMatches extends Configured implements Tool {
         job.setPartitionerClass(SecondarySort.TupleTextPartitioner.class);
 
         Utility.setConfiguration(job.getConfiguration());
-        int numReducer = job.getConfiguration().getInt("tm.num.reducer", -1);
+        int numReducer = job.getConfiguration().getInt("tom.num.reducer", -1);
         numReducer = -1 == numReducer ? job.getConfiguration().getInt("num.reducer", 1) : numReducer;
         job.setNumReduceTasks(numReducer);
         
@@ -107,8 +107,8 @@ public class TopMatches extends Configured implements Tool {
 			Configuration conf = context.getConfiguration();
            	fieldDelim = conf.get("field.delim", ",");
             fieldDelimRegex = conf.get("field.delim.regex", ",");
-            distOrdinal = conf.getInt("distance.ordinal", -1);
-        	recordInOutput =  conf.getBoolean("record.in.output", false);     
+            distOrdinal = conf.getInt("tom.distance.ordinal", -1);
+        	recordInOutput =  conf.getBoolean("tom.record.in.output", false);     
         }    
 
         /* (non-Javadoc)
@@ -223,16 +223,16 @@ public class TopMatches extends Configured implements Tool {
         protected void setup(Context context) throws IOException, InterruptedException {
 			Configuration conf = context.getConfiguration();
            	fieldDelim = conf.get("field.delim", ",");
-        	nearestByCount = conf.getBoolean("nearest.by.count", true);
-        	nearestByDistance = conf.getBoolean("nearest.by.distance", false);
+        	nearestByCount = conf.getBoolean("tom.nearest.by.count", true);
+        	nearestByDistance = conf.getBoolean("tom.nearest.by.distance", false);
         	if (nearestByCount) {
-        		topMatchCount = conf.getInt("top.match.count", 10);
+        		topMatchCount = conf.getInt("tom.top.match.count", 10);
         	} else {
-        		topMatchDistance = conf.getInt("top.match.distance", 200);
+        		topMatchDistance = conf.getInt("tom.top.match.distance", 200);
         	}
-        	recordInOutput =  conf.getBoolean("record.in.output", false);     
-        	compactOutput =  conf.getBoolean("compact.output", false);     
-        	outputWithNoNeighbor =  conf.getBoolean("output.with.no.neighbor", false);     
+        	recordInOutput =  conf.getBoolean("tom.record.in.output", false);     
+        	compactOutput =  conf.getBoolean("tom.compact.output", false);     
+        	outputWithNoNeighbor =  conf.getBoolean("tom.output.with.no.neighbor", false);     
         }
     	
     	/* (non-Javadoc)

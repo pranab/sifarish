@@ -124,19 +124,19 @@ public class UtilityPredictor extends Configured implements Tool{
 
             fieldDelim = conf.get("field.delim", ",");
         	subFieldDelim = conf.get("sub.field.delim", ":");
-        	String ratingFilePrefix = conf.get("rating.file.prefix", "rating");
+        	String ratingFilePrefix = conf.get("utp.rating.file.prefix", "rating");
         	isRatingFileSplit = ((FileSplit)context.getInputSplit()).getPath().getName().startsWith(ratingFilePrefix);
-        	String ratingStatFilePrefix = conf.get("rating.stat.file.prefix", "stat");
+        	String ratingStatFilePrefix = conf.get("utp.rating.stat.file.prefix", "stat");
         	isRatingStatFileSplit = ((FileSplit)context.getInputSplit()).getPath().getName().startsWith(ratingStatFilePrefix);
         	
-        	linearCorrelation = conf.getBoolean("correlation.linear", true);
-        	int ratingTimeWindow = conf.getInt("rating.time.window.hour",  -1);
+        	linearCorrelation = conf.getBoolean("utp.correlation.linear", true);
+        	int ratingTimeWindow = conf.getInt("utp.rating.time.window.hour",  -1);
         	ratingTimeCutoff = ratingTimeWindow > 0 ?  System.currentTimeMillis() / 1000 - ratingTimeWindow * 60L * 60L : -1;
         	
-        	minInputRating = conf.getInt("min.input.rating",  -1);
-        	minCorrelation = conf.getInt("min.correlation",  -1);
+        	minInputRating = conf.getInt("utp.min.input.rating",  -1);
+        	minCorrelation = conf.getInt("utp.min.correlation",  -1);
         	
-        	userRatingWithContext = conf.getBoolean("user.rating.with.context", false);
+        	userRatingWithContext = conf.getBoolean("utp.user.rating.with.context", false);
         	LOG.info("isRatingFileSplit:" + isRatingFileSplit);
         }    
     	
@@ -260,11 +260,11 @@ public class UtilityPredictor extends Configured implements Tool{
         protected void setup(Context context) throws IOException, InterruptedException {
         	Configuration conf = context.getConfiguration();
         	fieldDelim = conf.get("field.delim", ",");
-        	linearCorrelation = conf.getBoolean("correlation.linear", true);
-        	correlationScale = conf.getInt("correlation.linear.scale", 1000);
-           	maxRating = conf.getInt("max.rating", 100);
-           	correlationModifier = conf.getFloat("correlation.modifier", (float)1.0);
-        	userRatingWithContext = conf.getBoolean("user.rating.with.context", false);
+        	linearCorrelation = conf.getBoolean("utp.correlation.linear", true);
+        	correlationScale = conf.getInt("utp.correlation.linear.scale", 1000);
+           	maxRating = conf.getInt("utp.max.rating", 100);
+           	correlationModifier = conf.getFloat("utp.correlation.modifier", (float)1.0);
+        	userRatingWithContext = conf.getBoolean("utp.user.rating.with.context", false);
         } 	
         
         /* (non-Javadoc)

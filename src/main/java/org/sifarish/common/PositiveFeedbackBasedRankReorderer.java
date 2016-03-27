@@ -87,7 +87,7 @@ public class PositiveFeedbackBasedRankReorderer  extends Configured implements T
         protected void setup(Context context) throws IOException, InterruptedException {
         	Configuration config = context.getConfiguration();
         	fieldDelimRegex = config.get("field.delim.regex", ",");
-        	String actualRatingFilePrefix = config.get("actual.rating.file.prefix", "actual");
+        	String actualRatingFilePrefix = config.get("pfbrr.actual.rating.file.prefix", "actual");
         	isActualRatingFileSplit = ((FileSplit)context.getInputSplit()).getPath().getName().startsWith(actualRatingFilePrefix);
         }
         
@@ -131,11 +131,11 @@ public class PositiveFeedbackBasedRankReorderer  extends Configured implements T
         protected void setup(Context context) throws IOException, InterruptedException {
         	Configuration config = context.getConfiguration();
         	fieldDelim = config.get("field.delim", ",");
-        	ratingAggrStrategy = config.get("rating.aggr.strategy", "max");
+        	ratingAggrStrategy = config.get("pfbrr.rating.aggr.strategy", "max");
         	if (ratingAggrStrategy.equals("weightedAverage")) {
-        		actualRatingWt = config.getInt("actual.rating.weight", 50);
+        		actualRatingWt = config.getInt("pfbrr.actual.rating.weight", 50);
         	}
-        	maxRating =  config.getInt("max.rating", 100);
+        	maxRating =  config.getInt("pfbrr.max.rating", 100);
         }
         
         /* (non-Javadoc)

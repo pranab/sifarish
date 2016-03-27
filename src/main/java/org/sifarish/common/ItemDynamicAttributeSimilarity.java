@@ -117,10 +117,10 @@ public class ItemDynamicAttributeSimilarity  extends Configured implements Tool{
              	LOG.setLevel(Level.DEBUG);
              	System.out.println("in debug mode");
             }
-        	bucketCount = conf.getInt("bucket.count", 10);
+        	bucketCount = conf.getInt("idas.bucket.count", 10);
         	fieldDelimRegex = conf.get("field.delim.regex", "\\[\\]");
-        	hashPairMult = conf.getInt("hash.pair.multiplier", 1000);
-        	partitonFieldOrdinal = conf.getInt("paritioning.field.ordinal", -1);
+        	hashPairMult = conf.getInt("idas.hash.pair.multiplier", 1000);
+        	partitonFieldOrdinal = conf.getInt("idas.paritioning.field.ordinal", -1);
         }    
         
         /* (non-Javadoc)
@@ -193,29 +193,29 @@ public class ItemDynamicAttributeSimilarity  extends Configured implements Tool{
         	fieldDelim = conf.get("field.delim", "[]");
         	fieldDelimRegex = conf.get("field.delim.regex", "\\[\\]");
         	delimLength =  fieldDelim.length();
-        	hashPairMult = conf.getInt("hash.pair.multiplier", 1000);
-        	String simAlgorithm = conf.get("similarity.algorithm", "cosine");
+        	hashPairMult = conf.getInt("idas.hash.pair.multiplier", 1000);
+        	String simAlgorithm = conf.get("idas.similarity.algorithm", "cosine");
         	
         	//semantic matching
         	Map<String, Object> params = new HashMap<String, Object>();
-        	params.put("matcherClass", conf.get("semantic.matcher.class"));
-        	params.put("topMatchCount", conf.getInt("semantic.top.match.count", 5));
-        	params.put("semanticScale", conf.getInt("semantic.match.scale", 10));
+        	params.put("matcherClass", conf.get("idas.semantic.matcher.class"));
+        	params.put("topMatchCount", conf.getInt("idas.semantic.top.match.count", 5));
+        	params.put("semanticScale", conf.getInt("idas.semantic.match.scale", 10));
         	params.put("config", conf);
         	loadSemanticMatcherParams( conf,  params); 
         	
-        	LOG.debug("simAlgorithm:" + simAlgorithm + " matcherClass: "  + conf.get("semantic.matcher.class"));
+        	LOG.debug("simAlgorithm:" + simAlgorithm + " matcherClass: "  + conf.get("idas.semantic.matcher.class"));
         	
         	//similarity matching algorithm
-        	params.put("srcNonMatchingTermWeight", conf.get("jaccard.srcNonMatchingTermWeight"));
-        	params.put("trgNonMatchingTermWeight", conf.get("jaccard.trgNonMatchingTermWeight"));
+        	params.put("srcNonMatchingTermWeight", conf.get("idas.jaccard.srcNonMatchingTermWeight"));
+        	params.put("trgNonMatchingTermWeight", conf.get("idas.jaccard.trgNonMatchingTermWeight"));
         	simStrategy = DynamicAttrSimilarityStrategy.createSimilarityStrategy(simAlgorithm, params);
         	
         	simStrategy.setFieldDelimRegex(fieldDelimRegex);
-        	boolean booleanVec = conf.getBoolean("vec.type.boolean", true);
-        	boolean semanticVec = conf.getBoolean("vec.type.semantic", false);
+        	boolean booleanVec = conf.getBoolean("idas.vec.type.boolean", true);
+        	boolean semanticVec = conf.getBoolean("idas.vec.type.semantic", false);
         	LOG.debug("booleanVec:" + booleanVec + " semanticVec:" + semanticVec);
-        	addMatchingContext = conf.getBoolean("add.semantic.matching.context", false);
+        	addMatchingContext = conf.getBoolean("idas.add.semantic.matching.context", false);
         	
         	//vector type
         	if (booleanVec){
@@ -225,14 +225,14 @@ public class ItemDynamicAttributeSimilarity  extends Configured implements Tool{
         		simStrategy.setSemanticVec(semanticVec);
         	}
         	if (!booleanVec && !semanticVec) {
-            	boolean countIncluded = conf.getBoolean("vec.count.included", true);
+            	boolean countIncluded = conf.getBoolean("idas.vec.count.included", true);
         		simStrategy.setCountIncluded(countIncluded);
         	}
         	
-           	scale = conf.getInt("distance.scale", 1000);
-           	outputCorrelation = conf.getBoolean("output.correlation", false);
-           	partitonFieldOrdinal = conf.getInt("paritioning.field.ordinal", -1);
-           	minIntLength =  conf.getInt("min.intersection.length", 2);
+           	scale = conf.getInt("idas.distance.scale", 1000);
+           	outputCorrelation = conf.getBoolean("idas.output.correlation", false);
+           	partitonFieldOrdinal = conf.getInt("idas.paritioning.field.ordinal", -1);
+           	minIntLength =  conf.getInt("idas.min.intersection.length", 2);
            	LOG.debug("outputCorrelation:" + outputCorrelation + " partitonFieldOrdinal:" + partitonFieldOrdinal +
            			" minIntLength:" + minIntLength);
           }    
@@ -242,7 +242,7 @@ public class ItemDynamicAttributeSimilarity  extends Configured implements Tool{
          * @param params
          */
         private void loadSemanticMatcherParams(Configuration conf, Map<String, Object> params ) {
-        	String semParams = conf.get("semantic.matcher.params");
+        	String semParams = conf.get("idas.semantic.matcher.params");
         	if (!StringUtils.isBlank(semParams)) {
 	        	String[] semanticParams = semParams.split(",");
 	        	for (String semanticParam :  semanticParams) {

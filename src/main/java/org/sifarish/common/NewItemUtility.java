@@ -106,11 +106,11 @@ public class NewItemUtility extends Configured implements Tool{
         protected void setup(Context context) throws IOException, InterruptedException {
         	Configuration config = context.getConfiguration();
         	fieldDelimRegex = config.get("field.delim.regex", ",");
-        	String metaDataFilePrefix = config.get("new.item.metadta.file.prefix", "new");
+        	String metaDataFilePrefix = config.get("niu.new.item.metadta.file.prefix", "new");
         	isMetaDataFileSplit = ((FileSplit)context.getInputSplit()).getPath().getName().startsWith(metaDataFilePrefix);
-        	hashBucketCount = config.getInt("hash.bucket.count", 16);
-        	if (null != config.get("item.attr.ordinals")) {
-        		attrOrdinals = Utility.intArrayFromString(config.get("item.attr.ordinals"));
+        	hashBucketCount = config.getInt("niu.hash.bucket.count", 16);
+        	if (null != config.get("niu.item.attr.ordinals")) {
+        		attrOrdinals = Utility.intArrayFromString(config.get("niu.item.attr.ordinals"));
         	}
 
         }
@@ -203,15 +203,15 @@ public class NewItemUtility extends Configured implements Tool{
 
         	fieldDelim = config.get("field.delim", ",");
         	try {
-				schema = org.sifarish.util.Utility.getSameTypeSchema( config);
+				schema = org.sifarish.util.Utility.getSameTypeSchema(config);
 			} catch (Exception e) {
 				throw new IOException("failed to process schema " + e.getMessage());
 			}
-        	scale = config.getInt("distance.scale", 1000);
-        	distThreshold = config.getInt("dist.threshold", scale);
-        	distFinder = new RecordDistanceFinder( config.get("field.delim.regex", ","),  0, scale,
+        	scale = config.getInt("niu.distance.scale", 1000);
+        	distThreshold = config.getInt("niu.dist.threshold", scale);
+        	distFinder = new RecordDistanceFinder(config.get("field.delim.regex", ","),  0, scale,
         			distThreshold, schema, ":");
-        	ratingAggrStrategy = config.get("new.item.rating.aggregator.strategy", "average");
+        	ratingAggrStrategy = config.get("niu.new.item.rating.aggregator.strategy", "average");
         	
         }
    	

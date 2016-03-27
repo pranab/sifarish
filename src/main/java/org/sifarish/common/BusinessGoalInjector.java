@@ -91,7 +91,7 @@ public class BusinessGoalInjector extends Configured implements Tool{
          */
         protected void setup(Context context) throws IOException, InterruptedException {
         	fieldDelim = context.getConfiguration().get("field.delim", ",");
-        	String bizGoalFilePrefix = context.getConfiguration().get("biz.goal.file.prefix", "biz");
+        	String bizGoalFilePrefix = context.getConfiguration().get("bgi.biz.goal.file.prefix", "biz");
         	isBizGoalFileSplit = ((FileSplit)context.getInputSplit()).getPath().getName().startsWith(bizGoalFilePrefix);
         }    
     	
@@ -142,8 +142,8 @@ public class BusinessGoalInjector extends Configured implements Tool{
         protected void setup(Context context) throws IOException, InterruptedException {
         	Configuration config = context.getConfiguration();
         	fieldDelim = config.get("field.delim", ",");
-        	bizGoalWeights = Utility.intArrayFromString(config.get("biz.goal.weights"),fieldDelim );
-        	maxBizGoalWeight = config.getInt("max.biz.goal.weight",  70);
+        	bizGoalWeights = Utility.intArrayFromString(config.get("bgi.biz.goal.weights"),fieldDelim );
+        	maxBizGoalWeight = config.getInt("bgi.max.biz.goal.weight",  70);
         	int sumWt = 0;
         	for (int wt : bizGoalWeights) {
         		sumWt += wt;
@@ -153,7 +153,7 @@ public class BusinessGoalInjector extends Configured implements Tool{
         	}
         	recWt = MAX_WEIGHT - sumWt;
         	
-        	bizGoalThreshold = Utility.intArrayFromString(config.get("biz.goal.min.threshold"),fieldDelim );
+        	bizGoalThreshold = Utility.intArrayFromString(config.get("bgi.biz.goal.min.threshold"),fieldDelim );
 
         }
         

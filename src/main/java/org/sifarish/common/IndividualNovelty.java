@@ -49,16 +49,16 @@ public class IndividualNovelty extends Transformer {
         protected void setup(Context context) throws IOException, InterruptedException {
         	super.setup(context);
         	Configuration config = context.getConfiguration();
-        	String strategy = config.get("novelty.gen.strategy", "selfInformation");
-        	int maxRating = config.getInt("rating.scale", 100);
+        	String strategy = config.get("inn.novelty.gen.strategy", "selfInformation");
+        	int maxRating = config.getInt("inn.rating.scale", 100);
         	if (strategy.equals("selfInformation")) {
         		//based on rating distribution
-        		 int engaementDistrScale = config.getInt("engaement.distr.scale",  1000);
+        		 int engaementDistrScale = config.getInt("inn.engaement.distr.scale",  1000);
        		 	 registerTransformers(2, new Transformer.NullTransformer());
         		 registerTransformers(3, new IndividualNovelty.SelfInformation(engaementDistrScale, maxRating));
         	} else if  (strategy.equals("nonLinearInverse")) {
         		//based on rating
-        		double param = config.getFloat("quadratic.param", (float) 0.8);
+        		double param = config.getFloat("inn.quadratic.param", (float) 0.8);
        		 	registerTransformers(2, new IndividualNovelty.NonLinearInverse(maxRating, param));
       		 	registerTransformers(3, new Transformer.NullTransformer());
         	}

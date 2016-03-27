@@ -124,7 +124,7 @@ public class ItemEngagementDistr extends Configured implements Tool {
         protected void setup(Context context) throws IOException, InterruptedException {
         	Configuration config = context.getConfiguration();
         	fieldDelim = config.get("field.delim", ",");
-        	engagementDistrScale = config.getInt("engagement.distr.scale",  1000);
+        	engagementDistrScale = config.getInt("ied.engagement.distr.scale",  1000);
         }
         
         /* (non-Javadoc)
