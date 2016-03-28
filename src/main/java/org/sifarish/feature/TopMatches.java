@@ -164,11 +164,11 @@ public class TopMatches extends Configured implements Tool {
 			Configuration conf = context.getConfiguration();
 
            	fieldDelim = conf.get("field.delim", ",");
-        	nearestByCount = conf.getBoolean("nearest.by.count", true);
+        	nearestByCount = conf.getBoolean("tom.nearest.by.count", true);
         	if (nearestByCount) {
-        		topMatchCount = conf.getInt("top.match.count", 10);
+        		topMatchCount = conf.getInt("tom.match.count", 10);
         	} else {
-        		topMatchDistance = conf.getInt("top.match.distance", 200);
+        		topMatchDistance = conf.getInt("tom.match.distance", 200);
         	}
        }
         

@@ -109,11 +109,12 @@ public class PearsonCorrelator extends Configured implements Tool{
              	LOG.setLevel(Level.DEBUG);
              	System.out.println("in debug mode");
             }
-        	bucketCount = conf.getInt("bucket.count", 10);
-        	fieldDelimRegex = conf.get("field.delim.regex", "\\[\\]");
-        	hashPairMult = conf.getInt("hash.pair.multiplier", 1000);
+        	fieldDelimRegex = conf.get("field.delim.regex", ",");
         	subFieldDelim = context.getConfiguration().get("subfield.delim", ":");
-        	ratingScale = context.getConfiguration().getInt("rating.scale", 100);
+
+        	bucketCount = conf.getInt("pec.bucket.count", 10);
+        	hashPairMult = conf.getInt("pec.hash.pair.multiplier", 1000);
+        	ratingScale = context.getConfiguration().getInt("pec.rating.scale", 100);
       }    
         
         /* (non-Javadoc)
@@ -203,9 +204,9 @@ public class PearsonCorrelator extends Configured implements Tool{
             }
         	
         	fieldDelim = conf.get("field.delim", ",");
-        	hashPairMult = conf.getInt("hash.pair.multiplier", 1000);
-           	corrScale = conf.getInt("correlation.scale", 1000);
-           	minRatingSetIntersection =  conf.getInt("min.rating.intersection.set", 3);
+        	hashPairMult = conf.getInt("pec.hash.pair.multiplier", 1000);
+           	corrScale = conf.getInt("pec.correlation.scale", 1000);
+           	minRatingSetIntersection =  conf.getInt("pec.min.rating.intersection.set", 3);
         }       
         
         /* (non-Javadoc)
