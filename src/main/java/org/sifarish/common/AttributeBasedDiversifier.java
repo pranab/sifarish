@@ -203,8 +203,8 @@ public class AttributeBasedDiversifier   extends Configured implements Tool{
         	
         	//sanity check
     		int attrPartitionedItemsCount = 0;
-        	for (String attrs : attrPartitionedRatedItems.keySet())  {
-    			ratedItemList = attrPartitionedRatedItems.get(attrs);
+        	for (Map.Entry<String, List<RatedItem>> entry : attrPartitionedRatedItems.entrySet())  {
+    			ratedItemList = entry.getValue();
     			attrPartitionedItemsCount += ratedItemList.size();
         	}        		
         	LOG.debug("ratedItems size:" + ratedItems.size() + " attrPartitionedItemsCount:" + attrPartitionedItemsCount);
@@ -229,8 +229,8 @@ public class AttributeBasedDiversifier   extends Configured implements Tool{
          */
         private void reorderByRankDiatance(Context context) {
         	//sort rated items for each attribute set value
-        	for (String attrs : attrPartitionedRatedItems.keySet())  {
-    			ratedItemList = attrPartitionedRatedItems.get(attrs);
+        	for (Map.Entry<String, List<RatedItem>> entry : attrPartitionedRatedItems.entrySet())  {
+    			ratedItemList = entry.getValue();
         		Collections.sort(ratedItemList);
         	}
         	
@@ -240,11 +240,11 @@ public class AttributeBasedDiversifier   extends Configured implements Tool{
 	            	topRatedWithDiffAttributes.clear();
 	            	
 	            	//collect top rated items for each unique attribute
-	               	for (String attrs : attrPartitionedRatedItems.keySet())  {
-	        			ratedItemList = attrPartitionedRatedItems.get(attrs);
+	               	for (Map.Entry<String, List<RatedItem>> entry : attrPartitionedRatedItems.entrySet())  {
+	        			ratedItemList = entry.getValue();
 	        			if (!ratedItemList.isEmpty()) {
 	        				RatedItem ratedItem = ratedItemList.get(0);
-	        				topRatedWithDiffAttributes.add(new RatedItemWithAttributes(ratedItem.getLeft(), ratedItem.getRight(), attrs));
+	        				topRatedWithDiffAttributes.add(new RatedItemWithAttributes(ratedItem.getLeft(), ratedItem.getRight(), entry.getKey()));
 	        			}
 	               	}
 	               

@@ -142,11 +142,11 @@ public class ItemEngagementDistr extends Configured implements Tool {
            	
            	//all items
            	userID = key.toString();
-           	for (String itemID :  itemRatings.keySet()) {
+           	for (Map.Entry<String, Integer> entry : itemRatings.entrySet()) {
         		stBld.delete(0,  stBld.length());
-           		stBld.append(userID).append(fieldDelim).append(itemID);
+           		stBld.append(userID).append(fieldDelim).append(entry.getKey());
 
-           		rating = itemRatings.get(itemID);
+           		rating = entry.getValue();
            		distr = (rating * engagementDistrScale) /  sum;
 
            		stBld.append(fieldDelim).append(rating);

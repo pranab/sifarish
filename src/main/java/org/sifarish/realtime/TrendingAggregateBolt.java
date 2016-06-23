@@ -104,9 +104,9 @@ public class TrendingAggregateBolt extends  GenericBolt {
 		  if (sketchedBolts.size() == numSkethesBolt) {
 			  LOG.info("**Frequent item stats***");
 			  sortedObjects.clear();
-			  for (String itemID :  frequentItems.keySet()) {
-				  LOG.info("item:" + itemID + " count:" + frequentItems.get(itemID));
-				  sortedObjects.add(itemID, frequentItems.get(itemID));
+			  for (Map.Entry<String, Integer> entry : frequentItems.entrySet()) {
+				  LOG.info("item:" + entry.getKey() + " count:" + entry.getValue());
+				  sortedObjects.add(entry.getKey(), entry.getValue());
 			  }
 			  LOG.info("after merge");
 			  sortedObjects.truncate();

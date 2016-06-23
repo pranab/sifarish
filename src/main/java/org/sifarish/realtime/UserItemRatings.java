@@ -139,9 +139,9 @@ public class UserItemRatings {
 		if (eventExpirePolicy.equals(EVENT_EXPIRE_SESSION))  {
 			//expire by session
 			if (this.sessionID != null && !this.sessionID.equals(sessionID)) {
-				for (String item : engagementEvents.keySet()) {
-					if (engagementEvents.get(item).removeAllEvents()) {
-						affectedItems.add(item);
+				for (Map.Entry<String, EngagementEvent> entry : engagementEvents.entrySet()) {
+					if (entry.getValue().removeAllEvents()) {
+						affectedItems.add(entry.getKey());
 					}
 				}
 				this.sessionID = sessionID;
@@ -151,9 +151,9 @@ public class UserItemRatings {
 			if (timedExpireWindowSec < 0) {
 				throw new Exception("For event expiry by time window, timed.expire.window needs to be set");
 			}
-			for (String item : engagementEvents.keySet()) {
-				if (engagementEvents.get(item).removeOldEventsByTime(timedExpireWindowSec)) {
-					affectedItems.add(item);
+			for (Map.Entry<String, EngagementEvent> entry : engagementEvents.entrySet()) {
+				if (entry.getValue().removeOldEventsByTime(timedExpireWindowSec)) {
+					affectedItems.add(entry.getKey());
 				}
 			}
 			
@@ -162,9 +162,9 @@ public class UserItemRatings {
 			if (countExpireLimit < 0) {
 				throw new Exception("For event expiry by count, count.expire.limit needs to be set");
 			}
-			for (String item : engagementEvents.keySet()) {
-				if (engagementEvents.get(item).removeOldEventsByCount(10)) {
-					affectedItems.add(item);
+			for (Map.Entry<String, EngagementEvent> entry : engagementEvents.entrySet()) {
+				if (entry.getValue().removeOldEventsByCount(10)) {
+					affectedItems.add(entry.getKey());
 				}
 			}
 		}
@@ -189,17 +189,17 @@ public class UserItemRatings {
 		}
 		
 		//all rated items
-		for (String itemID : engagementEvents.keySet()) {
+		for (Map.Entry<String, EngagementEvent> entry : engagementEvents.entrySet()) {
 			//predicted ratings for items correlated to this item 
 			if (debugOn)
-				LOG.info("processing item:" +itemID);
+				LOG.info("processing item:" + entry.getKey());
 			
-			EngagementEvent engageEvents = engagementEvents.get(itemID);
+			EngagementEvent engageEvents = entry.getValue();
 			engageEvents.processRating();
 			List<ItemRating> thisPredictedRatings = engageEvents.getPredictedRatings();
 			
 			if (debugOn) 
-				LOG.info("for item "  + itemID + " there are  " + thisPredictedRatings.size() + " correlated items with predicted ratings");
+				LOG.info("for item "  + entry.getKey() + " there are  " + thisPredictedRatings.size() + " correlated items with predicted ratings");
 			
 			//all correlated items
 			for (ItemRating itemRating : thisPredictedRatings) {
@@ -217,9 +217,9 @@ public class UserItemRatings {
 		}
 		
 		//average predicted rating
-		for (String item : itemPredictedRatings.keySet()) {
-			int avRating = itemPredictedRatings.get(item) / itemPredictedRatingCounts.get(item);
-			ratings.add(new ItemRating(item, avRating));
+		for (Map.Entry<String, Integer> entry : itemPredictedRatings.entrySet()) {
+			int avRating = entry.getValue() / itemPredictedRatingCounts.get(entry.getKey());
+			ratings.add(new ItemRating(entry.getKey(), avRating));
 		}
 		if (debugOn) {
 			LOG.info("found net " + ratings.size() + " items with predicted rating");
