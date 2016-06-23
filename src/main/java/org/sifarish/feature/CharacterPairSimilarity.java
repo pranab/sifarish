@@ -34,7 +34,7 @@ public class CharacterPairSimilarity extends DynamicAttrSimilarityStrategy {
 	 * @see org.sifarish.feature.DynamicAttrSimilarityStrategy#findDistance(java.lang.String, java.lang.String)
 	 */
 	public double findDistance(String src, String target) throws IOException {
-		double dist = 0;
+		double dist;
 		String[] srcTerms = src.split(fieldDelimRegex);
 		List<String> srcPairs = getCharacterPairs(srcTerms);
 		String[] trgTerms = target.split(fieldDelimRegex);

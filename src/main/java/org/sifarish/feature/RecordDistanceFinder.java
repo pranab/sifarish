@@ -153,7 +153,7 @@ public class RecordDistanceFinder {
 		String firstId =  firstItems[idOrdinal];
 		String secondId =  secondItems[idOrdinal];
 		
-    	int netDist = 0;
+    	int netDist;
 
    		//if inter set matching with mixed in sets, match only same ID from different sets
     	if (mixedInSets) {
@@ -194,7 +194,7 @@ public class RecordDistanceFinder {
 			}
 			
 			//extract fields
-			String firstAttr = "";
+			String firstAttr;
 			if (field.getOrdinal() < firstItems.length ){
 				firstAttr = firstItems[field.getOrdinal()];
 			} else {
@@ -202,7 +202,7 @@ public class RecordDistanceFinder {
 						" found "  + firstItems.length + " fields in the record starting with :" + firstItems[0]);
 			}
 			
-			String secondAttr = "";
+			String secondAttr;
 			if (field.getOrdinal() < secondItems.length ){
 				secondAttr = secondItems[field.getOrdinal()];
 			}else {
@@ -281,7 +281,7 @@ public class RecordDistanceFinder {
      * @throws IOException
      */
     private double textDistance(Field field, String firstAttr,  String secondAttr) throws IOException {
-    	double dist = 0;
+    	double dist;
 		if (field.getDataSubType() == Field.TEXT_TYPE_PERSON_NAME) {
 			dist = personNameDistance(field, firstAttr, secondAttr);
 		} if (field.getDataSubType() == Field.TEXT_TYPE_STREET_ADDRESS) {
@@ -380,7 +380,7 @@ public class RecordDistanceFinder {
      * @return
      */
     private double locationDistance(Field field, String firstAttr, String secondAttr) {
-    	double dist = 0;
+    	double dist;
 		String[] subFields = firstAttr.split(subFieldDelim);
 		Location firstLocation  = new Location( subFields[0], subFields[1], subFields[2]); 
 	    subFields = secondAttr.split(subFieldDelim);
@@ -459,7 +459,7 @@ public class RecordDistanceFinder {
      * @throws IOException
      */
     private double personNameDistance(Field field, String firstAttr, String secondAttr) throws IOException {
-    	double dist = 0;
+    	double dist;
     	String[] firstItems = firstAttr.split("\\s+");
     	String[] secondItems = secondAttr.split("\\s+");
     	double firstNameDist = textSimStrategy.findDistance(firstItems[0], secondItems[0]);	
@@ -477,7 +477,7 @@ public class RecordDistanceFinder {
      * @throws IOException
      */
     private double streetAddressDistance(Field field, String firstAttr, String secondAttr) throws IOException {
-    	double dist = 0;
+    	double dist;
     	String[] firstStreetCoponents = getStreetComponents(firstAttr);
     	String[] secondStreetCoponents = getStreetComponents(secondAttr);
     	dist = textSimStrategy.findDistance(firstStreetCoponents[0], secondStreetCoponents[0]) * field.getPartWeights()[0] + 

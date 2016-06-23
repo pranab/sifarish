@@ -164,7 +164,7 @@ public class BusinessGoalInjector extends Configured implements Tool{
         throws IOException, InterruptedException {
         	boolean first = true;
         	Tuple bizScore = null;
-        	boolean toSkip = false;
+        	boolean toSkip;
         	for(Tuple value : values) {
         		toSkip = false;
         		if (first) {
@@ -178,7 +178,7 @@ public class BusinessGoalInjector extends Configured implements Tool{
         			}
         			first = false;
         		} else {
-        			int weightedScore = 0;
+        			int weightedScore;
         			if (null != bizScore) {
         				//weighted average score
         				int sumWeightedScore = recWt * value.getInt(1);

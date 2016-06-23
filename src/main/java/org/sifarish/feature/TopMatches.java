@@ -242,7 +242,7 @@ public class TopMatches extends Configured implements Tool {
         	throws IOException, InterruptedException {
     		srcEntityId  = key.getString(0);
     		count = 0;
-    		boolean doEmitNeighbor = false;
+    		boolean doEmitNeighbor;
     		valueList.clear();
         	for (Text value : values){
         		doEmitNeighbor = false;

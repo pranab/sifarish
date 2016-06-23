@@ -394,7 +394,7 @@ public class SameTypeSimilarity  extends Configured implements Tool {
          */
         private int findDistance(String first, String second, Context context) throws IOException {
         	//LOG.debug("findDistance:" + first + "  " + second);
-        	int netDist = 0;
+        	int netDist;
 
        		//if inter set matching with mixed in sets, match only same ID from different sets
         	if (mixedInSets) {
@@ -438,7 +438,7 @@ public class SameTypeSimilarity  extends Configured implements Tool {
     			}
     			
     			//extract fields
-    			String firstAttr = "";
+    			String firstAttr;
     			if (field.getOrdinal() < firstItems.length ){
     				firstAttr = firstItems[field.getOrdinal()];
     			} else {
@@ -446,7 +446,7 @@ public class SameTypeSimilarity  extends Configured implements Tool {
     						" found "  + firstItems.length + " fields in the record:" + first);
     			}
     			
-    			String secondAttr = "";
+    			String secondAttr;
     			if (field.getOrdinal() < secondItems.length ){
     				secondAttr = secondItems[field.getOrdinal()];
     			}else {
@@ -686,7 +686,7 @@ public class SameTypeSimilarity  extends Configured implements Tool {
          * @return
          */
         private double locationDistance(Field field, String firstAttr, String secondAttr,Context context) {
-        	double dist = 0;
+        	double dist;
 			String[] subFields = firstAttr.split(subFieldDelim);
 			Location firstLocation  = new Location( subFields[0], subFields[1], subFields[2]); 
 		    subFields = secondAttr.split(subFieldDelim);

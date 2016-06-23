@@ -276,7 +276,7 @@ public class NewItemUtility extends Configured implements Tool{
      * @return
      */
         private int aggregateRating() {
-        	int aggrRating = 0;
+        	int aggrRating;
         	if (ratingAggrStrategy.equals("average")) {
         		int sum = 0;
     		    for (int rating : newItemPredRatings) {

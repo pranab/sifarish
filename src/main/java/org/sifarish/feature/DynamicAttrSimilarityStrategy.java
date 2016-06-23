@@ -122,7 +122,7 @@ public abstract class DynamicAttrSimilarityStrategy {
 	 */
 	public static DynamicAttrSimilarityStrategy createSimilarityStrategy(String algorithm, Map<String,Object> params) 
 		throws IOException {
-		DynamicAttrSimilarityStrategy  simStrategy = null;
+		DynamicAttrSimilarityStrategy  simStrategy;
 		if (algorithm.equals("jaccard")){
 			double srcNonMatchingTermWeight = (Double)params.get("srcNonMatchingTermWeight");
 			double trgNonMatchingTermWeight = (Double)params.get("trgNonMatchingTermWeight");

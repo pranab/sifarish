@@ -44,7 +44,7 @@ public class EngagementToPreferenceMapper {
 	 * @return
 	 */
 	public int scoreForEvent(int eventType, int count) {
-		int score = 0;
+		int score;
 		
 		//match event type
 		EngagementScore thisScore = null;

@@ -166,9 +166,9 @@ public class PearsonCorrelator extends Configured implements Tool{
         	valueHolder.add(secKey, items[0]);
         	
         	//all userID and rating pair
-        	String[] subItems = null;
-        	String userID = null;
-        	Integer rating = 0;
+        	String[] subItems;
+        	String userID;
+        	Integer rating;
         	for (int i = 1; i < items.length; ++ i) {
         		subItems = items[i].split(subFieldDelim);
         		userID = subItems[0];
@@ -216,8 +216,8 @@ public class PearsonCorrelator extends Configured implements Tool{
         throws IOException, InterruptedException {
         	
         	int hashPair = key.getInt(0);
-    		UserRating userRating = null;
-    		UserRating userRatingSecond = null;
+    		UserRating userRating;
+    		UserRating userRatingSecond;
         	if (hashPair / hashPairMult == hashPair % hashPairMult){
         		//same bucket
         		userRatings.clear();
@@ -409,7 +409,7 @@ public class PearsonCorrelator extends Configured implements Tool{
 		public void calculateStat() {
 	    	int ratingSum = 0;
 	    	int ratingSquareSum = 0;
-			int rating = 0;
+			int rating;
 			
 			for (int index : matchedRatings) {
 				rating = ratings.get(index).getRight();
@@ -440,7 +440,7 @@ public class PearsonCorrelator extends Configured implements Tool{
 		 * @return
 		 */
 		public int[] findCoVarianceItems(int[] coVarItems) {
-			int normRating = 0;
+			int normRating;
 			if (null == coVarItems) {
 				coVarItems = new int[matchedRatings.size()];
 				for (int i =0; i < matchedRatings.size(); ++i) {

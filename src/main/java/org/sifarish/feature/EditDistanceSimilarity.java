@@ -45,7 +45,7 @@ public class EditDistanceSimilarity extends DynamicAttrSimilarityStrategy {
 	 */
 	@Override
 	public double findDistance(String src, String target) {
-		double distance = 0;
+		double distance;
 		if (tokenWise) {
 			distance = findDistanceTokenWise( src,  target);
 		} else {
@@ -62,7 +62,7 @@ public class EditDistanceSimilarity extends DynamicAttrSimilarityStrategy {
 	 */
 	private  double findDistanceTokenWise(String src, String target) {
 		double distance = 0;
-		int editDistance = 0;
+		int editDistance;
 		//System.out.println("findDistanceTokenWise:" + src + ":"  + target);
 
 		String[] srcTerms = src.split(fieldDelimRegex);
@@ -118,7 +118,7 @@ public class EditDistanceSimilarity extends DynamicAttrSimilarityStrategy {
 	 */
 	private  double findDistanceFieldWise(String src, String target) {
 		double distance = 0;
-		int editDistance = 0;
+		int editDistance;
 		sequences.clear();
 		maxSeqLength = 0;
 		generateSubSequences(src, true);
@@ -143,7 +143,7 @@ public class EditDistanceSimilarity extends DynamicAttrSimilarityStrategy {
 			}
 		}
 		
-		String subToken = null;
+		String subToken;
 		if (len  > MIN_TOKEN_LENGTH ) { 
 			//create sub sequences by taking one char out and make recursive call
 			for (int i = 0; i < len; ++i) {
