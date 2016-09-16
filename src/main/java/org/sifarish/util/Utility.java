@@ -18,6 +18,8 @@
 package org.sifarish.util;
 
 import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.Properties;
 
 import org.apache.hadoop.conf.Configuration;
@@ -101,5 +103,17 @@ public class Utility {
     	return schema;
     }
     
-    
+    /**
+     * @param conf
+     * @param pathParam
+     * @return
+     * @throws IOException
+     */
+    public static SingleTypeSchema getSingleTypeSchema(Configuration conf, String pathParam) throws IOException {
+    	//data schema
+		InputStream fs = org.chombo.util.Utility.getFileStream(conf, pathParam);
+        ObjectMapper mapper = new ObjectMapper();
+        SingleTypeSchema schema = mapper.readValue(fs, SingleTypeSchema.class);
+    	return schema;
+    }
 }
