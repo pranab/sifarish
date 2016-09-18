@@ -170,7 +170,7 @@ public class ImplicitRatingEstimator   extends Configured implements Tool{
         protected void reduce(Tuple  key, Iterable<Tuple> values, Context context)
         throws IOException, InterruptedException {
         	if (stBld.length() > 0) {
-        		stBld.delete(0,  stBld.length() -1);
+        		stBld.delete(0,  stBld.length());
         	}
         	
         	//separate negative and positive events
