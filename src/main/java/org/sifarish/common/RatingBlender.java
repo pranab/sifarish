@@ -99,8 +99,8 @@ public class RatingBlender extends Configured implements Tool{
          */
         protected void setup(Context context) throws IOException, InterruptedException {
         	fieldDelim = context.getConfiguration().get("field.delim", ",");
-        	String explicitRatingFilePrefix = context.getConfiguration().get("explicit.rating.file.prefix", "expl");
-        	String custSvcRatingFilePrefix = context.getConfiguration().get("custsvc.rating.file.prefix", "cust");
+        	String explicitRatingFilePrefix = context.getConfiguration().get("rab.explicit.rating.file.prefix", "expl");
+        	String custSvcRatingFilePrefix = context.getConfiguration().get("rab.custsvc.rating.file.prefix", "cust");
         	
         	String splitName = ((FileSplit)context.getInputSplit()).getPath().getName();
         	isExplicitRatingFileSplit = splitName.startsWith(explicitRatingFilePrefix);
@@ -171,11 +171,11 @@ public class RatingBlender extends Configured implements Tool{
         protected void setup(Context context) throws IOException, InterruptedException {
         	Configuration config = context.getConfiguration();
         	fieldDelim = config.get("field.delim", ",");
-        	ratingWeightList = Utility.intArrayFromString(config.get("rating.weights"),fieldDelim );
+        	ratingWeightList = Utility.intArrayFromString(config.get("rab.rating.weights"),fieldDelim );
         	if ((ratingWeightList[0] + ratingWeightList[1] + ratingWeightList[2]) != 100) {
         		throw new IllegalArgumentException("rating weights are not normalized");
         	}
-        	explicitRatingOverride = config.get("explicit.rating.override", "none");
+        	explicitRatingOverride = config.get("rab.explicit.rating.override", "none");
         }
 
         /* (non-Javadoc)

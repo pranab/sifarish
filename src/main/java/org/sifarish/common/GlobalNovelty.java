@@ -48,19 +48,19 @@ public class GlobalNovelty  extends Transformer {
         protected void setup(Context context) throws IOException, InterruptedException {
         	super.setup(context);
         	Configuration config = context.getConfiguration();
-        	String strategy = config.get("novelty.gen.strategy", "selfInformation");
-        	int maxRating = config.getInt("rating.scale", 100);
+        	String strategy = config.get("gln.novelty.gen.strategy", "selfInformation");
+        	int maxRating = config.getInt("gln.rating.scale", 100);
     		RedisCache cache = RedisCache.createRedisCache(config, "ch");
         	if (strategy.equals("selfInformation")) {
         		//based on rating distribution
-				String countMaxValueKeyPrefix = config.get("count.max.value.key.prefix");
+				String countMaxValueKeyPrefix = config.get("gln.count.max.value.key.prefix");
         		int engaementDistrScale = cache.getIntMax(countMaxValueKeyPrefix);
        		 	registerTransformers(1, new Transformer.NullTransformer());
         		registerTransformers(2, new IndividualNovelty.SelfInformation(engaementDistrScale, maxRating));
         	} else if  (strategy.equals("nonLinearInverse")) {
         		//based on rating
-        		double param = config.getFloat("quadratic.param", (float) 0.8);
-				String ratingMaxValueKeyPrefix = config.get("rating.max.value.key.prefix");
+        		double param = config.getFloat("gln.quadratic.param", (float) 0.8);
+				String ratingMaxValueKeyPrefix = config.get("gln.rating.max.value.key.prefix");
         		int maxRatingInData = cache.getIntMax(ratingMaxValueKeyPrefix);
        		 	registerTransformers(1, new IndividualNovelty.NonLinearInverse(maxRating, param, maxRatingInData));
       		 	registerTransformers(2, new Transformer.NullTransformer());

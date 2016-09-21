@@ -109,19 +109,19 @@ public class TextAnalyzer extends Configured implements Tool{
         	Configuration config = context.getConfiguration();
         	fieldDelim = config.get("field.delim", "[]");
         	fieldDelimRegex = config.get("field.delim.regex", "\\[\\]");
-        	consolidateFields = config.getBoolean("consolidate.field", false);
-        	String textFields = config.get("text.field.ordinals", "");
+        	consolidateFields = config.getBoolean("tea.consolidate.field", false);
+        	String textFields = config.get("tea.text.field.ordinals", "");
             String[] items  =  textFields.toString().split(",");
             for (int i = 0; i < items.length; ++i){
             	textFieldOrdinals.add(Integer.parseInt(items[i]));
             }
             
             //language specific analyzer
-            String lang = config.get("text.language", "en");
+            String lang = config.get("tea.text.language", "en");
             createAnalyzer(lang);
             
             //load schema
-            String filePath = config.get("raw.schema.file.path");
+            String filePath = config.get("tea.raw.schema.file.path");
             FileSystem dfs = FileSystem.get(config);
             Path src = new Path(filePath);
             FSDataInputStream fs = dfs.open(src);

@@ -95,10 +95,10 @@ public class ItemRatingAttributeAggregator  extends Configured implements Tool{
         protected void setup(Context context) throws IOException, InterruptedException {
         	Configuration config = context.getConfiguration();
         	fieldDelimRegex = config.get("field.delim.regex", ",");
-        	String metaDataFilePrefix = config.get("item.metadta.file.prefix", "meta");
+        	String metaDataFilePrefix = config.get("iraa.item.metadta.file.prefix", "meta");
         	isMetaDataFileSplit = ((FileSplit)context.getInputSplit()).getPath().getName().startsWith(metaDataFilePrefix);
-        	if (null != config.get("item.attr.ordinals")) {
-        		attrOrdinals = Utility.intArrayFromString(config.get("item.attr.ordinals"));
+        	if (null != config.get("iraa.item.attr.ordinals")) {
+        		attrOrdinals = Utility.intArrayFromString(config.get("iraa.item.attr.ordinals"));
         	}
         }
         
@@ -159,7 +159,7 @@ public class ItemRatingAttributeAggregator  extends Configured implements Tool{
         protected void setup(Context context) throws IOException, InterruptedException {
         	Configuration config = context.getConfiguration();
         	fieldDelim = config.get("field.delim", ",");
-        	outputRating = config.getBoolean("output.rating", false);
+        	outputRating = config.getBoolean("iraa.output.rating", false);
         }
         
         /* (non-Javadoc)

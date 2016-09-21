@@ -191,14 +191,14 @@ public class ItemRatingStat extends Configured implements Tool{
              	System.out.println("in debug mode");
             }
         	fieldDelim = config.get("field.delim", ",");
-        	ratingScale = context.getConfiguration().getInt("rating.scale", 100);
-        	normalizedOutput = config.getBoolean("normalized.output", false);
+        	ratingScale = context.getConfiguration().getInt("irs.rating.scale", 100);
+        	normalizedOutput = config.getBoolean("irs.normalized.output", false);
     		if (normalizedOutput) {
-	        	int maxInMemory  = config.getInt("tuple.list.max.in.memory", 1000);
-	        	String spillFilePath = config.get("tuple.list.spill.dir", "/tmp/bigTupleList");
+	        	int maxInMemory  = config.getInt("irs.tuple.list.max.in.memory", 1000);
+	        	String spillFilePath = config.get("irs.tuple.list.spill.dir", "/tmp/bigTupleList");
 	        	tupleList = new BigTupleList(maxInMemory, spillFilePath);
 	        	tupleList.open(BigTupleList.Mode.Write);
-	        	statsScale = context.getConfiguration().getInt("stats.scale", 100);
+	        	statsScale = context.getConfiguration().getInt("irs.stats.scale", 100);
 	        	maxCount = 0;
 	        	maxRatingMean = 0;
 	        	maxRatingMedian = 0;

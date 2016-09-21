@@ -133,13 +133,13 @@ public class SameTypeSimilarity  extends Configured implements Tool {
          * @see org.apache.hadoop.mapreduce.Mapper#setup(org.apache.hadoop.mapreduce.Mapper.Context)
          */
         protected void setup(Context context) throws IOException, InterruptedException {
-        	bucketCount = context.getConfiguration().getInt("bucket.count", 1000);
         	fieldDelimRegex = context.getConfiguration().get("field.delim.regex", "\\[\\]");
             
 			Configuration conf = context.getConfiguration();
+        	bucketCount = conf.getInt("sts.bucket.count", 1000);
             
         	//data schema
-    		InputStream fs = org.chombo.util.Utility.getFileStream(conf, "same.schema.file.path");
+    		InputStream fs = org.chombo.util.Utility.getFileStream(conf, "sts.same.schema.file.path");
             ObjectMapper mapper = new ObjectMapper();
             schema = mapper.readValue(fs, SingleTypeSchema.class);
             
@@ -155,12 +155,12 @@ public class SameTypeSimilarity  extends Configured implements Tool {
         	LOG.debug("bucketCount: " + bucketCount + "partitonOrdinal: " + partitonOrdinal  + "idOrdinal:" + idOrdinal );
         	
         	//inter set matching
-       	 	interSetMatching = conf.getBoolean("inter.set.matching",  false);
-       	 	String baseSetSplitPrefix = conf.get("base.set.split.prefix", "base");
+       	 	interSetMatching = conf.getBoolean("sts.inter.set.matching",  false);
+       	 	String baseSetSplitPrefix = conf.get("sts.base.set.split.prefix", "base");
        	 	isBaseSetSplit = ((FileSplit)context.getInputSplit()).getPath().getName().startsWith(baseSetSplitPrefix);
        	 	
        	 	//generate record Id as the first field
-       	 	autoGenerateId = conf.getBoolean("auto.generate.id", false);
+       	 	autoGenerateId = conf.getBoolean("sts.auto.generate.id", false);
        	 	if (autoGenerateId && idOrdinal != 0) {
        	 		throw new IllegalArgumentException("when record  Id is auto generated, it should be the first field");
        	 	}
@@ -269,15 +269,15 @@ public class SameTypeSimilarity  extends Configured implements Tool {
         	fieldDelim = context.getConfiguration().get("field.delim", ",");
 			
 			//schema
-       		InputStream fs = org.chombo.util.Utility.getFileStream(conf, "same.schema.file.path");
+       		InputStream fs = org.chombo.util.Utility.getFileStream(conf, "sts.same.schema.file.path");
        	    ObjectMapper mapper = new ObjectMapper();
             schema = mapper.readValue(fs, SingleTypeSchema.class);
             schema.processStructuredFields();
             schema.setConf(conf);
         	
             idOrdinal = schema.getEntity().getIdField().getOrdinal();
-        	scale = conf.getInt("distance.scale", 1000);
-        	subFieldDelim = conf.get("sub.field.delim.regex", "::");
+        	scale = conf.getInt("sts.distance.scale", 1000);
+        	subFieldDelim = conf.get("sts.sub.field.delim.regex", "::");
         	
         	//distance calculation strategy
         	distStrategy = schema.createDistanceStrategy(scale);
@@ -286,33 +286,33 @@ public class SameTypeSimilarity  extends Configured implements Tool {
         	textSimStrategy = schema.createTextSimilarityStrategy();
         	
         	//faceted fields
-        	String facetedFieldValues =  conf.get("faceted.field.ordinal");
+        	String facetedFieldValues =  conf.get("sts.faceted.field.ordinal");
         	if (!StringUtils.isBlank(facetedFieldValues)) {
         		facetedFields = org.chombo.util.Utility.intArrayFromString(facetedFieldValues);
         	}
         	
         	//carry along all passive fields in output
-        	includePassiveFields = conf.getBoolean("include.passive.fields", false);
+        	includePassiveFields = conf.getBoolean("sts.include.passive.fields", false);
         	
         	//distance threshold for output
-        	distThreshold = conf.getInt("dist.threshold", scale);
+        	distThreshold = conf.getInt("sts.dist.threshold", scale);
         	
         	//output ID first
-        	outputIdFirst =   conf.getBoolean("output.id.first", true);      	
+        	outputIdFirst =   conf.getBoolean("sts.output.id.first", true);      	
 
         	//inter set matching
-        	mixedInSets = conf.getBoolean("mixed.in.sets",  false);
-        	setIdSize = conf.getInt("set.ID.size",  0);
+        	mixedInSets = conf.getBoolean("sts.mixed.in.sets",  false);
+        	setIdSize = conf.getInt("sts.set.ID.size",  0);
         	
         	//extra selected passive fields to be output
-        	String extraOutputFieldList = conf.get("extra.output.field");
+        	String extraOutputFieldList = conf.get("sts.extra.output.field");
         	if (!StringUtils.isBlank(extraOutputFieldList)) {
         		extraOutputFields = org.chombo.util.Utility.intArrayFromString(extraOutputFieldList);
         		
         	}        	
         	
         	//output whole record
-        	outputRecord =  conf.getBoolean("output.record", false);     
+        	outputRecord =  conf.getBoolean("sts.output.record", false);     
         	
             if (conf.getBoolean("debug.on", false)) {
              	LOG.setLevel(Level.DEBUG);

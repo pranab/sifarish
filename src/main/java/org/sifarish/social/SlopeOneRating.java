@@ -30,6 +30,7 @@ import org.apache.hadoop.mapreduce.Reducer;
 import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 import org.apache.hadoop.util.Tool;
+import org.apache.hadoop.util.ToolRunner;
 import org.chombo.util.IntPair;
 import org.chombo.util.TextPair;
 import org.chombo.util.Utility;
@@ -130,4 +131,14 @@ public class SlopeOneRating extends Configured implements Tool{
 	   		context.write(NullWritable.get(), valueOut);
         }
     }
+    
+    /**
+     * @param args
+     * @throws Exception
+     */
+    public static void main(String[] args) throws Exception {
+        int exitCode = ToolRunner.run(new SlopeOneRating(), args);
+        System.exit(exitCode);
+    }
+    
 }

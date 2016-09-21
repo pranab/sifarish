@@ -90,7 +90,7 @@ public class UtilityAggregator extends Configured implements Tool{
         protected void setup(Context context) throws IOException, InterruptedException {
         	Configuration conf = context.getConfiguration();
         	fieldDelim = conf.get("field.delim", ",");
-        	userRatingWithContext = conf.getBoolean("user.rating.with.context", false);
+        	userRatingWithContext = conf.getBoolean("uta.user.rating.with.context", false);
         }    
     	
         /* (non-Javadoc)
@@ -152,17 +152,17 @@ public class UtilityAggregator extends Configured implements Tool{
         protected void setup(Context context) throws IOException, InterruptedException {
         	Configuration config = context.getConfiguration();
         	fieldDelim = config.get("field.delim", ",");
-        	corrLengthWeightedAverage = config.getBoolean("corr.length.weighted.average", true);
-        	inputRatingStdDevWeightedAverage = config.getBoolean("input.rating.stdDev.weighted.average", false);
-        	ratingAggregatorStrategy = config.get("rating.aggregator.strategy", "average");
-        	corrScale = config.getInt("correlation.scale", 1000);
-        	maxRating = config.getInt("max.rating", 100);
+        	corrLengthWeightedAverage = config.getBoolean("uta.corr.length.weighted.average", true);
+        	inputRatingStdDevWeightedAverage = config.getBoolean("uta.input.rating.stdDev.weighted.average", false);
+        	ratingAggregatorStrategy = config.get("uta.rating.aggregator.strategy", "average");
+        	corrScale = config.getInt("uta.correlation.scale", 1000);
+        	maxRating = config.getInt("uta.max.rating", 100);
         	maxStdDev = (35 * maxRating)  / 100;
         	maxPredictedRating = 0;
-        	outputAggregationCount = config.getBoolean("output.aggregation.count", true);
-        	userRatingWithContext = config.getBoolean("user.rating.with.context", false);
+        	outputAggregationCount = config.getBoolean("uta.output.aggregation.count", true);
+        	userRatingWithContext = config.getBoolean("uta.user.rating.with.context", false);
         	
-        	boolean cacheMaxPredRating = config.getBoolean("cache.max.pred.rating", false);
+        	boolean cacheMaxPredRating = config.getBoolean("uta.cache.max.pred.rating", false);
         	if (cacheMaxPredRating) {
         		redisCache = RedisCache.createRedisCache(config, "si");
         	}

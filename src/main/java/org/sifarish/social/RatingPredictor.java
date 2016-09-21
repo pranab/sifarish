@@ -36,6 +36,7 @@ import org.apache.hadoop.mapreduce.Reducer;
 import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 import org.apache.hadoop.util.Tool;
+import org.apache.hadoop.util.ToolRunner;
 import org.chombo.util.TextInt;
 import org.chombo.util.Tuple;
 import org.chombo.util.Utility;
@@ -100,9 +101,9 @@ public class RatingPredictor extends Configured implements Tool{
         protected void setup(Context context) throws IOException, InterruptedException {
         	fieldDelim = context.getConfiguration().get("field.delim", ",");
         	subFieldDelim = context.getConfiguration().get("field.delim", ":");
-        	String ratingFilePrefix = context.getConfiguration().get("rating.file.prefix", "rating");
+        	String ratingFilePrefix = context.getConfiguration().get("rap.rating.file.prefix", "rating");
         	isRatingFileSplit = ((FileSplit)context.getInputSplit()).getPath().getName().startsWith(ratingFilePrefix);
-        	linearCorrelation = context.getConfiguration().getBoolean("correlation.linear", true);
+        	linearCorrelation = context.getConfiguration().getBoolean("rap.correlation.linear", true);
         }    
     	
         /* (non-Javadoc)
@@ -155,8 +156,8 @@ public class RatingPredictor extends Configured implements Tool{
          */
         protected void setup(Context context) throws IOException, InterruptedException {
         	fieldDelim = context.getConfiguration().get("field.delim", ",");
-        	linearCorrelation = context.getConfiguration().getBoolean("correlation.linear", true);
-        	correlationScale = context.getConfiguration().getInt("correlation.linear.scale", 1000);
+        	linearCorrelation = context.getConfiguration().getBoolean("rap.correlation.linear", true);
+        	correlationScale = context.getConfiguration().getInt("rap.correlation.linear.scale", 1000);
         } 	
         
         /* (non-Javadoc)
@@ -218,5 +219,14 @@ public class RatingPredictor extends Configured implements Tool{
     		return t1.baseCompareTo(t2);
     	}
      }
+    
+    /**
+     * @param args
+     * @throws Exception
+     */
+    public static void main(String[] args) throws Exception {
+        int exitCode = ToolRunner.run(new RatingPredictor(), args);
+        System.exit(exitCode);
+    }
     
 }
