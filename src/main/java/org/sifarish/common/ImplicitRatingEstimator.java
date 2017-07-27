@@ -93,6 +93,10 @@ public class ImplicitRatingEstimator   extends Configured implements Tool{
     	private String userID;
     	private int  eventType = 0;
     	private long timeStamp;
+    	private int userIdOrd;
+    	private int itemIdOrd;
+    	private int evtOrd;
+    	private int tsOrd;
     	private static final int USER_ID_ORD = 0;
     	private static final int ITEM_ID_ORD = 2;
     	private static final int EVT_ORD = 3;
@@ -102,7 +106,12 @@ public class ImplicitRatingEstimator   extends Configured implements Tool{
          * @see org.apache.hadoop.mapreduce.Mapper#setup(org.apache.hadoop.mapreduce.Mapper.Context)
          */
         protected void setup(Context context) throws IOException, InterruptedException {
-        	fieldDelim = context.getConfiguration().get("field.delim.regex", ",");
+        	Configuration config = context.getConfiguration();
+        	fieldDelim = config.get("field.delim.regex", ",");
+        	userIdOrd = config.getInt("ire.user.id.ord", USER_ID_ORD);
+        	itemIdOrd = config.getInt("ire.item.id.ord", ITEM_ID_ORD);
+        	evtOrd = config.getInt("ire.evt.ord", EVT_ORD);
+        	tsOrd = config.getInt("ire.ts.ord", TS_ORD);
         }    
    
         /* (non-Javadoc)
@@ -111,16 +120,16 @@ public class ImplicitRatingEstimator   extends Configured implements Tool{
         @Override
         protected void map(LongWritable key, Text value, Context context)
             throws IOException, InterruptedException {
-           	String[] items = value.toString().split(fieldDelim);
-           	userID = items[USER_ID_ORD];
+           	String[] items = value.toString().split(fieldDelim, -1);
+           	userID = items[userIdOrd];
            	if (!userID.isEmpty()) {
            		//process only logged in sessions
-	           	eventType = Integer.parseInt(items[EVT_ORD]);
-	           	timeStamp = Long.parseLong(items[TS_ORD]);
+	           	eventType = Integer.parseInt(items[evtOrd]);
+	           	timeStamp = Long.parseLong(items[tsOrd]);
 	           	
 	           	//user ID, item ID, event
 	           	keyOut.initialize();
-	           	keyOut.add(items[USER_ID_ORD], items[ITEM_ID_ORD], eventType);
+	           	keyOut.add(userID, items[itemIdOrd], eventType);
 	           	
 	           	valOut.initialize();
 	           	valOut.add(eventType, timeStamp);
