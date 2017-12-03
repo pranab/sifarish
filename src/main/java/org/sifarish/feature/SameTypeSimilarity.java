@@ -345,7 +345,7 @@ public class SameTypeSimilarity  extends Configured implements Tool {
 	            		if (!firstId.equals(secondId)){
 		        			dist  = findDistance( first,  second,  context);
 		        			if (dist <= distThreshold) {
-		        				valueHolder.set(createValueField(first, first));
+		        				valueHolder.set(createValueField(first, second));
 		        				context.write(NullWritable.get(), valueHolder);
 		        			}
 	            		} else {
