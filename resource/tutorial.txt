@@ -93,7 +93,9 @@ example schema file
 ./brec.sh expSchema <schema_file>
 
 2.2 Generate user engagement data as follows
-./brec.sh genHistEvent <item_count> <user_count> <average_event_count_per_user>
+./brec.sh genHistEvent <item_count> <user_count> <average_event_count_per_user> <output_file_name>
+item_count = number of items e.g. 1000
+user_count = number of users e.g. 100
 average_event_count_per_user = number of events per customer (a reasonable 
 number is around 10)
 
