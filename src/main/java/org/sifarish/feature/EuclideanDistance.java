@@ -38,7 +38,7 @@ public class EuclideanDistance extends DistanceStrategy {
 	 */
 	public void accumulate(double distance, double weight){
 		distance = Math.abs(distance);
-		double effectDist = 0;
+		double effectDist;
 		//if weight < 1 then convex i.e. effective distance greater than distance otherwise concave
 		effectDist =  (1 / weight) * distance  + ( 1 - 1 / weight) * distance * distance;
 			
@@ -77,7 +77,7 @@ public class EuclideanDistance extends DistanceStrategy {
 
 	@Override
 	public double getSimilarity(boolean isScaled) {
-		double sim = 0;
+		double sim;
 		if (isScaled) {
 			sim = ((Math.sqrt(sumWt) * scale) / count);
 		} else {

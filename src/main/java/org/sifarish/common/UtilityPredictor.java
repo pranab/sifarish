@@ -152,7 +152,7 @@ public class UtilityPredictor extends Configured implements Tool{
         		//user rating
 				context.getCounter("Record type count", "Rating").increment(1);
 
-        		boolean toInclude = true;
+        		boolean toInclude;
                	for (int i = 1; i < items.length; ++i) {
                		//all user ratings for this item
             		ratings = items[i].split(subFieldDelim);

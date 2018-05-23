@@ -241,7 +241,7 @@ public class Field implements Serializable {
 	 * @return
 	 */
 	public double  findDistance(int thisValue, int thatValue,  double diffThreshold) {
-		double distance = 1.0;
+		double distance;
 		if (max > min) {
 			distance = ((double)(thisValue - thatValue)) / (max  - min);
 		} else {
@@ -268,7 +268,7 @@ public class Field implements Serializable {
 	 * @return
 	 */
 	public double  findDistance(double thisValue, double thatValue,  double diffThreshold) {
-		double distance = 1.0;
+		double distance;
 		if (max > min) {
 			distance = ((thisValue - thatValue)) / (max  - min);
 		} else {

@@ -257,7 +257,7 @@ public class ItemDynamicAttributeSimilarity  extends Configured implements Tool{
          */
         protected void reduce(Tuple  key, Iterable<Text> values, Context context)
         throws IOException, InterruptedException {
-        	double dist = 0;
+        	double dist;
         	intLength = -1;
         	
         	valueList.clear();

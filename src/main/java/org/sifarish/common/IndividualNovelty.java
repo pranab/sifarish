@@ -125,7 +125,7 @@ public class IndividualNovelty extends Transformer {
 				rating = (rating * maxRating) / maxRatingInData;
 			}
 			
-			Integer novelty = null;
+			Integer novelty;
 			if (rating == 0) {
 				novelty = maxRating;
 			} else if (rating == maxRating){

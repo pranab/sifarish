@@ -93,7 +93,7 @@ public class RatingDifference extends Configured implements Tool{
         protected void map(LongWritable key, Text value, Context context)
             throws IOException, InterruptedException {
         	String[] items = value.toString().split(fieldDelim);
-        	String[] ratings = null;
+        	String[] ratings;
         	for (int i = 1; i < items.length; ++i) {
         		ratings = items[i].split(subFieldDelim);
         		String itemOne = ratings[0];

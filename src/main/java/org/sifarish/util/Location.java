@@ -49,7 +49,7 @@ public class Location extends StructuredAttribute {
 		double[] weights = field.getComponentWeights();
 		Location other = (Location)otherAttr;
 		distStrategy.initialize();
-		double dist = 0;
+		double dist;
 		if (null  != landMark) {
 			dist = (landMark.equals(other.landMark)? 0 : 1);
 			distStrategy.accumulate(dist, weights[0]);

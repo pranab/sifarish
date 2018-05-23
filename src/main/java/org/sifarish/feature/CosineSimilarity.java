@@ -34,7 +34,7 @@ public class CosineSimilarity  extends DynamicAttrSimilarityStrategy{
 	 */
 	@Override
 	public double findDistance(String src, String target) {
-		double distance = 1.0;
+		double distance;
 		countVec.clear();
 		intersectionLength = 0;
 		

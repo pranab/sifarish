@@ -213,7 +213,7 @@ public class ItemRatingStat extends Configured implements Tool{
 	   					" maxRatingStdDev:" + maxRatingStdDev + " maxCount:" + maxCount);
 	        	tupleList.close();
 	        	tupleList.open(BigTupleList.Mode.Read);
-	        	Tuple value = null;
+	        	Tuple value;
 	        	while ((value = tupleList.read()) != null) {
 	        		thisCount = value.getInt(COUNT_ORD + 1) * statsScale / maxCount;
 	        		thisRatingMean = value.getInt(MEAN_ORD + 1) * statsScale / maxRatingMean ;

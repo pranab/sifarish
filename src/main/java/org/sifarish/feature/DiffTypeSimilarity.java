@@ -344,11 +344,11 @@ public class DiffTypeSimilarity  extends Configured implements Tool {
     	 * @throws IOException 
     	 */
     	private int findSimilarity(String source, String target, Context context) throws IOException {
-    		int sim = 0;
+    		int sim;
     		mapFields(source, context);
     		String[] trgItems = target.split(fieldDelimRegex);
     		
-    		double dist = 0;
+    		double dist;
 			context.getCounter("Data", "Target Field Count").increment(targetFields.size());
 			if (prntDetail){
 				System.out.println("target record: " + trgItems[0]);

@@ -43,7 +43,7 @@ public class JaccardSimilarity extends DynamicAttrSimilarityStrategy {
 	 */
 	@Override
 	public double findDistance(String src, String target) {
-		double distance = 1.0;
+		double distance;
 		
 		String[] srcTerms = src.split(fieldDelimRegex);
 		String[] trgTerms = target.split(fieldDelimRegex);
