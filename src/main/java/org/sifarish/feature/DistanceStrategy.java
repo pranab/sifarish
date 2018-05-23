@@ -116,8 +116,8 @@ public abstract class DistanceStrategy  implements  IDistanceStrategy {
 		int explodedCount = 0;
 		int implodedCount = 0;
 		
-		for (int fieldOrd : attributeDistanceStatus.keySet()) {
-			if (attributeDistanceStatus.get(fieldOrd) == DistanceStatus.DistanceExploded) {
+		for (Map.Entry<Integer, DistanceStatus> entry : attributeDistanceStatus.entrySet()) {
+			if (entry.getValue() == DistanceStatus.DistanceExploded) {
 				++explodedCount;
 			} else {
 				++implodedCount;

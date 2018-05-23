@@ -247,10 +247,10 @@ public class NewItemUtility extends Configured implements Tool{
         	}
         	
         	//all users
-        	 for (String userID : itemsForUsers.keySet()) {
+        	 for (Map.Entry<String, List<RatedItemWithAttributes>> entry : itemsForUsers.entrySet()) {
         		 //new items
         		 for (RatedItemWithAttributes newItem : newItems) {
-        			 List<RatedItemWithAttributes> items = itemsForUsers.get(userID);
+        			 List<RatedItemWithAttributes> items = entry.getValue();
         			 newItemPredRatings = new int[items.size()];
         			 int i = 0;
         			 //items or an user
@@ -259,10 +259,10 @@ public class NewItemUtility extends Configured implements Tool{
         						 (scale - distFinder.findDistance(item.getAttributeArray(), newItem.getAttributeArray())) * item.getRight();
         			 }
         			 int aggrRating = aggregateRating();
-        			 List<RatedItem> ratedNewItems = newItemsForUsers.get(userID);
-        			 if (null == userID) {
+        			 List<RatedItem> ratedNewItems = newItemsForUsers.get(entry.getKey());
+        			 if (null == entry.getKey()) {
         				 ratedNewItems = new ArrayList<RatedItem>();
-        				 newItemsForUsers.put(userID, ratedNewItems);
+        				 newItemsForUsers.put(entry.getKey(), ratedNewItems);
         			 }
         			 ratedNewItems.add(new RatedItem(newItem.getLeft(),  aggrRating ));
         		 }
@@ -306,23 +306,23 @@ public class NewItemUtility extends Configured implements Tool{
      */
         private void outputRating(Context context) throws IOException, InterruptedException {
         	//all users
-        	for (String userID : itemsForUsers.keySet()) {
-        		List<RatedItemWithAttributes> items = itemsForUsers.get(userID);
+        	for (Map.Entry<String, List<RatedItemWithAttributes>> entry : itemsForUsers.entrySet()) {
+        		List<RatedItemWithAttributes> items = entry.getValue();
     		
         		//existing items
         		for (RatedItemWithAttributes item : items) {
     	    		stBld.delete(0, stBld.length());
-    	    		stBld.append(userID).append(fieldDelim).append(item.getLeft()).append(fieldDelim).
+    	    		stBld.append(entry.getKey()).append(fieldDelim).append(item.getLeft()).append(fieldDelim).
     	    			append(item.getRight()).append("E");
     	    		valOut.set(stBld.toString());
     	    		context.write(NullWritable.get(), valOut);
         		}
     		 
         		//new items
-        		List<RatedItem> newItems = newItemsForUsers.get(userID);
+        		List<RatedItem> newItems = newItemsForUsers.get(entry.getKey());
         		for (RatedItem item : newItems) {
         			stBld.delete(0, stBld.length());
-        			stBld.append(userID).append(fieldDelim).append(item.getLeft()).append(fieldDelim).
+        			stBld.append(entry.getKey()).append(fieldDelim).append(item.getLeft()).append(fieldDelim).
    	    				append(item.getRight()).append("N");
         			valOut.set(stBld.toString());
         			context.write(NullWritable.get(), valOut);
