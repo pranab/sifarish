@@ -99,7 +99,7 @@ xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/ma
 		<dependency>
 	       <groupId>org.apache.lucene</groupId>
 	       <artifactId>lucene-core</artifactId>
-	       <version>4.4.0</version>
+	       <version>7.1.0</version>
 	       <type>jar</type>
 	    </dependency>
 	    
